@@ -8,3 +8,17 @@ requires-python = ">=3.12"
 testpaths = ["tests"]
 pythonpath = ["."]
 addopts = "-ra --strict-markers"
+
+# ---------- Ruff: linter + formatter ----------
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+# E/W pycodestyle, F pyflakes, I import order, B bugbear, UP modern syntax,
+# S bandit security checks, SIM simplifications, N naming
+select = ["E", "W", "F", "I", "B", "UP", "S", "SIM", "N"]
+
+[tool.ruff.lint.per-file-ignores]
+# pytest uses plain `assert`; the S101 "assert used" security rule only matters in app code
+"tests/**" = ["S101"]

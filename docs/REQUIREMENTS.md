@@ -12,7 +12,7 @@
 | C1 | GitHub repository | Meaningful name; ≥ 15 commits with meaningful messages | Planned | |
 | C2 | Branching | `main` + `feature/*` branches; every member merges via PR | Planned | |
 | C3 | README | Title, problem, team, features, stack, setup, screenshots, git workflow | Planned | |
-| C4 | Automated tests | ≥ 3 automated tests (we target ≥ 80% backend coverage) | Planned | |
+| C4 | Automated tests | ≥ 3 automated tests (we target ≥ 80% backend coverage) | Verified | 60 pytest tests run in CI on every push |
 | C5 | CI | GitHub Actions on push showing pass/fail | Planned | |
 | C6 | Deployment | A public deployment URL with documented setup | Planned | |
 
@@ -23,15 +23,15 @@
 | FR1 | Spotify authentication | Login redirects to Spotify; callback rejects a missing or mismatched `state` with `400`; success creates a session cookie; logout invalidates it server-side | 1 | Planned |
 | FR2 | Preference input | Save/read artists, genres, languages, styles, reference tracks and exclusions; invalid or oversized input rejected with `422` | 1 | Planned |
 | FR3 | Music DNA | Returns a genre spread, top artists, language mix and default mood centre, computed only from stated preferences | 1 | Planned |
-| FR4 | Mood input | Accepts chips and/or text (≤ 500 chars); at least one is required | 1 | Planned |
-| FR5 | Mood processing | Returns valence, energy (0–1), tempo, labels, intent and confidence; chips-only input is deterministic | 1 | Planned |
+| FR4 | Mood input | Accepts chips (≤ 5) and/or text (≤ 500 chars); at least one is required | 1 | Verified (`test_mood_api.py`) |
+| FR5 | Mood processing | Returns valence, energy (0–1), tempo, labels, mode and confidence; chips-only input is deterministic | 1 | Verified (`test_mood_analyzer.py`, `test_mood_classifier.py`) |
 | FR6 | Preference + mood scoring | Every candidate gets `mood_fit`, `taste_fit` and `score`; ranking is deterministic for the same input and candidates | 1 | Planned |
 | FR7 | Playlist generation | Returns 10–30 tracks (default 15); ≤ 2 tracks per artist; excluded artists never appear | 1 | Planned |
 | FR8 | Explanations | Every track has a sentence that only refers to factors that actually contributed to its score | 1 | Planned |
 | FR9 | Spotify playlist creation | Export creates a playlist in the user's account containing exactly the curated tracks; the Spotify URL is returned and stored | 1 | Planned |
 | FR10 | Persistence | Preferences, mood sessions and playlist records are stored in MongoDB | 1 | Planned |
 | FR11 | Data access & deletion *(added)* | `GET /me/data` returns all of the user's Muse data as JSON; `DELETE /me` removes every document for that user and ends all sessions | 1 | Planned |
-| FR12 | Wellbeing notice *(added)* | Text matching the crisis-phrase list returns a `support` notice with helpline information; music is still returned; the text is not stored | 1 | Planned |
+| FR12 | Wellbeing notice *(added)* | Text matching the crisis-phrase list returns a `support` notice with helpline information; music is still returned; the text is not stored | 1 | Verified (`test_wellbeing.py`); phrase list awaits counsellor/faculty review |
 | FR13 | Feedback loop | Like/dislike per track | 3 | Deferred |
 | FR14 | Session history & mood trajectory | List past sessions; chart moods over time | 3 | Deferred |
 

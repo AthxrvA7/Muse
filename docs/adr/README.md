@@ -14,3 +14,4 @@ Format: [Michael Nygard's template](https://cognitect.com/blog/2011/11/15/docume
 | [0006](0006-store-derived-mood-not-raw-text.md) | Store derived mood, never raw mood text | Accepted | 2026-10-20 |
 | [0007](0007-render-and-atlas-deployment.md) | Render + MongoDB Atlas for the demo deployment | Accepted | 2026-10-20 |
 | [0008](0008-github-flow-public-repo.md) | GitHub Flow, Conventional Commits and a public repository | Accepted | 2026-10-20 |
+| [0009](0009-curation-core-first.md) | Build the curation core before persistence and login | Accepted | 2026-10-21 |

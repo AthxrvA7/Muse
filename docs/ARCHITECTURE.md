@@ -120,14 +120,16 @@ Output: MoodProfile {
           energy:  0.25        # 0 = calm, 1 = intense
           tempo:   "slow"      # slow | medium | fast
           labels:  ["sadness", "calm"]
-          intent:  "comfort"   # comfort | focus | energy | discovery
+          mode:    "comfort"   # comfort | focus | energy | discovery
           confidence: 0.71
+          text_analysis: "classifier"   # or "keywords", or null with no text
+          support: null                 # wellbeing notice, see below
         }
 ```
 
 How it works:
 1. **Chips** map directly to valence/energy values from a Muse-owned table (`mood_map.json`).
-2. **Free text** goes through a small scikit-learn classifier: **TF-IDF + Logistic Regression** trained on a public English emotion dataset (6 emotions: joy, sadness, anger, fear, love, surprise). Each emotion has a valence/energy coordinate; the result is the probability-weighted average.
+2. **Free text** goes through a small scikit-learn classifier (used only when its top probability is ≥ 0.5; below that, known mood words are matched instead): **TF-IDF + Logistic Regression** trained on a public English emotion dataset (6 emotions: joy, sadness, anger, fear, love, surprise). Each emotion has a valence/energy coordinate; the result is the probability-weighted average.
 3. **Intent keywords** ("study", "gym", "sleep", "party") nudge energy and pick a playlist mode.
 4. Chips and text are blended (chips weigh more — they are explicit).
 
@@ -410,7 +412,7 @@ Full threat model and control mapping: [`SECURITY_PRIVACY.md`](SECURITY_PRIVACY.
 
 | Phase | Scope | Who |
 |---|---|---|
-| **1 — Backend (this semester)** | Repo + CI + Docker, health/logging, error handling, security hardening, MongoDB, Spotify auth, privacy controls, Classics APIs, mood engine + wellbeing safeguard, recommender, playlist export, deployment + runbooks | All three (backend-heavy: Atharva) |
+| **1 — Backend (this semester)** | Built in slices, core first (ADR-0009): mood engine ✅ → recommender → login + MongoDB + Classics → playlist export + privacy. DevOps track (Docker, CD, extra CI) follows the course. | All three (backend-heavy: Atharva) |
 | 2 — Frontend | React dashboard, Music DNA charts, mood input, playlist view | Piyush lead |
 | 3 — Advanced | Feedback loop, adaptive weights, session history, mood trajectory | Atharva + team |
 

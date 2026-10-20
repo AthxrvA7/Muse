@@ -38,3 +38,13 @@ Never paste secrets, tokens or real user data into an AI tool.
 - **Changes made by us:** Ran the app and the tests on our own laptops (Windows and Mac) before committing. Fixed how the server was started (it has to be run from inside `backend/`). Added a typed response model after Swagger showed `additionalProp1` instead of the real fields. Fixed the GitHub login on the Mac so it could push workflow files.
 - **Verification:** `pytest` passes locally (8 tests); the CI run on the PR shows Lint and Tests both green.
 - **Reflection:** A workflow is just the same commands we run on our laptop, run on a fresh machine on every push. Pushing a workflow file needs extra GitHub permission (`workflow` scope), which we didn't know about until the push failed.
+
+### 2026-10-21 — Mood engine (slice 1)
+- **Member:** Atharva
+- **Tool:** Claude (Anthropic)
+- **Purpose:** code suggestion, design, learning
+- **Prompt (summary):** Build the mood engine: chips on Russell's circumplex, an analyze endpoint, a TF-IDF + logistic regression emotion classifier with a training script, safe model loading, and a wellbeing notice.
+- **Output used:** `backend/app/services/mood/*`, `backend/app/knowledge/*.json`, `backend/app/schemas/mood.py`, `backend/app/api/v1/mood.py`, `backend/scripts/train_mood_model.py`, the mood tests.
+- **Changes made by us:** Trained the model on my own laptop (Claude couldn't reach Hugging Face). Results: test accuracy 0.879, macro-F1 0.838, best C = 4. Testing in Swagger showed two problems. First, neutral sentences like "exams tomorrow, need to study" got a made-up "joy" label, because the model always picks something (top probability only 0.31). We added a rule to use the model only when it's at least 50% sure and fall back to mood words otherwise. Second, Swagger pre-filled `"mode": "comfort"`, which overrode the "study" intent, so we fixed the example.
+- **Verification:** 60 tests pass locally and in CI; ran real sentences through the trained model and checked the results by hand.
+- **Reflection:** The model is very confident when there's a feeling word ("nervous" → fear 0.98) but unreliable on neutral text. An accuracy number alone doesn't show that; trying real inputs did. The mood positions in `mood_map.json` are our own estimates, and we say so in the file.

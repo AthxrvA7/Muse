@@ -1,0 +1,48 @@
+name: Bug report
+description: Something in Muse is not working as expected
+title: "bug: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting! **Do not paste tokens, cookies, secrets or personal data.**
+        Security vulnerabilities go through SECURITY.md, not issues.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      placeholder: Steps to reproduce, then what you saw.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      placeholder: v0.1.0 or a commit SHA
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Backend API
+        - Auth / Spotify
+        - Mood engine
+        - Recommender
+        - CI/CD / Docker
+        - Docs
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: Remove any tokens or personal data first.
+      render: text

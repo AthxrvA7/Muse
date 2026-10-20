@@ -58,3 +58,13 @@ Never paste secrets, tokens or real user data into an AI tool.
 - **Changes made by us:** Created the Spotify developer app myself. I accidentally showed the client secret in a screenshot, so I rotated it in the Spotify dashboard right away and only kept the new one in `.env`.
 - **Verification:** 93 tests pass with a fake Spotify (no network in CI). I then ran a real search from my laptop in Swagger and got real tracks back.
 - **Reflection:** Spotify now limits search to 10 results per request, so paging matters. A leaked secret has to be rotated, not just deleted, because a screenshot can't be taken back.
+
+### 2026-10-21 — Recommender and curate endpoint (slice 2, part 2)
+- **Member:** Atharva
+- **Tool:** Claude (Anthropic)
+- **Purpose:** design, code suggestion, testing
+- **Prompt (summary):** Build the recommender: a genre knowledge base, search planning from mood + taste, parallel candidate search, mood/taste scoring, diversity re-ranking, explanations, and `POST /api/v1/curate`.
+- **Output used:** `backend/app/knowledge/genre_kb.json`, `backend/app/services/recommender/*`, `backend/app/services/curate.py`, `backend/app/api/v1/curate.py`, tests.
+- **Changes made by us:** The end-to-end tests caught two problems before anything shipped. First, one genre search filled the whole playlist (12 indie folk songs from 6 different artists, so the per-artist limit didn't stop it), and my favourite artist didn't appear at all. We added a rule that no single search can supply more than 40% of the playlist. Second, a search that returned the same track twice counted it twice; fixed. We also switched mood fit from cosine similarity to distance (ADR-0010), because cosine treats "very sad and calm" and "very happy and energetic" as identical.
+- **Verification:** 148 tests (unit and end-to-end with a fake Spotify catalogue, plus a 300 ms-latency timing test). I then ran a real curate request against Spotify from my laptop and checked that the playlist and reasons made sense.
+- **Reflection:** Unit tests passed while the playlist was obviously bad. Only looking at the actual output showed the genre monopoly. The genre positions are our estimates, so the playlist is only as good as `genre_kb.json`.

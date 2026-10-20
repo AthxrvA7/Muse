@@ -73,12 +73,12 @@ The app is built in vertical slices so a working "mood → explained songs" demo
 - [x] `docs: document Spotify setup and the catalogue search endpoint`
 
 ### `feature/recommendation` 🅰
-- [ ] `feat(recommender): add genre knowledge base`
-- [ ] `feat(recommender): add query planning and candidate search`
-- [ ] `feat(recommender): add mood and taste scoring`
-- [ ] `feat(recommender): add diversity re-ranking and explanations`
-- [ ] `feat(curate): add curate preview endpoint`
-- [ ] `test(recommender): add scoring, ranking and explanation tests`
+- [x] `feat(recommender): add genre knowledge base`
+- [x] `feat(recommender): add query planning and parallel candidate search`
+- [x] `feat(recommender): add mood and taste scoring`
+- [x] `feat(recommender): add diversity re-ranking and explanations`
+- [x] `feat(curate): add curate preview endpoint`
+- [x] `docs: document the recommender, ADR-0010 and curate endpoint`
 
 🏷 **Tag `v0.2.0` — Curate preview**
 

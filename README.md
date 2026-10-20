@@ -47,6 +47,20 @@ Start the backend (see Setup), open http://127.0.0.1:8000/docs and call **POST /
 
 To retrain the emotion model: `cd backend`, `pip install -r requirements-train.txt`, `python -m scripts.train_mood_model`.
 
+## Curate a playlist
+
+With Spotify connected (next section), call **POST /api/v1/curate** in `/docs`:
+
+```json
+{
+  "mood": {"chips": ["tired", "low"], "text": "long day, want something soft"},
+  "taste": {"artists": ["Prateek Kuhad"], "genres": ["indie folk", "bollywood"], "languages": ["hi", "en"]},
+  "size": 15
+}
+```
+
+Each returned track has `score`, `mood_fit`, `taste_fit` and a `reason`, e.g. *"Picked because you like Prateek Kuhad, and its indie folk feel fits your tired and low mood."* Allowed genres and languages: **GET /api/v1/curate/options**.
+
 ## Connect Spotify (optional for tests, needed for search)
 
 1. Create an app at https://developer.spotify.com/dashboard (Redirect URI `http://127.0.0.1:8000/api/v1/auth/callback`, API: Web API).

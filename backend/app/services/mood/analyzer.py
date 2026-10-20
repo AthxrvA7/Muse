@@ -156,13 +156,24 @@ class MoodAnalyzer:
         labels = [e for e in ranked if probabilities[e] >= LABEL_THRESHOLD] or ranked[:1]
         return TextReading(point, labels, max(probabilities.values()) / total, "classifier")
 
-    def _match_keywords(self, text: str) -> TextReading | None:
+    @property
+    def vocabulary(self) -> MoodVocabulary:
+        return self._vocabulary
+
+    def mood_words(self, text: str) -> list[str]:
+        """Mood chips whose name or synonym appears in the text (negated words skipped).
+
+        Public because the recommender also reads moods from track titles.
+        """
         lowered = text.lower()
-        found = list(
+        return list(
             dict.fromkeys(
                 chip_id for pattern, chip_id in self._mood_words if pattern.search(lowered)
             )
         )
+
+    def _match_keywords(self, text: str) -> TextReading | None:
+        found = self.mood_words(text)
         if not found:
             return None
         points = [self._vocabulary.chips[c] for c in found]

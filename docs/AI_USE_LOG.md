@@ -58,3 +58,13 @@ Never paste secrets, tokens or real user data into an AI tool.
 - **Changes made by us:** Created the Spotify developer app myself. I accidentally showed the client secret in a screenshot, so I rotated it in the Spotify dashboard right away and only kept the new one in `.env`.
 - **Verification:** 93 tests pass with a fake Spotify (no network in CI). I then ran a real search from my laptop in Swagger and got real tracks back.
 - **Reflection:** Spotify now limits search to 10 results per request, so paging matters. A leaked secret has to be rotated, not just deleted, because a screenshot can't be taken back.
+
+### 2026-10-21 — Recommender and curate endpoint (slice 2, part 2)
+- **Member:** Atharva
+- **Tool:** Claude (Anthropic)
+- **Purpose:** design, code suggestion, testing
+- **Prompt (summary):** Build the recommender: a genre knowledge base, search planning from mood + taste, parallel candidate search, mood/taste scoring, diversity re-ranking, explanations, and `POST /api/v1/curate`.
+- **Output used:** `backend/app/knowledge/genre_kb.json`, `backend/app/services/recommender/*`, `backend/app/services/curate.py`, `backend/app/api/v1/curate.py`, tests.
+- **Changes made by us:** The end-to-end tests caught two problems before anything shipped. First, one genre search filled the whole playlist, and my favourite artist didn't appear; we added a 40%-per-search limit. Second, duplicate results were counted twice. We also switched mood fit from cosine similarity to distance (ADR-0010). Then I ran it against real Spotify (6 searches, 83 candidates, 15 tracks), and the output showed three more problems the fake data couldn't. Arijit Singh appeared 3 times, because he's credited second on Bollywood songs, so the per-artist limit now counts every credited artist. Many tracks had identical scores, so ties are now broken by Spotify's result order. And ghazal songs were explained as "bollywood feel", so explanations now name every genre behind the estimate and keep proper names.
+- **Verification:** 153 tests (unit, end-to-end with a fake catalogue, and a 300 ms-latency timing test), plus real Spotify runs from my laptop before and after the fixes.
+- **Reflection:** Each kind of testing found different bugs. Unit tests passed while the playlist was bad; fake end-to-end data found the genre monopoly; only real Spotify data found the featured-artist and tie problems. Real data also showed that Spotify's `genre:` filter is loose (Shawn Mendes came back for "indie folk"), and that favourite-artist songs get a neutral mood fit because Spotify says nothing about how they sound. Both are limitations we should state in the report.

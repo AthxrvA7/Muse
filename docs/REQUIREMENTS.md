@@ -25,9 +25,9 @@
 | FR3 | Music DNA | Returns a genre spread, top artists, language mix and default mood centre, computed only from stated preferences | 1 | Planned |
 | FR4 | Mood input | Accepts chips (≤ 5) and/or text (≤ 500 chars); at least one is required | 1 | Verified (`test_mood_api.py`) |
 | FR5 | Mood processing | Returns valence, energy (0–1), tempo, labels, mode and confidence; chips-only input is deterministic | 1 | Verified (`test_mood_analyzer.py`, `test_mood_classifier.py`) |
-| FR6 | Preference + mood scoring | Every candidate gets `mood_fit`, `taste_fit` and `score`; ranking is deterministic for the same input and candidates | 1 | Planned |
-| FR7 | Playlist generation | Returns 10–30 tracks (default 15); ≤ 2 tracks per artist; excluded artists never appear | 1 | Planned |
-| FR8 | Explanations | Every track has a sentence that only refers to factors that actually contributed to its score | 1 | Planned |
+| FR6 | Preference + mood scoring | Every candidate gets `mood_fit`, `taste_fit` and `score`; ranking is deterministic for the same input and candidates | 1 | Verified (`test_recommender_scoring.py`, `test_recommender_ranking.py`) |
+| FR7 | Playlist generation | Returns 10–30 tracks (default 15); ≤ 2 tracks per artist when there's enough choice; ≤ 40% from one search; excluded artists never appear | 1 | Verified (`test_curate_api.py`) |
+| FR8 | Explanations | Every track has a sentence that only refers to factors that actually contributed to its score | 1 | Verified (`test_recommender_ranking.py`) |
 | FR9 | Spotify catalogue + playlist creation | Catalogue search returns tracks/artists from Spotify (`GET /api/v1/catalog/search`); export creates a playlist in the user's account containing exactly the curated tracks; the Spotify URL is returned and stored | 1 | Search verified (`test_spotify_*.py`, `test_catalog_api.py`, real call checked locally); export planned |
 | FR10 | Persistence | Preferences, mood sessions and playlist records are stored in MongoDB | 1 | Planned |
 | FR11 | Data access & deletion *(added)* | `GET /me/data` returns all of the user's Muse data as JSON; `DELETE /me` removes every document for that user and ends all sessions | 1 | Planned |
@@ -39,7 +39,7 @@
 
 | ID | Quality | Requirement | Acceptance criteria (how we verify) |
 |---|---|---|---|
-| NFR1 | Performance | Curate completes quickly | p95 ≤ 5 s for a 15-track playlist with mocked Spotify latency of 300 ms per call (timed test); Muse's own scoring ≤ 200 ms for 300 candidates |
+| NFR1 | Performance | Curate completes quickly | p95 ≤ 5 s for a 15-track playlist with mocked Spotify latency of 300 ms per call (timed test); Muse's own scoring ≤ 200 ms for 300 candidates — **Verified** (`test_curate_finishes_within_5_seconds_with_slow_spotify`, `test_scoring_300_candidates_takes_under_200_ms`) |
 | NFR2 | Security | Secrets never in code, logs or the frontend | Secret scanning on; log-redaction test; `.env` git-ignored |
 | NFR3 | Security | Tokens encrypted at rest | Test: the stored token field is not equal to the plaintext token and decrypts correctly |
 | NFR4 | Security | Protected endpoints need a valid session | Security tests: no cookie, expired session and deleted session each return `401` |

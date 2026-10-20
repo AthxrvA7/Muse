@@ -139,7 +139,7 @@ def test_full_chain_from_settings_to_spotify_with_only_the_network_faked(
     def fake_client(**kwargs: Any) -> httpx2.AsyncClient:
         return real_client(transport=httpx2.MockTransport(spotify), **kwargs)
 
-    monkeypatch.setattr("app.services.catalog.httpx2.AsyncClient", fake_client)
+    monkeypatch.setattr("app.services.spotify_session.httpx2.AsyncClient", fake_client)
     settings = Settings(
         _env_file=None,
         app_env="test",

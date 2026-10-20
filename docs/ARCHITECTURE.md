@@ -171,13 +171,13 @@ flowchart LR
    - preferred genres that fit the mood (genre profile close to the target) → `genre:"lo-fi"`
    - artists of reference tracks → `artist:"..."`
    - one or two "mood-adjacent" genres the user did *not* list, for discovery (only in discovery mode)
-2. **Search** — run those queries (2–3 pages each, ~150–250 candidates), with `market=from_token`. Remove duplicates and anything the user excluded.
-3. **Feature vectors** — for each candidate, build a vector from Muse-owned data: the genre profile of the query that found it (valence, energy, tempo), whether the artist is a stated favourite, whether it matches a reference artist, language match, release-year closeness to the user's stated era (if given).
-4. **Score** — two parts, combined with weights:
-   - `mood_fit` = cosine similarity between the track vector and the mood target vector (scikit-learn)
-   - `taste_fit` = how strongly it matches stated preferences
-   - `score = 0.55 · mood_fit + 0.45 · taste_fit` (weights shift by mode: *comfort* favours taste, *discovery* favours mood)
-5. **Diversify** — greedy re-ranking so no artist appears more than 2 times and genres are mixed; pick the top 15 (configurable 10–30).
+2. **Search** — run those queries in parallel (at most 4 at a time, 20 tracks each, paged 10 at a time) with the configured `market`. A `genre:` search that finds fewer than 5 tracks falls back to the genre's plain keywords. One failed search doesn't stop the playlist; a rate limit does. Duplicates are merged, keeping every search that found the track.
+3. **Estimate each track's feel** — from the genre search(es) that found it (that genre's point in the KB), else from mood words in its title ("Sad", "Happy"), else unknown. Excluded artists and (optionally) explicit tracks are dropped here.
+4. **Score** — two parts, combined with weights *(implemented)*:
+   - `mood_fit` = 1 − distance(track point, mood point) / √2 on the valence-energy plane, pulled towards 0.5 when the estimate is uncertain (ADR-0010 explains why distance, not cosine similarity)
+   - `taste_fit` = the strongest reason the track was found: favourite artist 1.0 · favourite genre 0.75 · language 0.5 · discovery/mood 0.25
+   - `score = w_mood · mood_fit + w_taste · taste_fit`, with (w_mood, w_taste) = comfort (0.45, 0.55) · focus (0.55, 0.45) · energy (0.60, 0.40) · discovery (0.65, 0.35)
+5. **Diversify** — greedy re-ranking: at most 2 songs per artist (counting every credited artist, not just the first), at most 40% from any one search, and versions of the same song ("Song - Remastered", "Song (Live)") count once. Equal scores are ordered by Spotify's own result order. If candidates are scarce, the limits relax so the playlist still fills (10–30 tracks, default 15).
 6. **Explain** — template-based sentences built from the actual score components, e.g.
    *"Picked because you love Prateek Kuhad, and its soft indie-folk feel fits your calm, slightly low mood."*
 
@@ -229,7 +229,8 @@ All under `/api/v1` except health checks. Interactive docs are auto-generated at
 | GET | `/preferences/dna` | Music DNA summary | 1 |
 | GET | `/catalog/search` | Artist/track autocomplete | 1 |
 | POST | `/mood/analyze` | Mood → MoodProfile (preview) | 1 |
-| POST | `/curate` | Generate ranked, explained playlist | 1 |
+| POST | `/curate` | Generate a ranked, explained playlist preview *(implemented, stateless)* | 1 |
+| GET | `/curate/options` | Genres and languages allowed in `taste` *(implemented)* | 1 |
 | POST | `/curate/{session_id}/export` | Save it to Spotify | 1 |
 | GET | `/sessions` | Past sessions | 3 |
 | POST | `/sessions/{id}/feedback` | Like/dislike tracks | 3 |
@@ -295,7 +296,7 @@ muse/
 | HTTP client | `httpx2` (async) | Talks to Spotify. *Changed:* `httpx2` (the successor to httpx) is used for both the app and FastAPI's TestClient, so there is one HTTP library; tests fake Spotify with its built-in `MockTransport`, so `respx` isn't needed |
 | Database driver | **PyMongo async (`AsyncMongoClient`)** | *Changed:* Motor is deprecated by MongoDB; PyMongo's native async API replaces it |
 | Database | MongoDB 7 (Docker locally, Atlas M0 free tier in deployment) | Document model fits profiles/sessions |
-| ML / scoring | scikit-learn, NumPy, Pandas | TF-IDF + LogReg, cosine similarity, scaling |
+| ML / scoring | scikit-learn (+ NumPy); Pandas for training only | TF-IDF + logistic regression for mood text; recommender scoring is plain Python geometry on the valence-energy plane (fast enough: 300 candidates in well under 200 ms) |
 | Testing | pytest (async tests via the anyio plugin), `httpx2.MockTransport` for a fake Spotify | At least 3 tests required — we have 93. No real network calls in CI |
 | Lint/format | Ruff | One fast tool for lint + format |
 | Type checking | mypy (standard mode) | Catches type errors before runtime |

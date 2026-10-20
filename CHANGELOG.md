@@ -29,7 +29,20 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 - `GET /api/v1/catalog/search?q=&type=track|artist&limit=`: answers 503 if Spotify isn't configured or is down, and 429 with `Retry-After` if rate-limited
 - Spotify settings (`SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`, `SPOTIFY_MARKET`): optional, so the app and CI run without them; the secret is a `SecretStr` and is never printed
 
+- Genre knowledge base: 60 genres on the valence-energy plane with languages and Spotify search terms (`app/knowledge/genre_kb.json`)
+- Recommender: plans searches from mood + taste (favourite artists, closest favourite genres, language genres, discovery genres), runs them in parallel with keyword fallback and partial-failure tolerance
+- Scoring: mood fit from distance on the valence-energy plane, taste fit from why a track was found, weights per mode
+- Diversity re-ranking (≤ 2 per artist, ≤ 40% per search, song versions de-duplicated) and one-sentence explanations
+- `POST /api/v1/curate` (stateless playlist preview) and `GET /api/v1/curate/options`
+- ADR-0010: distance, not cosine similarity, for mood fit
+
+### Fixed (found in the first run against real Spotify)
+- The 2-per-artist limit now counts every credited artist; Arijit Singh appeared 3 times because he was credited second
+- Tracks with equal scores are now ordered by Spotify's own result order instead of by track ID
+- Explanations name every genre that shaped a track's estimated feel, don't repeat a genre already named, and keep proper names ("Bollywood", "R&B")
+
 ### Changed
+- Spotify connection setup shared by catalogue and curation (`services/spotify_session.py`); Spotify error mapping moved to `api/errors.py`
 - `httpx2` moved to runtime dependencies: one HTTP library for the Spotify client and FastAPI's TestClient
 - Lint: tests may contain fake secrets (Ruff S105/S106 allowed in `tests/` only)
 - The classifier is used only when it is at least 50% confident; neutral text ("need to study") falls back to mood words instead of a guessed emotion

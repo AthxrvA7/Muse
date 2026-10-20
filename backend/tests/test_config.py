@@ -32,3 +32,21 @@ def test_unknown_environment_is_rejected() -> None:
 def test_debug_logging_is_rejected_in_production() -> None:
     with pytest.raises(ValidationError, match="DEBUG is not allowed"):
         Settings(_env_file=None, app_env="production", log_level="DEBUG")
+
+
+def test_spotify_is_optional_and_empty_values_mean_unset() -> None:
+    settings = Settings(_env_file=None, spotify_client_id="", spotify_client_secret="  ")
+
+    assert settings.spotify_configured is False
+
+
+def test_spotify_secret_is_never_shown_in_repr() -> None:
+    settings = Settings(_env_file=None, spotify_client_id="id", spotify_client_secret="s3cret")
+
+    assert settings.spotify_configured is True
+    assert "s3cret" not in repr(settings)
+
+
+def test_market_must_be_a_two_letter_country_code() -> None:
+    with pytest.raises(ValidationError):
+        Settings(_env_file=None, spotify_market="India")

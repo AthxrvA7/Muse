@@ -20,5 +20,6 @@ target-version = "py312"
 select = ["E", "W", "F", "I", "B", "UP", "S", "SIM", "N"]
 
 [tool.ruff.lint.per-file-ignores]
-# pytest uses plain `assert`; the S101 "assert used" security rule only matters in app code
-"tests/**" = ["S101"]
+# pytest uses plain `assert` (S101), and tests use fake secrets on purpose (S105/S106).
+# These security rules still apply to all app code.
+"tests/**" = ["S101", "S105", "S106"]

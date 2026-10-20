@@ -47,6 +47,19 @@ Start the backend (see Setup), open http://127.0.0.1:8000/docs and call **POST /
 
 To retrain the emotion model: `cd backend`, `pip install -r requirements-train.txt`, `python -m scripts.train_mood_model`.
 
+## Connect Spotify (optional for tests, needed for search)
+
+1. Create an app at https://developer.spotify.com/dashboard (Redirect URI `http://127.0.0.1:8000/api/v1/auth/callback`, API: Web API).
+2. Put its credentials in `.env` (never commit this file):
+   ```
+   SPOTIFY_CLIENT_ID=...
+   SPOTIFY_CLIENT_SECRET=...
+   SPOTIFY_MARKET=IN
+   ```
+3. Start the backend and try **GET /api/v1/catalog/search** in `/docs`, e.g. `q=Prateek Kuhad`.
+
+Without credentials the app still runs; Spotify endpoints answer `503`. Tests never call the real Spotify.
+
 ## Technology stack
 
 Python 3.12 · FastAPI · scikit-learn · MongoDB · Spotify Web API · pytest · Docker · GitHub Actions · Render

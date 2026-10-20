@@ -292,11 +292,11 @@ muse/
 | Language | Python 3.12 | Team's strength; best ML ecosystem |
 | Web framework | FastAPI + Uvicorn | Async, typed, free Swagger docs |
 | Validation/config | Pydantic v2 + pydantic-settings | Typed models, env-based config |
-| HTTP client | httpx (async) | Talks to Spotify; easy to mock with `respx` |
+| HTTP client | `httpx2` (async) | Talks to Spotify. *Changed:* `httpx2` (the successor to httpx) is used for both the app and FastAPI's TestClient, so there is one HTTP library; tests fake Spotify with its built-in `MockTransport`, so `respx` isn't needed |
 | Database driver | **PyMongo async (`AsyncMongoClient`)** | *Changed:* Motor is deprecated by MongoDB; PyMongo's native async API replaces it |
 | Database | MongoDB 7 (Docker locally, Atlas M0 free tier in deployment) | Document model fits profiles/sessions |
 | ML / scoring | scikit-learn, NumPy, Pandas | TF-IDF + LogReg, cosine similarity, scaling |
-| Testing | pytest, pytest-asyncio, respx, pytest-cov; `httpx2` for FastAPI's TestClient | At least 3 tests required — we'll have far more. `httpx2` replaces `httpx` in tests because Starlette deprecated `httpx` for its TestClient |
+| Testing | pytest (async tests via the anyio plugin), `httpx2.MockTransport` for a fake Spotify | At least 3 tests required — we have 93. No real network calls in CI |
 | Lint/format | Ruff | One fast tool for lint + format |
 | Type checking | mypy (standard mode) | Catches type errors before runtime |
 | Security tooling | pip-audit, CodeQL, Dependabot, GitHub secret scanning | All free; none needs an enterprise DevSecOps platform (which the guidelines rule out) |

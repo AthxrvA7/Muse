@@ -48,3 +48,13 @@ Never paste secrets, tokens or real user data into an AI tool.
 - **Changes made by us:** Trained the model on my own laptop (Claude couldn't reach Hugging Face). Results: test accuracy 0.879, macro-F1 0.838, best C = 4. Testing in Swagger showed two problems. First, neutral sentences like "exams tomorrow, need to study" got a made-up "joy" label, because the model always picks something (top probability only 0.31). We added a rule to use the model only when it's at least 50% sure and fall back to mood words otherwise. Second, Swagger pre-filled `"mode": "comfort"`, which overrode the "study" intent, so we fixed the example.
 - **Verification:** 60 tests pass locally and in CI; ran real sentences through the trained model and checked the results by hand.
 - **Reflection:** The model is very confident when there's a feeling word ("nervous" → fear 0.98) but unreliable on neutral text. An accuracy number alone doesn't show that; trying real inputs did. The mood positions in `mood_map.json` are our own estimates, and we say so in the file.
+
+### 2026-10-21 — Spotify client and catalogue search (slice 2, part 1)
+- **Member:** Atharva
+- **Tool:** Claude (Anthropic)
+- **Purpose:** code suggestion, learning
+- **Prompt (summary):** Build the Spotify client for the client-credentials flow (token caching, retries, rate limits), catalogue search with Spotify's 10-results-per-page limit, and a search endpoint.
+- **Output used:** `backend/app/clients/spotify.py`, `backend/app/services/catalog.py`, `backend/app/api/v1/catalog.py`, `backend/app/schemas/catalog.py`, Spotify settings in `config.py`, tests.
+- **Changes made by us:** Created the Spotify developer app myself. I accidentally showed the client secret in a screenshot, so I rotated it in the Spotify dashboard right away and only kept the new one in `.env`.
+- **Verification:** 93 tests pass with a fake Spotify (no network in CI). I then ran a real search from my laptop in Swagger and got real tracks back.
+- **Reflection:** Spotify now limits search to 10 results per request, so paging matters. A leaked secret has to be rotated, not just deleted, because a screenshot can't be taken back.

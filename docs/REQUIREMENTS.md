@@ -28,7 +28,7 @@
 | FR6 | Preference + mood scoring | Every candidate gets `mood_fit`, `taste_fit` and `score`; ranking is deterministic for the same input and candidates | 1 | Planned |
 | FR7 | Playlist generation | Returns 10–30 tracks (default 15); ≤ 2 tracks per artist; excluded artists never appear | 1 | Planned |
 | FR8 | Explanations | Every track has a sentence that only refers to factors that actually contributed to its score | 1 | Planned |
-| FR9 | Spotify playlist creation | Export creates a playlist in the user's account containing exactly the curated tracks; the Spotify URL is returned and stored | 1 | Planned |
+| FR9 | Spotify catalogue + playlist creation | Catalogue search returns tracks/artists from Spotify (`GET /api/v1/catalog/search`); export creates a playlist in the user's account containing exactly the curated tracks; the Spotify URL is returned and stored | 1 | Search verified (`test_spotify_*.py`, `test_catalog_api.py`, real call checked locally); export planned |
 | FR10 | Persistence | Preferences, mood sessions and playlist records are stored in MongoDB | 1 | Planned |
 | FR11 | Data access & deletion *(added)* | `GET /me/data` returns all of the user's Muse data as JSON; `DELETE /me` removes every document for that user and ends all sessions | 1 | Planned |
 | FR12 | Wellbeing notice *(added)* | Text matching the crisis-phrase list returns a `support` notice with helpline information; music is still returned; the text is not stored | 1 | Verified (`test_wellbeing.py`); phrase list awaits counsellor/faculty review |

@@ -24,6 +24,13 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 - Wellbeing notice with the Tele-MANAS helpline when text suggests crisis; the text is never stored or logged
 - ADR-0009: build the curation core before persistence and login
 
+- Spotify client (client-credentials flow): cached app token with automatic refresh; one retry on 401, 429 (waits up to 5 s for `Retry-After`), 5xx and timeouts
+- Catalogue search with paging (Spotify's 10-per-request limit) and a query builder that strips quotes and control characters from user input
+- `GET /api/v1/catalog/search?q=&type=track|artist&limit=`: answers 503 if Spotify isn't configured or is down, and 429 with `Retry-After` if rate-limited
+- Spotify settings (`SPOTIFY_CLIENT_ID`, `SPOTIFY_CLIENT_SECRET`, `SPOTIFY_MARKET`): optional, so the app and CI run without them; the secret is a `SecretStr` and is never printed
+
 ### Changed
+- `httpx2` moved to runtime dependencies: one HTTP library for the Spotify client and FastAPI's TestClient
+- Lint: tests may contain fake secrets (Ruff S105/S106 allowed in `tests/` only)
 - The classifier is used only when it is at least 50% confident; neutral text ("need to study") falls back to mood words instead of a guessed emotion
 - Swagger's example mood request no longer pre-fills `mode`, which was overriding the detected intent

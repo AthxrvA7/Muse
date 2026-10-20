@@ -13,7 +13,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
-from pydantic import model_validator
+from pydantic import Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # backend/app/core/config.py -> parents[3] is the repository root
@@ -34,6 +34,23 @@ class Settings(BaseSettings):
     log_level: LogLevel = "INFO"
     docs_enabled: bool = True
     api_v1_prefix: str = "/api/v1"
+
+    # Spotify developer app (client-credentials flow). Optional, so the app and CI run
+    # without them; Spotify-backed endpoints answer 503 until they are set.
+    spotify_client_id: str | None = None
+    spotify_client_secret: SecretStr | None = None  # SecretStr: never printed in logs or reprs
+    spotify_market: str = Field(default="IN", pattern=r"^[A-Z]{2}$")  # country for search
+    spotify_timeout_seconds: float = Field(default=10.0, gt=0, le=30)
+
+    @field_validator("spotify_client_id", "spotify_client_secret", mode="before")
+    @classmethod
+    def _empty_is_unset(cls, value: object) -> object:
+        # "SPOTIFY_CLIENT_ID=" in .env means "not configured", not an empty ID
+        return None if isinstance(value, str) and not value.strip() else value
+
+    @property
+    def spotify_configured(self) -> bool:
+        return bool(self.spotify_client_id and self.spotify_client_secret)
 
     @model_validator(mode="after")
     def _check_production_rules(self) -> "Settings":

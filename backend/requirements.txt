@@ -6,3 +6,5 @@ pydantic==2.14.1
 pydantic-settings==2.16.1
 # Mood classifier. The model must be loaded with the SAME version it was trained with.
 scikit-learn==1.9.1
+# HTTP client for Spotify (successor to httpx; also used by FastAPI's TestClient)
+httpx2==2.15.1

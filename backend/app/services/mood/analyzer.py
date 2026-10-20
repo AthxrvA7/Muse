@@ -5,6 +5,7 @@
    weights its point on the circumplex. Without a model, text is scanned for mood words.
 3. Chips and text are blended; chips weigh more because the user chose them on purpose.
 4. Intent words ("study", "gym", "sleep") pick a playlist mode and nudge the energy.
+5. A wellbeing check adds a support notice if the text suggests the person is in crisis.
 """
 
 import re
@@ -15,6 +16,7 @@ from typing import Literal
 from app.schemas.mood import Mode, MoodProfile, MoodRequest, Tempo
 from app.services.mood.classifier import EmotionClassifier
 from app.services.mood.vocabulary import MoodPoint, MoodVocabulary
+from app.services.mood.wellbeing import WellbeingCheck
 
 CHIP_WEIGHT = 0.7  # share of the final mood that comes from chips when text is also sent
 CHIP_CONFIDENCE = 0.9
@@ -72,10 +74,14 @@ def tempo_for(energy: float) -> Tempo:
 
 class MoodAnalyzer:
     def __init__(
-        self, vocabulary: MoodVocabulary, classifier: EmotionClassifier | None = None
+        self,
+        vocabulary: MoodVocabulary,
+        classifier: EmotionClassifier | None = None,
+        wellbeing: WellbeingCheck | None = None,
     ) -> None:
         self._vocabulary = vocabulary
         self._classifier = classifier
+        self._wellbeing = wellbeing
         self._text_method: Literal["classifier", "keywords"] = (
             "classifier" if classifier else "keywords"
         )
@@ -95,6 +101,7 @@ class MoodAnalyzer:
         if unknown:
             raise UnknownChipError(unknown, self._vocabulary.chip_ids)
 
+        support = self._wellbeing.check(request.text) if self._wellbeing else None
         reading = self._read_text(request.text) if request.text else None
         point, labels, confidence = self._combine(request.chips, reading)
 
@@ -110,6 +117,7 @@ class MoodAnalyzer:
             labels=labels,
             confidence=round(confidence, 2),
             text_analysis=self._text_method if request.text else None,
+            support=support,
         )
 
     # ---- reading the input ----

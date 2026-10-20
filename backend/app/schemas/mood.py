@@ -49,6 +49,13 @@ class MoodRequest(BaseModel):
         return self
 
 
+class SupportNotice(BaseModel):
+    """A kind message and where to find help, shown when the text suggests distress."""
+
+    message: str
+    resources: list[dict[str, str]]
+
+
 class MoodProfile(BaseModel):
     """The mood expressed as numbers Muse can rank music with."""
 
@@ -60,4 +67,7 @@ class MoodProfile(BaseModel):
     confidence: float = Field(ge=0, le=1, description="How sure Muse is about this reading")
     text_analysis: Literal["classifier", "keywords"] | None = Field(
         description="How the free text was read, or null if no text was sent"
+    )
+    support: SupportNotice | None = Field(
+        default=None, description="Present only if the text suggests the person may be struggling"
     )

@@ -18,7 +18,9 @@ def test_analyze_returns_a_mood_profile(client: TestClient) -> None:
         "labels",
         "confidence",
         "text_analysis",
+        "support",
     }
+    assert body["support"] is None
     assert body["tempo"] == "slow"
 
 

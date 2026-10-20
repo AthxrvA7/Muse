@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "about": "Phrases that suggest a person may be in crisis or thinking about self-harm. Kept short and conservative. Matching shows a supportive notice; it never blocks the user, never diagnoses, and the text is never stored. Changes need a reason in the PR and, ideally, review by a counsellor or faculty member (see docs/SECURITY_PRIVACY.md section 5).",
+  "phrases": [
+    "kill myself", "killing myself", "end my life", "ending my life", "take my own life",
+    "want to die", "wanna die", "wish i was dead", "wish i were dead",
+    "suicide", "suicidal", "self harm", "self-harm", "harm myself",
+    "hurt myself", "hurting myself", "cut myself", "cutting myself",
+    "no reason to live", "nothing to live for", "better off without me",
+    "don't want to be here anymore", "dont want to be here anymore",
+    "can't go on anymore", "cant go on anymore", "end it all", "disappear forever"
+  ],
+  "message": "It sounds like things might be really heavy right now. You don't have to go through it alone, and talking to someone can help.",
+  "resources": [
+    {
+      "name": "Tele-MANAS (Government of India)",
+      "phone": "14416 or 1800-891-4416",
+      "availability": "Free, 24x7, in many Indian languages"
+    }
+  ]
+}

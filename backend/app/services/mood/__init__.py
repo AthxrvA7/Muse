@@ -5,9 +5,10 @@ from functools import lru_cache
 from app.services.mood.analyzer import MoodAnalyzer
 from app.services.mood.classifier import load_classifier
 from app.services.mood.vocabulary import get_vocabulary
+from app.services.mood.wellbeing import get_wellbeing_check
 
 
 @lru_cache
 def get_mood_analyzer() -> MoodAnalyzer:
     """The analyzer, built once per process (FastAPI dependency)."""
-    return MoodAnalyzer(get_vocabulary(), load_classifier())
+    return MoodAnalyzer(get_vocabulary(), load_classifier(), get_wellbeing_check())

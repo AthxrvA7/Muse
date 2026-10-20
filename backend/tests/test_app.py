@@ -22,7 +22,9 @@ def test_openapi_schema_is_served_when_docs_enabled(client: TestClient) -> None:
     response = client.get("/openapi.json")
 
     assert response.status_code == 200
-    assert response.json()["info"]["title"] == "Muse API"
+    schema = response.json()
+    assert schema["info"]["title"] == "Muse API"
+    assert "ServiceInfo" in schema["components"]["schemas"]
 
 
 def test_docs_are_hidden_when_disabled() -> None:

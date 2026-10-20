@@ -9,6 +9,7 @@ from fastapi import FastAPI
 from app import __version__
 from app.api.v1.router import api_router
 from app.core.config import Settings, get_settings
+from app.schemas.meta import ServiceInfo
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -27,12 +28,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(api_router, prefix=settings.api_v1_prefix)
 
     @app.get("/", tags=["meta"], summary="Service information")
-    def root() -> dict[str, str]:
-        return {
-            "name": "Muse API",
-            "version": __version__,
-            "environment": settings.app_env,
-        }
+    def root() -> ServiceInfo:
+        return ServiceInfo(name="Muse API", version=__version__, environment=settings.app_env)
 
     return app
 

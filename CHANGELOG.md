@@ -12,3 +12,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 - Threat model, OWASP Top 10 (2025) mapping, privacy design and wellbeing safeguard (`docs/SECURITY_PRIVACY.md`)
 - Development roadmap, contributing guide and AI use log
 - Initial repository files: README, MIT license, `.gitignore`, `.gitattributes`
+- Pull request template, issue forms, security policy and editorconfig
+- FastAPI application skeleton with layered package structure
+- Environment-based settings validated at startup (`.env.example`)
+- Typed service-info endpoint and 8 automated tests (pytest)
+- CI pipeline (GitHub Actions): Ruff lint and format check, and pytest, on every push and pull request

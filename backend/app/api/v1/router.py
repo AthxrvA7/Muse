@@ -5,4 +5,7 @@ Feature routers (auth, preferences, mood, curate) are included here as they land
 
 from fastapi import APIRouter
 
+from app.api.v1 import mood
+
 api_router = APIRouter()
+api_router.include_router(mood.router)

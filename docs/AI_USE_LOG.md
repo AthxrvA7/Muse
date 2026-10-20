@@ -25,6 +25,16 @@ Never paste secrets, tokens or real user data into an AI tool.
 - **Purpose:** design, documentation
 - **Prompt (summary):** Design an industry-style architecture for Muse within the course guidelines and the synopsis; check current Spotify API limits; produce the architecture, requirements, ADRs, threat model and roadmap.
 - **Output used:** `docs/ARCHITECTURE.md`, `docs/REQUIREMENTS.md`, `docs/SECURITY_PRIVACY.md`, `docs/adr/*`, `docs/ROADMAP.md`, `CONTRIBUTING.md`, `CHANGELOG.md`, the initial README.
-- **Changes made by us:** _(fill in after team review, e.g. adjusted owners, weights, scope)_
+- **Changes made by us:** Kept the repo public after first making it private (branch protection and security scanning are free only on public repos). Kept reviews required on `main` instead of letting the admin bypass them. Cut back a lot of the CI plan, because we haven't covered GitHub Actions in class yet and didn't want anything in the repo we can't explain. The roadmap now waits for each DevOps topic to be taught first.
 - **Verification:** Spotify Feb-2026 developer-mode changes checked against Spotify's official migration guide; course requirements cross-checked against the Project Guidelines; design reviewed by the team in PR #1.
-- **Reflection:** _(fill in: e.g. the AI flagged that Spotify removed audio features and recommendations, which changed our recommender design to a Muse-owned genre knowledge base)_
+- **Reflection:** The biggest surprise was Spotify's API. Most tutorials still use audio features and the recommendations endpoint, but both are gone for apps like ours, so the recommender has to rely on our own genre data. Also, the first plan was more than we needed for a Semester III project. Pushing back on it (especially the CI extras) made the plan more realistic. Next time we'll ask for the smallest working version first and add to it.
+
+### 2026-10-21 — Backend skeleton and first CI workflow
+- **Member:** Atharva (skeleton), Darsh (CI)
+- **Tool:** Claude (Anthropic)
+- **Purpose:** code suggestion, learning
+- **Prompt (summary):** Set up a FastAPI project structure with settings and tests; write a GitHub Actions workflow that runs lint and tests on every push.
+- **Output used:** `backend/app/*`, `backend/tests/*`, `.env.example`, `.github/workflows/ci.yml`, ruff config in `backend/pyproject.toml`.
+- **Changes made by us:** Ran the app and the tests on our own laptops (Windows and Mac) before committing. Fixed how the server was started (it has to be run from inside `backend/`). Added a typed response model after Swagger showed `additionalProp1` instead of the real fields. Fixed the GitHub login on the Mac so it could push workflow files.
+- **Verification:** `pytest` passes locally (8 tests); the CI run on the PR shows Lint and Tests both green.
+- **Reflection:** A workflow is just the same commands we run on our laptop, run on a fresh machine on every push. Pushing a workflow file needs extra GitHub permission (`workflow` scope), which we didn't know about until the push failed.

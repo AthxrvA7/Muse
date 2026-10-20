@@ -25,10 +25,16 @@ class TrackSearcher(Protocol):
     async def search_tracks(self, query: str, total: int = ...) -> list[Track]: ...
 
 
+UNRANKED = 10**6
+
+
 @dataclass
 class Candidate:
     track: Track
     sources: list[SearchPlan] = field(default_factory=list)  # every search that found it
+    # Best position in any Spotify result list (0 = top hit). Spotify orders results by
+    # relevance, so this breaks ties between tracks Muse scores the same.
+    best_rank: int = UNRANKED
 
 
 async def _run(spotify: TrackSearcher, plan: SearchPlan, limit: asyncio.Semaphore) -> list[Track]:
@@ -58,8 +64,9 @@ async def gather_candidates(spotify: TrackSearcher, plans: list[SearchPlan]) -> 
             continue
         if isinstance(result, BaseException):
             raise result
-        for track in result:
+        for rank, track in enumerate(result):
             candidate = candidates.setdefault(track.id, Candidate(track))
+            candidate.best_rank = min(candidate.best_rank, rank)
             if plan not in candidate.sources:  # a search may return the same track twice
                 candidate.sources.append(plan)
 

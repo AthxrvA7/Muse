@@ -79,3 +79,16 @@ async def test_a_rate_limit_stops_everything() -> None:
 
     with pytest.raises(SpotifyRateLimitError):
         await gather_candidates(spotify, [ARTIST, GENRE])
+
+
+@pytest.mark.anyio
+async def test_each_candidate_keeps_its_best_spotify_position() -> None:
+    shared = track("shared")
+    spotify = FakeSearcher(
+        {ARTIST.query: [track("a"), track("b"), shared], GENRE.query: [shared] + [track("g")] * 5}
+    )
+
+    candidates = {c.track.id: c for c in await gather_candidates(spotify, [ARTIST, GENRE])}
+
+    assert candidates["shared"].best_rank == 0  # 3rd in one search, 1st in the other
+    assert candidates["b"].best_rank == 1

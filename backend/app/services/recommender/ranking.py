@@ -43,7 +43,8 @@ def _main_search(item: ScoredTrack) -> str:
 
 
 def pick_diverse(scored: list[ScoredTrack], size: int) -> list[ScoredTrack]:
-    ranked = sorted(scored, key=lambda s: (-s.score, s.candidate.track.id))  # stable for ties
+    # Highest score first; equal scores -> Spotify's own order (top hits first)
+    ranked = sorted(scored, key=lambda s: (-s.score, s.candidate.best_rank, s.candidate.track.id))
     picked: list[ScoredTrack] = []
     seen_songs: set[str] = set()
     limits = [

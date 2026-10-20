@@ -40,6 +40,15 @@ def scored(
     )
 
 
+def test_equal_scores_follow_spotifys_order() -> None:
+    late, early = scored("a", 0.8), scored("z", 0.8)
+    late.candidate.best_rank, early.candidate.best_rank = 9, 0
+
+    picked = pick_diverse([late, early], 2)
+
+    assert [p.candidate.track.id for p in picked] == ["z", "a"]
+
+
 def test_highest_scores_come_first() -> None:
     picked = pick_diverse([scored("b", 0.5, "B"), scored("a", 0.9, "A"), scored("c", 0.7, "C")], 3)
 

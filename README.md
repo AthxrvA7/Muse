@@ -1,5 +1,7 @@
 # Muse 🎧
 
+[![CI](https://github.com/AthxrvA7/Muse/actions/workflows/ci.yml/badge.svg)](https://github.com/AthxrvA7/Muse/actions/workflows/ci.yml)
+
 **Mood-aware music curation on top of Spotify.**
 
 Muse combines how you feel *right now* with the music you say you love, ranks tracks with its own explainable scoring, and saves the result as a playlist in your Spotify account.
@@ -68,6 +70,17 @@ On macOS or Linux, use `cp .env.example .env` and `source .venv/bin/activate` in
 cd backend
 pytest
 ```
+
+### Run the same checks as CI
+
+```powershell
+cd backend
+ruff check .
+ruff format --check .
+pytest
+```
+
+CI runs these automatically on every push and pull request (see the **Actions** tab).
 
 ## Screenshots
 

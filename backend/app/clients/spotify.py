@@ -1,5 +1,9 @@
 """The only code in Muse that talks to Spotify.
 
+Search (Feb 2026 rules): at most 10 results per request, so longer result lists
+are fetched page by page with `offset` (0, 10, 20, ...). A `market` (country) is
+required because client-credentials requests have no user country.
+
 Authentication: client-credentials flow (app-level, no user login). Muse gets an
 access token with its Client ID + Secret, caches it until shortly before it
 expires (Spotify issues 1-hour tokens), and refreshes it automatically.
@@ -12,16 +16,22 @@ Failure handling, for every API call:
 
 import asyncio
 import logging
+import re
 import time
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Literal
 
 import httpx2
+
+from app.schemas.catalog import Artist, ArtistRef, Track
 
 TOKEN_URL = "https://accounts.spotify.com/api/token"  # noqa: S105 - a URL, not a password
 API_URL = "https://api.spotify.com/v1"
 TOKEN_REFRESH_MARGIN = 60  # seconds: refresh a token this long before it expires
 MAX_RETRY_AFTER = 5  # seconds: never wait longer than this on a 429
+PAGE_SIZE = 10  # Spotify's maximum `limit` per search request
+MAX_OFFSET = 1000  # Spotify's maximum `offset`
+MAX_TERM_LENGTH = 100
 
 logger = logging.getLogger(__name__)
 
@@ -146,3 +156,99 @@ class SpotifyClient:
             if status >= 500:
                 raise SpotifyUnavailableError(f"Spotify returned {status}")
             raise SpotifyError(f"Spotify returned {status} for {path}")
+
+    # ---------- search ----------
+
+    async def search_tracks(self, query: str, total: int = PAGE_SIZE) -> list[Track]:
+        items = await self._search(query, "track", total)
+        return [track for item in items if (track := _parse_track(item))]
+
+    async def search_artists(self, query: str, total: int = PAGE_SIZE) -> list[Artist]:
+        items = await self._search(query, "artist", total)
+        return [artist for item in items if (artist := _parse_artist(item))]
+
+    async def _search(
+        self, query: str, kind: Literal["track", "artist"], total: int
+    ) -> list[dict[str, Any]]:
+        results: list[dict[str, Any]] = []
+        offset = 0
+        while len(results) < total and offset <= MAX_OFFSET:
+            limit = min(PAGE_SIZE, total - len(results))
+            body = await self.get(
+                "/search",
+                {"q": query, "type": kind, "market": self.market, "limit": limit, "offset": offset},
+            )
+            page = [item for item in body.get(f"{kind}s", {}).get("items", []) if item]
+            results.extend(page)
+            if len(page) < limit:  # Spotify has no more results
+                break
+            offset += limit
+        return results
+
+
+# ---------- building queries ----------
+
+
+def _clean(term: str) -> str:
+    """Make user text safe inside a Spotify query: no quotes, no control characters."""
+    term = re.sub(r'["\x00-\x1f]', " ", term)
+    return " ".join(term.split())[:MAX_TERM_LENGTH]
+
+
+def build_query(
+    text: str = "", *, artist: str | None = None, genre: str | None = None, year: str | None = None
+) -> str:
+    """Build a Spotify search query, e.g. build_query(artist="Arijit Singh", genre="sufi")
+    -> 'artist:"Arijit Singh" genre:"sufi"'."""
+    parts = [_clean(text)] if text.strip() else []
+    if artist:
+        parts.append(f'artist:"{_clean(artist)}"')
+    if genre:
+        parts.append(f'genre:"{_clean(genre)}"')
+    if year and re.fullmatch(r"\d{4}(-\d{4})?", year):
+        parts.append(f"year:{year}")
+    return " ".join(p for p in parts if p and not p.endswith(':""'))
+
+
+# ---------- parsing responses ----------
+
+
+def _image(item: dict[str, Any]) -> str | None:
+    images = item.get("images") or []
+    return images[0]["url"] if images and images[0].get("url") else None
+
+
+def _parse_track(item: dict[str, Any]) -> Track | None:
+    """Turn a Spotify track object into a Track; skip anything malformed."""
+    try:
+        album = item.get("album") or {}
+        release = str(album.get("release_date") or "")
+        return Track(
+            id=item["id"],
+            name=item["name"],
+            artists=[ArtistRef(id=a["id"], name=a["name"]) for a in item.get("artists") or []],
+            album=album.get("name", ""),
+            release_year=int(release[:4]) if release[:4].isdigit() else None,
+            image_url=_image(album),
+            spotify_url=item["external_urls"]["spotify"],
+            uri=item["uri"],
+            explicit=bool(item.get("explicit")),
+            duration_ms=int(item.get("duration_ms") or 0),
+        )
+    except (KeyError, TypeError, ValueError):
+        logger.warning("Skipping malformed track from Spotify search")
+        return None
+
+
+def _parse_artist(item: dict[str, Any]) -> Artist | None:
+    try:
+        return Artist(
+            id=item["id"],
+            name=item["name"],
+            genres=list(item.get("genres") or []),
+            image_url=_image(item),
+            spotify_url=item["external_urls"]["spotify"],
+        )
+    except (KeyError, TypeError, ValueError):
+        logger.warning("Skipping malformed artist from Spotify search")
+        return None

@@ -1,0 +1,28 @@
+{
+  "name": "muse-mood-classifier",
+  "model": "TF-IDF (1-2 word n-grams) + logistic regression",
+  "labels": [
+    "anger",
+    "fear",
+    "joy",
+    "love",
+    "sadness",
+    "surprise"
+  ],
+  "dataset": "dair-ai/emotion (https://huggingface.co/datasets/dair-ai/emotion)",
+  "dataset_terms": "educational and research use only",
+  "intended_use": "Map a short English mood sentence to one of 6 emotions for music curation. Not a diagnostic or mental-health tool.",
+  "limitations": "English only; trained on short social-media sentences; misses sarcasm and indirect phrasing.",
+  "metrics": {
+    "best_C": 4.0,
+    "validation_macro_f1": 0.8649,
+    "test_accuracy": 0.8785,
+    "test_macro_f1": 0.8376,
+    "train_rows": 18000,
+    "test_rows": 2000
+  },
+  "sha256": "2701e6c03156aed1ce1024d17124f3fe7e847a23f5733d34836ef8bedba8037f",
+  "sklearn_version": "1.9.1",
+  "python_version": "3.12.10",
+  "trained_at": "2026-10-20T20:17:05+00:00"
+}

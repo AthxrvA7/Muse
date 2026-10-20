@@ -29,8 +29,23 @@ Muse is an independent personalisation layer. It uses Spotify for login, catalog
 | Stage | Feature | Status |
 |---|---|---|
 | Classics: "Know your music" | Preference profile, reference tracks, Music DNA | Planned |
-| Essential: "Curate for me" | Mood analysis, preference + mood scoring, explained playlist, export to Spotify | Planned |
+| Essential: "Curate for me" | Mood analysis ✅, preference + mood scoring, explained playlist, export to Spotify | In progress |
 | Advanced: "Learn from me" | Feedback loop, session history, mood trajectory | Future |
+
+## Try the mood engine
+
+Start the backend (see Setup), open http://127.0.0.1:8000/docs and call **POST /api/v1/mood/analyze**:
+
+```json
+{"chips": ["anxious", "low"], "text": "exams tomorrow, need to study"}
+```
+
+```json
+{"valence": 0.23, "energy": 0.5, "tempo": "medium", "mode": "focus",
+ "labels": ["anxious", "low"], "confidence": 0.9, "text_analysis": "keywords", "support": null}
+```
+
+To retrain the emotion model: `cd backend`, `pip install -r requirements-train.txt`, `python -m scripts.train_mood_model`.
 
 ## Technology stack
 

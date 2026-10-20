@@ -38,14 +38,95 @@ Each block is **one branch → one pull request**. Tick boxes as commits land, a
 - [x] `ci: add GitHub Actions workflow for lint and tests`
 - [ ] *(GitHub settings, 🅰)* require `Lint` and `Tests` checks to pass before merging
 
-### `docs/sync-foundation` 🅰
-- [ ] `docs: sync changelog, roadmap, readme and AI log after foundation`
+### `docs/sync-foundation` 🅰 — merged as #5
+- [x] `docs: add CI badge and local check commands to README`
+- [x] `docs: sync changelog and architecture with merged work`
+- [x] `docs: resequence roadmap to follow course topics`
+- [x] `docs: record team review notes in AI use log`
 
 ---
 
-## Milestone 1 — Observability & data
+## Build order: core first (ADR-0009)
 
-### `feature/health-monitoring` 🅿
+The app is built in vertical slices so a working "mood → explained songs" demo exists early. Login and the database come after the core.
+
+## Slice 1 — Mood engine ✅
+
+### `feature/mood-analysis` 🅰 — merged as #6 (steps 1–3); steps 4–6 + fixes in the follow-up PR
+- [x] `feat(mood): add mood vocabulary with valence-energy coordinates`
+- [x] `feat(mood): add mood analyze endpoint for chips, mood words and intents`
+- [x] `feat(mood): add emotion classifier training script`
+- [x] `feat(mood): add trained emotion classifier with integrity check`
+- [x] `feat(mood): add wellbeing support notice for crisis language`
+- [x] `fix(mood): fall back to mood words when the classifier is unsure`
+- [x] `fix(api): show an example mood request without a preset mode`
+- [x] `docs: record mood engine in changelog, roadmap, requirements and ADR-0009`
+
+🏷 **Tag `v0.1.0` — Mood engine**
+
+## Slice 2 — Recommender (the core of Muse)
+
+### `feature/spotify-client` 🅰 (needs a Spotify developer app: Client ID + Secret)
+- [ ] `feat(spotify): add Spotify API client with client-credentials auth`
+- [ ] `feat(spotify): add catalogue search with pagination, timeouts and rate-limit handling`
+- [ ] `test(spotify): add client tests with mocked Spotify responses`
+
+### `feature/recommendation` 🅰
+- [ ] `feat(recommender): add genre knowledge base`
+- [ ] `feat(recommender): add query planning and candidate search`
+- [ ] `feat(recommender): add mood and taste scoring`
+- [ ] `feat(recommender): add diversity re-ranking and explanations`
+- [ ] `feat(curate): add curate preview endpoint`
+- [ ] `test(recommender): add scoring, ranking and explanation tests`
+
+🏷 **Tag `v0.2.0` — Curate preview**
+
+## Slice 3 — Login & memory (Classics)
+
+### `feature/database` 🅰 (MongoDB Atlas free cluster)
+- [ ] `feat(db): add async MongoDB connection lifecycle and readiness check`
+- [ ] `feat(db): add repositories with unique and TTL indexes`
+- [ ] `test(db): add repository tests`
+
+### `feature/security-hardening` 🅰
+- [ ] `feat(security): add security headers, strict CORS and rate limiting`
+- [ ] `feat(security): add origin check for state-changing requests`
+- [ ] `test(security): add header, CORS, rate-limit and CSRF tests`
+
+### `feature/spotify-auth` 🅰
+- [ ] `feat(auth): add Spotify OAuth login and callback with state check`
+- [ ] `feat(auth): add encrypted token storage and server-side sessions`
+- [ ] `feat(auth): add token refresh, logout and me endpoint`
+- [ ] `test(auth): add OAuth, session and token encryption tests`
+
+### `feature/user-preferences` 🅰
+- [ ] `feat(preferences): add preference profile endpoints`
+- [ ] `feat(preferences): add Music DNA summary endpoint`
+- [ ] `feat(curate): use the stored profile when curating`
+- [ ] `test(preferences): add validation, access-control and DNA tests`
+
+🏷 **Tag `v0.3.0` — Login & Classics**
+
+## Slice 4 — Save to Spotify & privacy
+
+### `feature/playlist-export` 🅰
+- [ ] `feat(playlist): store curate sessions`
+- [ ] `feat(playlist): export curated playlist to Spotify`
+- [ ] `test(playlist): add end-to-end curate and export test with mocked Spotify`
+
+### `feature/privacy-controls` 🅰
+- [ ] `feat(privacy): add privacy notice endpoint and consent versioning`
+- [ ] `feat(privacy): add personal data export and account deletion`
+- [ ] `feat(audit): add audit events for security-relevant actions`
+- [ ] `test(privacy): add export, deletion and audit tests`
+
+🏷 **Tag `v0.4.0` — Essential backend**
+
+---
+
+## Monitoring track (🅿 lead)
+
+### `feature/health-monitoring` 🅿 — in progress
 - [ ] `feat(monitoring): add structured JSON logging with request IDs`
 - [ ] `feat(monitoring): add log redaction for sensitive fields`
 - [ ] `feat(monitoring): add health and readiness endpoints`
@@ -55,77 +136,6 @@ Each block is **one branch → one pull request**. Tick boxes as commits land, a
 - [ ] `feat(errors): add consistent error response format`
 - [ ] `feat(errors): add global exception handlers without stack traces`
 - [ ] `test(errors): add error format and unhandled exception tests`
-
-### `feature/database` 🅰 (MongoDB Atlas free cluster for development)
-- [ ] `feat(db): add async MongoDB connection lifecycle`
-- [ ] `feat(db): add repositories with unique and TTL indexes`
-- [ ] `test(db): add repository tests`
-
-🏷 **Tag `v0.1.0` — Foundation**
-
----
-
-## Milestone 2 — Security, auth & privacy
-
-### `feature/security-hardening` 🅰
-- [ ] `feat(security): add security headers and strict CORS`
-- [ ] `feat(security): add rate limiting`
-- [ ] `feat(security): add origin check for state-changing requests`
-- [ ] `test(security): add header, CORS, rate-limit and CSRF tests`
-
-### `feature/spotify-auth` 🅰
-- [ ] `feat(spotify): add Spotify API client with timeouts and retry handling`
-- [ ] `feat(auth): add Spotify OAuth login and callback with state check`
-- [ ] `feat(auth): add encrypted token storage and server-side sessions`
-- [ ] `feat(auth): add token refresh, logout and me endpoint`
-- [ ] `test(auth): add OAuth, session and token encryption tests`
-
-### `feature/privacy-controls` 🅰
-- [ ] `feat(privacy): add privacy notice endpoint and consent versioning`
-- [ ] `feat(privacy): add personal data export endpoint`
-- [ ] `feat(privacy): add account deletion across all collections`
-- [ ] `feat(audit): add audit events for security-relevant actions`
-- [ ] `test(privacy): add export, deletion and audit tests`
-
-🏷 **Tag `v0.2.0` — Secure auth & data**
-
----
-
-## Milestone 3 — Classics ("Know your music")
-
-### `feature/user-preferences` 🅰
-- [ ] `feat(catalog): add artist and track search endpoint`
-- [ ] `feat(preferences): add preference profile endpoints`
-- [ ] `feat(preferences): add Music DNA summary endpoint`
-- [ ] `test(preferences): add validation, access-control and DNA tests`
-
-🏷 **Tag `v0.3.0` — Classics**
-
----
-
-## Milestone 4 — Essential ("Curate for me")
-
-### `feature/mood-analysis` 🅰
-- [ ] `feat(mood): add mood chip to valence-energy mapping`
-- [ ] `feat(mood): add emotion classifier training script and model card`
-- [ ] `feat(mood): add trained model with integrity check and analyze endpoint`
-- [ ] `feat(mood): add wellbeing support notice`
-- [ ] `test(mood): add mapping, classifier, fallback and wellbeing tests`
-
-### `feature/recommendation` 🅰
-- [ ] `feat(recommender): add genre knowledge base`
-- [ ] `feat(recommender): add query planning and candidate search`
-- [ ] `feat(recommender): add mood and taste scoring`
-- [ ] `feat(recommender): add diversity re-ranking`
-- [ ] `feat(recommender): add recommendation explanations`
-- [ ] `test(recommender): add scoring, ranking, explanation and performance tests`
-
-### `feature/playlist-export` 🅰
-- [ ] `feat(playlist): add curate endpoint with session storage`
-- [ ] `feat(playlist): export curated playlist to Spotify`
-- [ ] `test(playlist): add end-to-end curate flow test with mocked Spotify`
-
-🏷 **Tag `v0.4.0` — Essential backend**
 
 ---
 

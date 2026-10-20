@@ -1,9 +1,12 @@
 """Mood analysis: chips and/or free text -> MoodProfile.
 
 1. Chips map straight to their valence/energy point; several chips are averaged.
-2. Free text is scanned for mood words (chip names and synonyms).
+2. Free text goes through the trained emotion classifier; each emotion's probability
+   weights its point on the circumplex. If the model is unsure (or missing), the text
+   is scanned for known mood words instead.
 3. Chips and text are blended; chips weigh more because the user chose them on purpose.
 4. Intent words ("study", "gym", "sleep") pick a playlist mode and nudge the energy.
+5. A wellbeing check adds a support notice if the text suggests the person is in crisis.
 """
 
 import re
@@ -12,11 +15,17 @@ from dataclasses import dataclass
 from typing import Literal
 
 from app.schemas.mood import Mode, MoodProfile, MoodRequest, Tempo
+from app.services.mood.classifier import EmotionClassifier
 from app.services.mood.vocabulary import MoodPoint, MoodVocabulary
+from app.services.mood.wellbeing import WellbeingCheck
 
 CHIP_WEIGHT = 0.7  # share of the final mood that comes from chips when text is also sent
 CHIP_CONFIDENCE = 0.9
 KEYWORD_CONFIDENCE = 0.6
+LABEL_THRESHOLD = 0.3  # an emotion is named in the labels if the model gives it >= 30%
+# Below this top probability the model is guessing (typical for neutral text like
+# "need to study"), so Muse falls back to known mood words instead.
+MIN_CLASSIFIER_CONFIDENCE = 0.5
 NO_SIGNAL_CONFIDENCE = 0.2
 NEUTRAL = MoodPoint(valence=0.5, energy=0.5)
 
@@ -68,9 +77,15 @@ def tempo_for(energy: float) -> Tempo:
 
 
 class MoodAnalyzer:
-    def __init__(self, vocabulary: MoodVocabulary) -> None:
+    def __init__(
+        self,
+        vocabulary: MoodVocabulary,
+        classifier: EmotionClassifier | None = None,
+        wellbeing: WellbeingCheck | None = None,
+    ) -> None:
         self._vocabulary = vocabulary
-        self._text_method: Literal["classifier", "keywords"] = "keywords"
+        self._classifier = classifier
+        self._wellbeing = wellbeing
         self._mood_words = [
             (_pattern(word), chip_id)
             for chip_id, chip in vocabulary.chips.items()
@@ -87,6 +102,7 @@ class MoodAnalyzer:
         if unknown:
             raise UnknownChipError(unknown, self._vocabulary.chip_ids)
 
+        support = self._wellbeing.check(request.text) if self._wellbeing else None
         reading = self._read_text(request.text) if request.text else None
         point, labels, confidence = self._combine(request.chips, reading)
 
@@ -101,12 +117,46 @@ class MoodAnalyzer:
             mode=mode,
             labels=labels,
             confidence=round(confidence, 2),
-            text_analysis=self._text_method if request.text else None,
+            text_analysis=self._text_method(request.text, reading),
+            support=support,
         )
 
     # ---- reading the input ----
 
     def _read_text(self, text: str) -> TextReading | None:
+        if self._classifier:
+            reading = self._classify(text, self._classifier)
+            if reading.confidence >= MIN_CLASSIFIER_CONFIDENCE:
+                return reading
+        return self._match_keywords(text)
+
+    @staticmethod
+    def _text_method(
+        text: str | None, reading: TextReading | None
+    ) -> Literal["classifier", "keywords"] | None:
+        if not text:
+            return None
+        # No reading means the keyword fallback ran and found no mood words
+        return reading.method if reading else "keywords"
+
+    def _classify(self, text: str, classifier: EmotionClassifier) -> TextReading:
+        probabilities = {
+            emotion: p
+            for emotion, p in classifier.predict(text).items()
+            if emotion in self._vocabulary.emotions
+        }
+        total = sum(probabilities.values())
+        point = MoodPoint(
+            valence=sum(self._vocabulary.emotions[e].valence * p for e, p in probabilities.items())
+            / total,
+            energy=sum(self._vocabulary.emotions[e].energy * p for e, p in probabilities.items())
+            / total,
+        )
+        ranked = sorted(probabilities, key=lambda e: probabilities[e], reverse=True)
+        labels = [e for e in ranked if probabilities[e] >= LABEL_THRESHOLD] or ranked[:1]
+        return TextReading(point, labels, max(probabilities.values()) / total, "classifier")
+
+    def _match_keywords(self, text: str) -> TextReading | None:
         lowered = text.lower()
         found = list(
             dict.fromkeys(

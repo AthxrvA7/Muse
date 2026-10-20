@@ -2,27 +2,14 @@
 
 from typing import Annotated, Literal
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query
 
-from app.clients.spotify import SpotifyError, SpotifyRateLimitError
+from app.api.errors import spotify_http_error
+from app.clients.spotify import SpotifyError
 from app.schemas.catalog import Artist, Track
 from app.services.catalog import CatalogService, get_catalog_service
 
 router = APIRouter(prefix="/catalog", tags=["catalog"])
-
-
-def spotify_http_error(error: SpotifyError) -> HTTPException:
-    """Translate a Spotify problem into a clear HTTP error (no internal details)."""
-    if isinstance(error, SpotifyRateLimitError):
-        return HTTPException(
-            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail={"message": "Spotify is busy; try again shortly"},
-            headers={"Retry-After": str(error.retry_after)},
-        )
-    return HTTPException(
-        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-        detail={"message": "Spotify is unavailable right now; try again later"},
-    )
 
 
 @router.get("/search", summary="Search Spotify for tracks or artists")

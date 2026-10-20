@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "about": "Muse-owned mood vocabulary. Each mood is placed on Russell's circumplex model of affect (Russell, 1980): valence = how positive (0 to 1), energy = arousal, how intense (0 to 1). Positions are the team's own estimates, not measured data. Change them through a PR with a reason.",
+  "chips": {
+    "happy":       {"valence": 0.85, "energy": 0.65, "synonyms": ["cheerful", "joyful", "glad", "good"]},
+    "hyped":       {"valence": 0.80, "energy": 0.92, "synonyms": ["excited", "pumped", "thrilled"]},
+    "energetic":   {"valence": 0.70, "energy": 0.85, "synonyms": ["active", "lively"]},
+    "confident":   {"valence": 0.78, "energy": 0.70, "synonyms": ["bold", "unstoppable"]},
+    "romantic":    {"valence": 0.78, "energy": 0.45, "synonyms": ["in love", "loved", "crush"]},
+    "grateful":    {"valence": 0.82, "energy": 0.40, "synonyms": ["thankful", "blessed"]},
+    "calm":        {"valence": 0.65, "energy": 0.20, "synonyms": ["peaceful", "serene", "chill"]},
+    "relaxed":     {"valence": 0.70, "energy": 0.25, "synonyms": ["laid back", "easy"]},
+    "focused":     {"valence": 0.55, "energy": 0.50, "synonyms": ["productive", "in the zone"]},
+    "dreamy":      {"valence": 0.62, "energy": 0.30, "synonyms": ["daydreaming", "floaty"]},
+    "nostalgic":   {"valence": 0.50, "energy": 0.32, "synonyms": ["reminiscing", "missing old days"]},
+    "bored":       {"valence": 0.35, "energy": 0.28, "synonyms": ["meh", "restless"]},
+    "tired":       {"valence": 0.40, "energy": 0.15, "synonyms": ["exhausted", "drained", "sleepy", "worn out"]},
+    "low":         {"valence": 0.22, "energy": 0.25, "synonyms": ["sad", "down", "blue", "gloomy", "upset"]},
+    "lonely":      {"valence": 0.20, "energy": 0.30, "synonyms": ["alone", "isolated"]},
+    "heartbroken": {"valence": 0.10, "energy": 0.35, "synonyms": ["breakup", "broken heart", "hurt"]},
+    "anxious":     {"valence": 0.25, "energy": 0.75, "synonyms": ["nervous", "worried", "on edge", "panicky"]},
+    "stressed":    {"valence": 0.25, "energy": 0.70, "synonyms": ["overwhelmed", "pressured", "tense"]},
+    "frustrated":  {"valence": 0.20, "energy": 0.75, "synonyms": ["annoyed", "irritated", "fed up"]},
+    "angry":       {"valence": 0.12, "energy": 0.88, "synonyms": ["mad", "furious", "raging"]}
+  },
+  "emotions": {
+    "joy":      {"valence": 0.85, "energy": 0.60},
+    "love":     {"valence": 0.80, "energy": 0.45},
+    "surprise": {"valence": 0.65, "energy": 0.75},
+    "sadness":  {"valence": 0.15, "energy": 0.25},
+    "anger":    {"valence": 0.15, "energy": 0.85},
+    "fear":     {"valence": 0.20, "energy": 0.75}
+  },
+  "intents": {
+    "focus":     ["study", "studying", "focus", "focusing", "coding", "exam", "exams", "homework", "assignment", "deep work"],
+    "energy":    ["gym", "workout", "running", "run", "party", "dance", "dancing", "lifting", "hype me"],
+    "sleep":     ["sleep", "bedtime", "fall asleep", "wind down"],
+    "discovery": ["discover", "something new", "something different", "new music", "explore"]
+  }
+}

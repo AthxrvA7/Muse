@@ -4,3 +4,5 @@ fastapi==0.156.0
 uvicorn[standard]==0.54.0
 pydantic==2.14.1
 pydantic-settings==2.16.1
+# Mood classifier. The model must be loaded with the SAME version it was trained with.
+scikit-learn==1.9.1

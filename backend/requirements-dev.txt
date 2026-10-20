@@ -1,0 +1,5 @@
+# Development and test dependencies (not installed in the production image).
+-r requirements.txt
+pytest==9.1.1
+# HTTP client used by FastAPI's TestClient (successor to httpx, recommended by Starlette)
+httpx2==2.15.1

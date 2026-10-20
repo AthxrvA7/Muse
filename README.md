@@ -38,7 +38,36 @@ The full design is in [Architecture](docs/ARCHITECTURE.md).
 
 ## Setup
 
-*Coming with the backend skeleton (PR #3) and Docker setup (PR #7).*
+### Prerequisites
+- Git
+- Python 3.12 or newer (`python --version`)
+- Docker Desktop (needed from the Docker setup onwards)
+
+### Run the backend locally (Windows PowerShell)
+
+```powershell
+git clone https://github.com/AthxrvA7/Muse.git
+cd Muse
+Copy-Item .env.example .env
+
+cd backend
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements-dev.txt
+
+uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+```
+
+Open http://127.0.0.1:8000/docs for the interactive API docs.
+
+On macOS or Linux, use `cp .env.example .env` and `source .venv/bin/activate` instead.
+
+### Run the tests
+
+```powershell
+cd backend
+pytest
+```
 
 ## Screenshots
 

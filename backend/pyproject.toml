@@ -1,0 +1,10 @@
+[project]
+name = "muse-backend"
+version = "0.1.0"
+description = "Muse - mood-aware music curation API"
+requires-python = ">=3.12"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-ra --strict-markers"

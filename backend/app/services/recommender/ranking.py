@@ -1,7 +1,8 @@
 """Diversity re-ranking: turn a scored list into a varied playlist.
 
 Highest score first, but:
-- at most 2 songs per artist, so one artist can't fill the playlist
+- at most 2 songs per artist, counting every credited artist (Bollywood songs
+  often list the singer third or fourth), so one artist can't fill the playlist
 - at most 40% from any one search, so one genre (or artist search) can't either
 - versions of the same song ("Song", "Song - Remastered", "Song (Live)") count once
 If there aren't enough candidates, the limits are relaxed to fill the playlist.
@@ -27,9 +28,8 @@ def song_key(track: Track) -> str:
     return f"{' '.join(name.split())}|{artist}"
 
 
-def _main_artist(item: ScoredTrack) -> str:
-    artists = item.candidate.track.artists
-    return artists[0].id if artists else ""
+def _artist_ids(item: ScoredTrack) -> list[str]:
+    return [artist.id for artist in item.candidate.track.artists]
 
 
 def _main_search(item: ScoredTrack) -> str:
@@ -55,24 +55,24 @@ def pick_diverse(scored: list[ScoredTrack], size: int) -> list[ScoredTrack]:
         per_artist: dict[str, int] = {}
         per_search: dict[str, int] = {}
         for item in picked:
-            per_artist[_main_artist(item)] = per_artist.get(_main_artist(item), 0) + 1
+            for artist in _artist_ids(item):
+                per_artist[artist] = per_artist.get(artist, 0) + 1
             per_search[_main_search(item)] = per_search.get(_main_search(item), 0) + 1
         for item in ranked:
             if len(picked) >= size:
                 return picked
-            key, artist, search = (
-                song_key(item.candidate.track),
-                _main_artist(item),
-                _main_search(item),
-            )
+            key = song_key(item.candidate.track)
+            artists = _artist_ids(item)
+            search = _main_search(item)
             if (
                 key in seen_songs
-                or per_artist.get(artist, 0) >= artist_cap
+                or any(per_artist.get(a, 0) >= artist_cap for a in artists)
                 or per_search.get(search, 0) >= search_cap
             ):
                 continue
             picked.append(item)
             seen_songs.add(key)
-            per_artist[artist] = per_artist.get(artist, 0) + 1
+            for artist in artists:
+                per_artist[artist] = per_artist.get(artist, 0) + 1
             per_search[search] = per_search.get(search, 0) + 1
     return picked

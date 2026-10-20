@@ -1,5 +1,6 @@
 """Diversity re-ranking and explanations."""
 
+from app.schemas.catalog import ArtistRef
 from app.schemas.curate import Taste
 from app.services.recommender.candidates import Candidate
 from app.services.recommender.explain import explain, mood_phrase
@@ -23,9 +24,13 @@ def scored(
     favourite_artist: str | None = None,
     taste_reason: Reason | None = None,
     sources: list[SearchPlan] | None = None,
+    extra_artists: list[str] | None = None,
 ) -> ScoredTrack:
+    base = track(track_id, artist, name)
+    for extra in extra_artists or []:
+        base.artists.append(ArtistRef(id=f"id-{extra}", name=extra))
     return ScoredTrack(
-        candidate=Candidate(track(track_id, artist, name), sources or []),
+        candidate=Candidate(base, sources or []),
         mood_fit=mood_fit,
         taste_fit=0.5,
         score=score,
@@ -52,6 +57,21 @@ def test_at_most_two_songs_per_artist_when_there_is_choice() -> None:
     artists = [p.candidate.track.artists[0].name for p in picked]
     assert artists.count("Same") == 2
     assert len(picked) == 4
+
+
+def test_featured_artists_count_towards_the_limit() -> None:
+    # Arijit Singh is credited second on every song, after a different composer
+    items = [
+        scored(f"s{i}", 0.9 - i / 100, f"Composer{i}", extra_artists=["Arijit Singh"])
+        for i in range(4)
+    ] + [scored(f"o{i}", 0.5, f"Other{i}") for i in range(4)]
+
+    picked = pick_diverse(items, 6)
+
+    with_arijit = [
+        p for p in picked if any(a.name == "Arijit Singh" for a in p.candidate.track.artists)
+    ]
+    assert len(with_arijit) == 2
 
 
 def test_artist_limit_relaxes_when_candidates_are_scarce() -> None:

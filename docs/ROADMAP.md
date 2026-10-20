@@ -66,10 +66,11 @@ The app is built in vertical slices so a working "mood → explained songs" demo
 
 ## Slice 2 — Recommender (the core of Muse)
 
-### `feature/spotify-client` 🅰 (needs a Spotify developer app: Client ID + Secret)
-- [ ] `feat(spotify): add Spotify API client with client-credentials auth`
-- [ ] `feat(spotify): add catalogue search with pagination, timeouts and rate-limit handling`
-- [ ] `test(spotify): add client tests with mocked Spotify responses`
+### `feature/spotify-client` 🅰
+- [x] `feat(spotify): add Spotify settings and client-credentials authentication`
+- [x] `feat(spotify): add catalogue search with paging and safe query building`
+- [x] `feat(catalog): add catalogue search endpoint`
+- [x] `docs: document Spotify setup and the catalogue search endpoint`
 
 ### `feature/recommendation` 🅰
 - [ ] `feat(recommender): add genre knowledge base`

@@ -93,3 +93,47 @@ def test_committed_model_passes_its_integrity_check_and_reads_clear_moods() -> N
     assert card["metrics"]["test_macro_f1"] >= 0.75
     scores = classifier.predict("i am so happy and grateful today")
     assert max(scores, key=lambda e: scores[e]) in {"joy", "love"}
+
+
+class FakeClassifier:
+    """Stands in for the trained model with fixed probabilities."""
+
+    def __init__(self, probabilities: dict[str, float]) -> None:
+        self.labels = list(probabilities)
+        self._probabilities = probabilities
+
+    def predict(self, text: str) -> dict[str, float]:
+        return self._probabilities
+
+
+UNSURE = {"joy": 0.31, "anger": 0.27, "sadness": 0.21, "fear": 0.1, "love": 0.06, "surprise": 0.05}
+SURE = {"fear": 0.95, "joy": 0.01, "anger": 0.01, "sadness": 0.01, "love": 0.01, "surprise": 0.01}
+
+
+def test_confident_classifier_reading_is_used() -> None:
+    analyzer = MoodAnalyzer(load_vocabulary(), FakeClassifier(SURE))  # type: ignore[arg-type]
+
+    profile = analyzer.analyze(MoodRequest(text="so nervous about the interview"))
+
+    assert profile.text_analysis == "classifier"
+    assert profile.labels == ["fear"]
+
+
+def test_unsure_classifier_falls_back_to_mood_words() -> None:
+    analyzer = MoodAnalyzer(load_vocabulary(), FakeClassifier(UNSURE))  # type: ignore[arg-type]
+
+    profile = analyzer.analyze(MoodRequest(text="feeling drained tonight"))
+
+    assert profile.text_analysis == "keywords"
+    assert profile.labels == ["tired"]
+
+
+def test_unsure_classifier_on_neutral_text_does_not_invent_a_mood() -> None:
+    analyzer = MoodAnalyzer(load_vocabulary(), FakeClassifier(UNSURE))  # type: ignore[arg-type]
+
+    profile = analyzer.analyze(
+        MoodRequest(chips=["anxious", "low"], text="exams tomorrow, need to study")
+    )
+
+    assert profile.labels == ["anxious", "low"]  # no made-up "joy"
+    assert profile.mode == "focus"

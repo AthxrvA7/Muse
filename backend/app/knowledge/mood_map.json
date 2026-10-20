@@ -2,7 +2,7 @@
   "version": 1,
   "about": "Muse-owned mood vocabulary. Each mood is placed on Russell's circumplex model of affect (Russell, 1980): valence = how positive (0 to 1), energy = arousal, how intense (0 to 1). Positions are the team's own estimates, not measured data. Change them through a PR with a reason.",
   "chips": {
-    "happy":       {"valence": 0.85, "energy": 0.65, "synonyms": ["cheerful", "joyful", "glad", "good"]},
+    "happy":       {"valence": 0.85, "energy": 0.65, "synonyms": ["cheerful", "joyful", "glad", "good", "great", "fantastic"]},
     "hyped":       {"valence": 0.80, "energy": 0.92, "synonyms": ["excited", "pumped", "thrilled"]},
     "energetic":   {"valence": 0.70, "energy": 0.85, "synonyms": ["active", "lively"]},
     "confident":   {"valence": 0.78, "energy": 0.70, "synonyms": ["bold", "unstoppable"]},

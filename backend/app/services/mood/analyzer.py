@@ -2,7 +2,8 @@
 
 1. Chips map straight to their valence/energy point; several chips are averaged.
 2. Free text goes through the trained emotion classifier; each emotion's probability
-   weights its point on the circumplex. Without a model, text is scanned for mood words.
+   weights its point on the circumplex. If the model is unsure (or missing), the text
+   is scanned for known mood words instead.
 3. Chips and text are blended; chips weigh more because the user chose them on purpose.
 4. Intent words ("study", "gym", "sleep") pick a playlist mode and nudge the energy.
 5. A wellbeing check adds a support notice if the text suggests the person is in crisis.
@@ -22,6 +23,9 @@ CHIP_WEIGHT = 0.7  # share of the final mood that comes from chips when text is 
 CHIP_CONFIDENCE = 0.9
 KEYWORD_CONFIDENCE = 0.6
 LABEL_THRESHOLD = 0.3  # an emotion is named in the labels if the model gives it >= 30%
+# Below this top probability the model is guessing (typical for neutral text like
+# "need to study"), so Muse falls back to known mood words instead.
+MIN_CLASSIFIER_CONFIDENCE = 0.5
 NO_SIGNAL_CONFIDENCE = 0.2
 NEUTRAL = MoodPoint(valence=0.5, energy=0.5)
 
@@ -82,9 +86,6 @@ class MoodAnalyzer:
         self._vocabulary = vocabulary
         self._classifier = classifier
         self._wellbeing = wellbeing
-        self._text_method: Literal["classifier", "keywords"] = (
-            "classifier" if classifier else "keywords"
-        )
         self._mood_words = [
             (_pattern(word), chip_id)
             for chip_id, chip in vocabulary.chips.items()
@@ -116,7 +117,7 @@ class MoodAnalyzer:
             mode=mode,
             labels=labels,
             confidence=round(confidence, 2),
-            text_analysis=self._text_method if request.text else None,
+            text_analysis=self._text_method(request.text, reading),
             support=support,
         )
 
@@ -124,8 +125,19 @@ class MoodAnalyzer:
 
     def _read_text(self, text: str) -> TextReading | None:
         if self._classifier:
-            return self._classify(text, self._classifier)
+            reading = self._classify(text, self._classifier)
+            if reading.confidence >= MIN_CLASSIFIER_CONFIDENCE:
+                return reading
         return self._match_keywords(text)
+
+    @staticmethod
+    def _text_method(
+        text: str | None, reading: TextReading | None
+    ) -> Literal["classifier", "keywords"] | None:
+        if not text:
+            return None
+        # No reading means the keyword fallback ran and found no mood words
+        return reading.method if reading else "keywords"
 
     def _classify(self, text: str, classifier: EmotionClassifier) -> TextReading:
         probabilities = {

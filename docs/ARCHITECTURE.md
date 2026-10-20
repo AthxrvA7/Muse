@@ -294,7 +294,7 @@ muse/
 | Database driver | **PyMongo async (`AsyncMongoClient`)** | *Changed:* Motor is deprecated by MongoDB; PyMongo's native async API replaces it |
 | Database | MongoDB 7 (Docker locally, Atlas M0 free tier in deployment) | Document model fits profiles/sessions |
 | ML / scoring | scikit-learn, NumPy, Pandas | TF-IDF + LogReg, cosine similarity, scaling |
-| Testing | pytest, pytest-asyncio, respx, pytest-cov | At least 3 tests required — we'll have far more |
+| Testing | pytest, pytest-asyncio, respx, pytest-cov; `httpx2` for FastAPI's TestClient | At least 3 tests required — we'll have far more. `httpx2` replaces `httpx` in tests because Starlette deprecated `httpx` for its TestClient |
 | Lint/format | Ruff | One fast tool for lint + format |
 | Type checking | mypy (standard mode) | Catches type errors before runtime |
 | Security tooling | pip-audit, CodeQL, Dependabot, GitHub secret scanning | All free; none needs an enterprise DevSecOps platform (which the guidelines rule out) |
@@ -333,6 +333,8 @@ flowchart LR
     A --> D[Docker build]
     D --> R{Pass / Fail}
 ```
+
+> **Implementation status:** the *Lint* (Ruff) and *Tests* (pytest) jobs are live. Type checking, coverage gate, pip-audit, Dependabot and CodeQL are added step by step as the team covers each topic; see the DevOps track in [`ROADMAP.md`](ROADMAP.md).
 
 Runs on every push and pull request. Alongside it:
 - **CodeQL** (GitHub's free static analysis for public repos) scans for security bugs on every PR and weekly.

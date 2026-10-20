@@ -55,3 +55,10 @@ def test_chips_are_case_insensitive_and_deduplicated(client: TestClient) -> None
 
     assert response.status_code == 200
     assert response.json()["labels"] == ["calm"]
+
+
+def test_swagger_example_does_not_prefill_a_mode(client: TestClient) -> None:
+    schema = client.get("/openapi.json").json()["components"]["schemas"]["MoodRequest"]
+
+    assert schema["examples"]
+    assert all("mode" not in example for example in schema["examples"])

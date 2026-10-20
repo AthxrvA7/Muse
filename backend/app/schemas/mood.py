@@ -19,7 +19,14 @@ MAX_TEXT_LENGTH = 500
 class MoodRequest(BaseModel):
     """How the user feels: mood chips, a sentence, or both."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(
+        extra="forbid",
+        # Example shown in Swagger. It leaves out "mode" on purpose: a pre-filled mode
+        # would override the intent detected from the text.
+        json_schema_extra={
+            "examples": [{"chips": ["anxious", "low"], "text": "exams tomorrow, need to study"}]
+        },
+    )
 
     chips: list[str] = Field(default=[], max_length=MAX_CHIPS, examples=[["tired", "low"]])
     text: str | None = Field(

@@ -37,6 +37,7 @@ def test_track_from_a_quiet_genre_fits_a_tired_mood_better_than_metal() -> None:
     assert by_id["q"].mood_fit > 0.8
     assert by_id["l"].mood_fit < 0.6
     assert by_id["q"].mood_source == "ghazal"
+    assert by_id["q"].mood_genres == ["ghazal"]
 
 
 def test_title_mood_words_are_used_when_no_genre_is_known() -> None:

@@ -160,6 +160,15 @@ def test_explanation_names_the_favourite_artist_and_the_mood_match() -> None:
     )
 
 
+def test_explanation_names_both_genres_that_set_the_feel() -> None:
+    item = scored("t", 0.8, mood_fit=0.8, mood_source="ghazal", favourite_artist="X")
+    item.mood_genres = ["ghazal", "bollywood"]
+
+    text = explain(item, mood(0.3, 0.2, labels=["tired", "low"]), Taste(), KB)
+
+    assert "its ghazal and Bollywood feel fits your tired and low mood" in text
+
+
 def test_explanation_for_a_language_genre_names_the_language() -> None:
     plan = SearchPlan("genre", "marathi", "language", "q")
     item = scored("t", 0.6, taste_reason="language", sources=[plan], mood_fit=0.6)
@@ -167,6 +176,26 @@ def test_explanation_for_a_language_genre_names_the_language() -> None:
     text = explain(item, mood(0.6, 0.5), Taste(languages=["mr"]), KB)
 
     assert text == "Picked because it's Marathi music in Marathi."
+
+
+def test_a_genre_already_named_is_not_repeated() -> None:
+    plan = SearchPlan("genre", "indie folk", "favourite_genre", "q")
+    item = scored(
+        "t",
+        0.8,
+        mood_fit=0.85,
+        mood_source="indie folk",
+        taste_reason="favourite_genre",
+        sources=[plan],
+    )
+    item.mood_genres = ["indie folk"]
+
+    text = explain(item, mood(0.3, 0.2, labels=["tired", "low"]), Taste(), KB)
+
+    assert text == (
+        "Picked because it's indie folk, one of your genres, "
+        "and its feel fits your tired and low mood."
+    )
 
 
 def test_weak_mood_match_is_not_claimed() -> None:

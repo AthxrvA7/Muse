@@ -16,7 +16,7 @@ Score = mood_weight x mood_fit + taste_weight x taste_fit, weights set by the mo
 """
 
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from app.schemas.curate import Taste
 from app.schemas.mood import Mode, MoodProfile
@@ -56,6 +56,7 @@ class ScoredTrack:
     mood_source: str | None  # genre id or mood chip that set the track's estimated feel
     favourite_artist: str | None  # the user's favourite artist on this track, if any
     taste_reason: Reason | None
+    mood_genres: list[str] = field(default_factory=list)  # genres averaged into the estimate
 
 
 def similarity(a: MoodPoint, b: MoodPoint) -> float:
@@ -64,8 +65,8 @@ def similarity(a: MoodPoint, b: MoodPoint) -> float:
 
 def estimate_mood(
     candidate: Candidate, kb: GenreKnowledge, analyzer: MoodAnalyzer
-) -> tuple[MoodPoint | None, float, str | None]:
-    """Best guess of how a track feels: (point, certainty 0-1, what the guess is based on)."""
+) -> tuple[MoodPoint | None, float, list[str]]:
+    """Best guess of how a track feels: (point, certainty 0-1, genres or mood word used)."""
     genres = [p.value for p in candidate.sources if p.kind == "genre" and p.value in kb.genres]
     if genres:
         points = [kb.genres[g] for g in genres]
@@ -73,14 +74,14 @@ def estimate_mood(
             valence=sum(p.valence for p in points) / len(points),
             energy=sum(p.energy for p in points) / len(points),
         )
-        return point, GENRE_CERTAINTY, genres[0]
+        return point, GENRE_CERTAINTY, genres
 
     words = analyzer.mood_words(candidate.track.name)
     if words:
         chip = analyzer.vocabulary.chips[words[0]]
-        return MoodPoint(valence=chip.valence, energy=chip.energy), TITLE_CERTAINTY, words[0]
+        return MoodPoint(valence=chip.valence, energy=chip.energy), TITLE_CERTAINTY, words[:1]
 
-    return None, 0.0, None
+    return None, 0.0, []
 
 
 def keep_allowed(candidates: list[Candidate], taste: Taste) -> list[Candidate]:
@@ -107,7 +108,7 @@ def score_candidates(
 
     scored = []
     for candidate in candidates:
-        point, certainty, mood_source = estimate_mood(candidate, kb, analyzer)
+        point, certainty, basis = estimate_mood(candidate, kb, analyzer)
         fit = similarity(point, target) if point else NEUTRAL_FIT
         mood_fit = certainty * fit + (1 - certainty) * NEUTRAL_FIT
 
@@ -131,9 +132,10 @@ def score_candidates(
                 mood_fit=round(mood_fit, 3),
                 taste_fit=taste_fit,
                 score=round(mood_weight * mood_fit + taste_weight * taste_fit, 3),
-                mood_source=mood_source,
+                mood_source=basis[0] if basis else None,
                 favourite_artist=favourite,
                 taste_reason=best,
+                mood_genres=[g for g in basis if g in kb.genres],
             )
         )
     return scored

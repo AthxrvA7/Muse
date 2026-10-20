@@ -31,21 +31,27 @@ def mood_phrase(mood: MoodProfile) -> str:
 def explain(item: ScoredTrack, mood: MoodProfile, taste: Taste, kb: GenreKnowledge) -> str:
     sources = {plan.reason: plan for plan in item.candidate.sources}
     parts: list[str] = []
+    named: str | None = None  # genre already mentioned, so the mood clause doesn't repeat it
 
     if item.favourite_artist:
         parts.append(f"you like {item.favourite_artist}")
     elif item.taste_reason == "favourite_genre" and "favourite_genre" in sources:
-        parts.append(f"{kb.genres[sources['favourite_genre'].value].name} is one of your genres")
+        named = sources["favourite_genre"].value
+        parts.append(f"it's {kb.genres[named].name}, one of your genres")
     elif item.taste_reason == "language" and "language" in sources:
-        genre = kb.genres[sources["language"].value]
+        named = sources["language"].value
+        genre = kb.genres[named]
         languages = [kb.languages[code] for code in genre.langs if code in taste.languages]
         parts.append(f"it's {genre.name} music in {languages[0] if languages else 'your language'}")
     elif item.taste_reason == "discovery" and "discovery" in sources:
-        parts.append(f"it's something new from {kb.genres[sources['discovery'].value].name}")
+        named = sources["discovery"].value
+        parts.append(f"it's something new from {kb.genres[named].name}")
 
     if item.mood_fit >= GOOD_MOOD_FIT and item.mood_source:
         if item.mood_source in kb.genres:
-            feel = f"its {kb.genres[item.mood_source].name.lower()} feel"
+            genres = [g for g in (item.mood_genres or [item.mood_source]) if g != named]
+            names = list(dict.fromkeys(kb.genres[g].name for g in genres))[:2]
+            feel = f"its {' and '.join(names)} feel" if names else "its feel"
         else:
             feel = f"its title has a {item.mood_source} feel"
         parts.append(f"{feel} fits your {mood_phrase(mood)} mood")

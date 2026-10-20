@@ -177,7 +177,7 @@ flowchart LR
    - `mood_fit` = 1 − distance(track point, mood point) / √2 on the valence-energy plane, pulled towards 0.5 when the estimate is uncertain (ADR-0010 explains why distance, not cosine similarity)
    - `taste_fit` = the strongest reason the track was found: favourite artist 1.0 · favourite genre 0.75 · language 0.5 · discovery/mood 0.25
    - `score = w_mood · mood_fit + w_taste · taste_fit`, with (w_mood, w_taste) = comfort (0.45, 0.55) · focus (0.55, 0.45) · energy (0.60, 0.40) · discovery (0.65, 0.35)
-5. **Diversify** — greedy re-ranking: at most 2 songs per artist, at most 40% from any one search, and versions of the same song ("Song - Remastered", "Song (Live)") count once. If candidates are scarce, the limits relax so the playlist still fills (10–30 tracks, default 15).
+5. **Diversify** — greedy re-ranking: at most 2 songs per artist (counting every credited artist, not just the first), at most 40% from any one search, and versions of the same song ("Song - Remastered", "Song (Live)") count once. Equal scores are ordered by Spotify's own result order. If candidates are scarce, the limits relax so the playlist still fills (10–30 tracks, default 15).
 6. **Explain** — template-based sentences built from the actual score components, e.g.
    *"Picked because you love Prateek Kuhad, and its soft indie-folk feel fits your calm, slightly low mood."*
 

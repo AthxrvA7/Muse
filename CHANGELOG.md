@@ -36,6 +36,11 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 - `POST /api/v1/curate` (stateless playlist preview) and `GET /api/v1/curate/options`
 - ADR-0010: distance, not cosine similarity, for mood fit
 
+### Fixed (found in the first run against real Spotify)
+- The 2-per-artist limit now counts every credited artist; Arijit Singh appeared 3 times because he was credited second
+- Tracks with equal scores are now ordered by Spotify's own result order instead of by track ID
+- Explanations name every genre that shaped a track's estimated feel, don't repeat a genre already named, and keep proper names ("Bollywood", "R&B")
+
 ### Changed
 - Spotify connection setup shared by catalogue and curation (`services/spotify_session.py`); Spotify error mapping moved to `api/errors.py`
 - `httpx2` moved to runtime dependencies: one HTTP library for the Spotify client and FastAPI's TestClient

@@ -78,6 +78,9 @@ The app is built in vertical slices so a working "mood → explained songs" demo
 - [x] `feat(recommender): add mood and taste scoring`
 - [x] `feat(recommender): add diversity re-ranking and explanations`
 - [x] `feat(curate): add curate preview endpoint`
+- [x] `fix(recommender): count every credited artist towards the per-artist limit`
+- [x] `fix(recommender): break score ties by Spotify result order`
+- [x] `fix(recommender): name every genre behind a track's feel in explanations`
 - [x] `docs: document the recommender, ADR-0010 and curate endpoint`
 
 🏷 **Tag `v0.2.0` — Curate preview**

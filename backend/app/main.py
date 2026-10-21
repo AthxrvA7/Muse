@@ -9,11 +9,14 @@ from fastapi import FastAPI
 from app import __version__
 from app.api.v1.router import api_router
 from app.core.config import Settings, get_settings
+from app.core.logging import configure_logging
+from app.core.middleware import RequestIDMiddleware
 from app.schemas.meta import ServiceInfo
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
     settings = settings or get_settings()
+    configure_logging(settings.log_level)
 
     app = FastAPI(
         title="Muse API",
@@ -25,6 +28,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     app.state.settings = settings
 
+    app.add_middleware(RequestIDMiddleware)
     app.include_router(api_router, prefix=settings.api_v1_prefix)
 
     @app.get("/", tags=["meta"], summary="Service information")

@@ -15,4 +15,4 @@ class ReadinessStatus(BaseModel):
     """Readiness: the app and everything it depends on can serve traffic."""
 
     status: Literal["ready", "degraded", "not_ready"]
-    checks: dict[str, str] = Field(examples=[{"app": "ok"}])
+    checks: dict[str, str] = Field(examples=[{"app": "ok", "database": "ok"}])

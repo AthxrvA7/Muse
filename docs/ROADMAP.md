@@ -88,9 +88,10 @@ The app is built in vertical slices so a working "mood → explained songs" demo
 ## Slice 3 — Login & memory (Classics)
 
 ### `feature/database` 🅰 (MongoDB Atlas free cluster)
-- [ ] `feat(db): add async MongoDB connection lifecycle and readiness check`
-- [ ] `feat(db): add repositories with unique and TTL indexes`
-- [ ] `test(db): add repository tests`
+- [x] `feat(db): add async MongoDB connection lifecycle and readiness check`
+- [x] `feat(db): add repositories with unique and TTL indexes`
+- [x] `test(db): add repository tests against a real MongoDB`
+- [x] `docs: document MongoDB setup and database tests`
 
 ### `feature/security-hardening` 🅰
 - [ ] `feat(security): add security headers, strict CORS and rate limiting`
@@ -130,11 +131,11 @@ The app is built in vertical slices so a working "mood → explained songs" demo
 
 ## Monitoring track (🅿 lead)
 
-### `feature/health-monitoring` 🅿 — in progress
-- [ ] `feat(monitoring): add structured JSON logging with request IDs`
-- [ ] `feat(monitoring): add log redaction for sensitive fields`
-- [ ] `feat(monitoring): add health and readiness endpoints`
-- [ ] `test(monitoring): add health, request ID and redaction tests`
+### `feature/health-monitoring` 🅿 ✅ (PR #11)
+- [x] `feat(monitoring): add structured JSON logging with request IDs`
+- [x] `feat(monitoring): add log redaction for sensitive fields`
+- [x] `feat(monitoring): add health and readiness endpoints`
+- [x] `test(monitoring): add health, request ID and redaction tests`
 
 ### `feature/error-handling` 🅿
 - [ ] `feat(errors): add consistent error response format`

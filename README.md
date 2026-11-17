@@ -28,8 +28,8 @@ Muse is an independent personalisation layer. It uses Spotify for login, catalog
 
 | Stage | Feature | Status |
 |---|---|---|
-| Classics: "Know your music" | Preference profile, reference tracks, Music DNA | Planned |
-| Essential: "Curate for me" | Mood analysis ✅, preference + mood scoring, explained playlist, export to Spotify | In progress |
+| Classics: "Know your music" | Database ✅, Spotify login, preference profile, reference tracks, Music DNA | In progress |
+| Essential: "Curate for me" | Mood analysis ✅, preference + mood scoring ✅, explained playlist ✅, export to Spotify | In progress |
 | Advanced: "Learn from me" | Feedback loop, session history, mood trajectory | Future |
 
 ## Try the mood engine
@@ -74,6 +74,22 @@ Each returned track has `score`, `mood_fit`, `taste_fit` and a `reason`, e.g. *"
 
 Without credentials the app still runs; Spotify endpoints answer `503`. Tests never call the real Spotify.
 
+## Connect MongoDB (optional locally, required in production)
+
+Muse stores users, sessions and preferences in MongoDB. Locally it's optional: without it the mood and curate endpoints still work and `/ready` reports `degraded`.
+
+1. Create a free **M0** cluster at https://cloud.mongodb.com (AWS, Mumbai `ap-south-1`).
+2. **Security → Database Access:** add a database user with an auto-generated password (letters and numbers only, so the connection string needs no escaping).
+3. **Security → Network Access:** add your current IP address.
+4. **Connect → Drivers:** copy the connection string, put the password in place of `<db_password>`, and add it to `.env`:
+   ```
+   MONGODB_URI=mongodb+srv://<user>:<password>@<cluster>.mongodb.net/
+   MONGODB_DB=muse
+   ```
+5. Start the backend and open http://127.0.0.1:8000/ready. It should show `"database": "ok"`.
+
+On startup Muse creates its indexes (unique IDs and auto-expiry for sessions and pending logins), so the `muse` database and its collections appear in Atlas after the first run. If your IP address changes, `/ready` shows `"database": "unavailable"` until you add the new one in Network Access.
+
 ## Technology stack
 
 Python 3.12 · FastAPI · scikit-learn · MongoDB · Spotify Web API · pytest · Docker · GitHub Actions · Render
@@ -110,8 +126,11 @@ On macOS or Linux, use `cp .env.example .env` and `source .venv/bin/activate` in
 
 ```powershell
 cd backend
-pytest
+pytest          # everything except the database tests (same as CI)
+pytest --db     # also runs the repository tests against MONGODB_URI from .env
 ```
+
+`pytest --db` works in a throwaway database (`muse_test_<random>`) and removes it afterwards; the real `muse` database is never touched. CI runs plain `pytest`, so it never needs the database password.
 
 ### Run the same checks as CI
 

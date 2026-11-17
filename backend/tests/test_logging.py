@@ -72,6 +72,13 @@ def test_secret_query_parameters_in_messages_are_redacted() -> None:
     assert "state=xyz" in text
 
 
+def test_passwords_in_connection_strings_are_redacted() -> None:
+    text = redact_text("connecting to mongodb+srv://muse:s3cret@cluster0.example.mongodb.net/muse")
+
+    assert "s3cret" not in text
+    assert text == f"connecting to mongodb+srv://muse:{REDACTED}@cluster0.example.mongodb.net/muse"
+
+
 def test_message_arguments_are_redacted_after_formatting() -> None:
     record = _record("calling %s", args=("https://x.test/?access_token=secret",))
 

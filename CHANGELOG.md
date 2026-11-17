@@ -36,10 +36,20 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 - `POST /api/v1/curate` (stateless playlist preview) and `GET /api/v1/curate/options`
 - ADR-0010: distance, not cosine similarity, for mood fit
 
+- Structured JSON logs with request IDs and redaction, `GET /health` (liveness) and `GET /ready` (readiness)
+- MongoDB connection (PyMongo async) opened at startup and closed at shutdown; settings `MONGODB_URI` (secret) and `MONGODB_DB`; required when `APP_ENV=production`
+- `/ready` checks the database: `ready` (MongoDB answers), `degraded` (no database configured, e.g. local or CI), `not_ready` with HTTP 503 (configured but not answering)
+- Document models and repositories for `users`, `sessions`, `oauth_states` and `preferences`, with unique indexes and TTL indexes (sessions after 7 idle days, pending logins after 10 minutes), created at startup
+- Repository tests against a real MongoDB, run with `pytest --db` in a throwaway database
+
 ### Fixed (found in the first run against real Spotify)
 - The 2-per-artist limit now counts every credited artist; Arijit Singh appeared 3 times because he was credited second
 - Tracks with equal scores are now ordered by Spotify's own result order instead of by track ID
 - Explanations name every genre that shaped a track's estimated feel, don't repeat a genre already named, and keep proper names ("Bollywood", "R&B")
+
+### Security
+- Settings validation errors no longer echo the invalid value, which could have printed a password or secret at startup
+- Logs mask the password inside connection strings (`mongodb+srv://user:[REDACTED]@…`)
 
 ### Changed
 - Spotify connection setup shared by catalogue and curation (`services/spotify_session.py`); Spotify error mapping moved to `api/errors.py`

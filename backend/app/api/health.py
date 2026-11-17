@@ -7,9 +7,10 @@ not the versioned API, and they never require a login.
 - /ready   (readiness) -> "can it serve users?"     If not, stop sending traffic.
 """
 
-from fastapi import APIRouter, Response, status
+from fastapi import APIRouter, Request, Response, status
 
 from app.schemas.health import HealthStatus, ReadinessStatus
+from app.services.readiness import check_readiness
 
 router = APIRouter(tags=["health"])
 
@@ -20,12 +21,8 @@ def health() -> HealthStatus:
 
 
 @router.get("/ready", summary="Readiness check")
-def ready(response: Response) -> ReadinessStatus:
-    # Each dependency adds its own check here as it is built (MongoDB in feature/database).
-    checks = {"app": "ok"}
-
-    if all(result == "ok" for result in checks.values()):
-        return ReadinessStatus(status="ready", checks=checks)
-
-    response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
-    return ReadinessStatus(status="not_ready", checks=checks)
+async def ready(request: Request, response: Response) -> ReadinessStatus:
+    overall, checks = await check_readiness(request.app.state.db)
+    if overall == "not_ready":
+        response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+    return ReadinessStatus(status=overall, checks=checks)

@@ -10,11 +10,15 @@ def test_health_returns_ok(client: TestClient) -> None:
     assert response.json() == {"status": "ok"}
 
 
-def test_ready_reports_each_check(client: TestClient) -> None:
+def test_ready_is_degraded_without_a_database(client: TestClient) -> None:
+    # Local development and CI run without MongoDB: still serving, with fewer features
     response = client.get("/ready")
 
     assert response.status_code == 200
-    assert response.json() == {"status": "ready", "checks": {"app": "ok"}}
+    assert response.json() == {
+        "status": "degraded",
+        "checks": {"app": "ok", "database": "not_configured"},
+    }
 
 
 def test_health_endpoints_are_not_under_versioned_api(client: TestClient) -> None:

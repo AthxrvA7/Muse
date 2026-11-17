@@ -44,13 +44,16 @@ SENSITIVE_KEYS = frozenset(
 _SECRET_PATTERNS = [
     re.compile(r"(?i)(bearer\s+)[A-Za-z0-9._~+/=-]+"),
     re.compile(r"(?i)\b(access_token|refresh_token|client_secret|code|password|token)=([^&\s]+)"),
+    # user:password inside a connection string, e.g. mongodb+srv://muse:secret@cluster0...
+    re.compile(r"(?i)\b([a-z][a-z0-9+.-]*://[^:/@\s]+:)[^@\s]+@"),
 ]
 
 
 def redact_text(text: str) -> str:
     """Mask bearer tokens and secret-looking query parameters inside free text."""
     text = _SECRET_PATTERNS[0].sub(rf"\1{REDACTED}", text)
-    return _SECRET_PATTERNS[1].sub(rf"\1={REDACTED}", text)
+    text = _SECRET_PATTERNS[1].sub(rf"\1={REDACTED}", text)
+    return _SECRET_PATTERNS[2].sub(rf"\1{REDACTED}@", text)
 
 
 class RedactingFilter(logging.Filter):

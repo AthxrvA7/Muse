@@ -83,15 +83,22 @@ def test_create_client_requires_a_uri(settings: Settings) -> None:
         create_client(settings)
 
 
-def test_lifespan_opens_and_closes_the_database() -> None:
+def test_lifespan_opens_and_closes_the_database(monkeypatch: pytest.MonkeyPatch) -> None:
     settings = Settings(
         _env_file=None, app_env="test", mongodb_uri=FAKE_URI, mongodb_db="muse_test"
     )
     app = create_app(settings)
+    ensured: list[str] = []
+
+    async def fake_ensure_indexes(database: object) -> None:
+        ensured.append(database.name)  # type: ignore[attr-defined]
+
+    monkeypatch.setattr("app.main.ensure_indexes", fake_ensure_indexes)
 
     with TestClient(app):
         assert app.state.db is not None
         assert app.state.db.name == "muse_test"
+        assert ensured == ["muse_test"]
 
     assert app.state.db is None
 
@@ -101,3 +108,22 @@ def test_no_database_is_opened_when_not_configured(settings: Settings) -> None:
 
     with TestClient(app):
         assert app.state.db is None
+
+
+def test_app_starts_even_if_indexes_cannot_be_created(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    settings = Settings(_env_file=None, app_env="test", mongodb_uri=FAKE_URI)
+    app = create_app(settings)
+
+    async def failing_ensure_indexes(database: object) -> None:
+        raise ServerSelectionTimeoutError("no servers found")
+
+    monkeypatch.setattr("app.main.ensure_indexes", failing_ensure_indexes)
+
+    with TestClient(app) as client:
+        assert client.get("/health").status_code == 200
+
+    lines = [json.loads(line) for line in capsys.readouterr().out.splitlines()]
+    warning = next(line for line in lines if line["message"] == "Could not ensure MongoDB indexes")
+    assert warning["error_type"] == "ServerSelectionTimeoutError"

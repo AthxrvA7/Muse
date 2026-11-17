@@ -4,10 +4,12 @@
 with their own settings, and production runs ``uvicorn app.main:app``.
 """
 
+import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from pymongo.errors import PyMongoError
 
 from app import __version__
 from app.api.health import router as health_router
@@ -15,8 +17,11 @@ from app.api.v1.router import api_router
 from app.core.config import Settings, get_settings
 from app.core.logging import configure_logging
 from app.core.middleware import RequestIDMiddleware
+from app.db.indexes import ensure_indexes
 from app.db.mongo import create_client
 from app.schemas.meta import ServiceInfo
+
+logger = logging.getLogger(__name__)
 
 
 def create_app(settings: Settings | None = None) -> FastAPI:
@@ -28,6 +33,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         # Startup: open the MongoDB client once for the whole process (if configured)
         client = create_client(settings) if settings.mongodb_configured else None
         app.state.db = client[settings.mongodb_db] if client is not None else None
+        if app.state.db is not None:
+            try:
+                await ensure_indexes(app.state.db)
+            except PyMongoError as error:
+                # Start anyway: /ready reports the database as unavailable until it answers,
+                # and the indexes are created on the next start.
+                logger.warning(
+                    "Could not ensure MongoDB indexes",
+                    extra={"error_type": type(error).__name__},
+                )
         try:
             yield
         finally:

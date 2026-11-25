@@ -14,7 +14,9 @@ class ExportRequest(BaseModel):
             "examples": [
                 {
                     "name": "Muse: tired and low",
-                    "track_ids": ["4uLU6hMCjMI75M1A2tKUQC", "7ouMYWpwJ422jRcDASZB7P"],
+                    # Placeholders on purpose: real IDs here would add unrelated songs
+                    # when someone runs the example in Swagger. Paste IDs from /curate.
+                    "track_ids": ["paste-tracks[].track.id-from-POST-/curate"],
                 }
             ]
         },
@@ -22,7 +24,11 @@ class ExportRequest(BaseModel):
 
     name: str = Field(min_length=1, max_length=100)
     description: str = Field(default="Curated by Muse for how you felt.", max_length=300)
-    track_ids: list[str] = Field(min_length=1, max_length=100)
+    track_ids: list[str] = Field(
+        min_length=1,
+        max_length=100,
+        description="Spotify track IDs from a POST /curate response (tracks[].track.id)",
+    )
 
     @field_validator("name", "description")
     @classmethod

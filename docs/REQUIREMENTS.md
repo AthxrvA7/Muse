@@ -11,10 +11,10 @@
 |---|---|---|---|---|
 | C1 | GitHub repository | Meaningful name; ≥ 15 commits with meaningful messages | Verified | 60+ commits on `main` in Conventional Commit format (`git log --oneline main`) |
 | C2 | Branching | `main` + `feature/*` branches; every member merges via PR | Verified | Protected `main`; feature/docs/chore branches merged through PRs with review: Atharva (backend), Darsh (#3 templates, #4 CI), Piyush (#11 monitoring) |
-| C3 | README | Title, problem, team, features, stack, setup, screenshots, git workflow | Implemented | All sections present; screenshots to be added from the deployed demo |
+| C3 | README | Title, problem, team, features, stack, setup, screenshots, git workflow | Verified | All sections present, including screenshots from the deployed demo |
 | C4 | Automated tests | ≥ 3 automated tests (we target ≥ 80% backend coverage) | Verified | 285 pytest tests run in CI on every push (plus 13 database tests with `pytest --db`) |
 | C5 | CI | GitHub Actions on push showing pass/fail | Verified | `.github/workflows/ci.yml`: Lint and Tests jobs on every push and PR (Actions tab) |
-| C6 | Deployment | A public deployment URL with documented setup | Implemented | `render.yaml` + [deployment runbook](DEPLOYMENT.md); URL added to README after the first deploy |
+| C6 | Deployment | A public deployment URL with documented setup | Verified | https://muse-api-mu05.onrender.com (`/ready` shows the database `ok`); `render.yaml` + [deployment runbook](DEPLOYMENT.md) |
 
 ## 2. Functional requirements
 

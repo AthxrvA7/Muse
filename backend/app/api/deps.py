@@ -18,6 +18,7 @@ from app.schemas.curate import Taste
 from app.services.auth import SESSION_COOKIE, AuthService
 from app.services.playlists import PlaylistService
 from app.services.preferences import to_taste
+from app.services.privacy import PrivacyService
 
 NOT_LOGGED_IN = {"message": "Log in with Spotify first: open /api/v1/auth/login"}
 
@@ -107,6 +108,21 @@ def get_playlist_service(
     http: Annotated[httpx2.AsyncClient, Depends(get_http)],
 ) -> PlaylistService:
     return PlaylistService(auth, http, PlaylistRepository(request.app.state.db))
+
+
+def get_privacy_service(request: Request) -> PrivacyService:
+    database = request.app.state.db
+    if database is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail={"message": "This needs the database (MONGODB_URI)"},
+        )
+    return PrivacyService(
+        UserRepository(database),
+        SessionRepository(database),
+        PreferencesRepository(database),
+        PlaylistRepository(database),
+    )
 
 
 CurrentUser = Annotated[User, Depends(current_user)]

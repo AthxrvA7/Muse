@@ -55,6 +55,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 - Tracks with equal scores are now ordered by Spotify's own result order instead of by track ID
 - Explanations name every genre that shaped a track's estimated feel, don't repeat a genre already named, and keep proper names ("Bollywood", "R&B")
 
+### Deployment
+- Render Blueprint (`render.yaml`): one web service built from `main`, health-checked on `/health`, behind Render's HTTPS proxy (`--proxy-headers`); secrets entered in Render, never committed
+- Deployment runbook (`docs/DEPLOYMENT.md`): first deployment, rollback, demo checks, troubleshooting
+
 ### Security
 - Hard allow-list for calls made with a user's Spotify token: only reading the profile, creating a new playlist, and adding tracks to a playlist Muse just created. Deleting, editing, reordering or reading existing playlists is refused before any request is sent
 - Spotify login (Authorization Code flow): single-use `state` checked on the callback and expired after 10 minutes; minimal scopes (`playlist-modify-private`, `playlist-modify-public`, `user-read-private`)

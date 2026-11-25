@@ -152,7 +152,7 @@ The app is built in vertical slices so a working "mood → explained songs" demo
 | `feature/ci-dependency-audit` | pip-audit vulnerability scan | ⏸ |
 | `feature/ci-security-scanning` | Dependabot + CodeQL | ⏸ |
 | `feature/docker` | Dockerfile, docker-compose with MongoDB, Docker build in CI | ⏸ after Docker is covered |
-| `feature/deployment` | Render deployment + deploy after CI on `main` | ⏸ after CD is covered |
+| `feature/deployment` | Render deployment (`render.yaml`, auto-deploy from `main`) + deployment runbook | ✅ |
 | `feature/ops-runbooks` | Backup/restore + incident runbooks, restore rehearsal | ⏸ with deployment |
 
 🏷 **Tag `v1.0.0-backend` — Deployed backend** (submission point for this semester)

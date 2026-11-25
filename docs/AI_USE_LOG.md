@@ -118,3 +118,13 @@ Never paste secrets, tokens or real user data into an AI tool.
 - **Changes made by us:** We changed the plan from `POST /curate/{session_id}/export` to `POST /playlists` with the track IDs from the preview. That way curate stays stateless and we don't store mood sessions just to export them. Playlists are created private. Only the playlist's reference (ID, link, name, track count) is stored.
 - **Verification:** 275 tests pass with a fake Spotify: request shapes for the two new endpoints, duplicate track IDs removed, a 403 explained, an expired login asking to log in again, and nothing recorded when Spotify refuses.
 - **Reflection:** Spotify's February 2026 changes removed the playlist endpoints most tutorials use; checking the official changelog first avoided building on dead endpoints.
+
+### 2026-11-25 — Deployment on Render (`feature/deployment`)
+- **Member:** Atharva
+- **Tool:** Claude (Anthropic)
+- **Purpose:** configuration, documentation
+- **Prompt (summary):** Deploy the backend to Render with MongoDB Atlas, document setup and rollback, and bring the requirement statuses up to date.
+- **Output used:** `render.yaml`, `docs/DEPLOYMENT.md`, README and REQUIREMENTS updates.
+- **Changes made by us:** Used a separate encryption key for production. Kept Swagger enabled in production because it is our demo UI until the frontend exists. Allowed Atlas access from anywhere because Render's free tier has no fixed IP, relying on the database password; this is noted as a trade-off in the runbook.
+- **Verification:** To be checked on the live URL: `/ready` shows the database as `ok`, and login, curate and saving a playlist work.
+- **Reflection:** Behind Render's proxy the app sees Render's address and plain HTTP unless uvicorn trusts the forwarded headers. Without `--proxy-headers`, rate limiting would treat every user as one client and the Origin check would see the wrong scheme.

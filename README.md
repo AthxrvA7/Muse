@@ -112,6 +112,12 @@ To save a playlist, copy the track IDs from a curate response (`tracks[].track.i
 
 The browser only receives a random session ID in an `HttpOnly` cookie. Spotify tokens stay on the server, encrypted. **POST /api/v1/auth/logout** ends the session immediately.
 
+## Deployment
+
+The backend deploys to **Render** from `main` using [`render.yaml`](render.yaml), with MongoDB Atlas as the database. Step-by-step setup, rollback and troubleshooting are in the [deployment runbook](docs/DEPLOYMENT.md).
+
+**Live demo:** *(add the `onrender.com` URL here after the first deployment)*
+
 ## Technology stack
 
 Python 3.12 · FastAPI · scikit-learn · MongoDB · Spotify Web API · pytest · Docker · GitHub Actions · Render
@@ -182,6 +188,7 @@ We use **GitHub Flow**:
 ## Documentation
 
 - [Architecture](docs/ARCHITECTURE.md)
+- [Deployment runbook](docs/DEPLOYMENT.md)
 - [Requirements & risks](docs/REQUIREMENTS.md)
 - [Security, privacy & wellbeing](docs/SECURITY_PRIVACY.md)
 - [Architecture decisions](docs/adr/)

@@ -6,7 +6,9 @@ import { Layout } from "@/components/Layout";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Curate from "@/pages/Curate";
 import Discover from "@/pages/Discover";
+import History from "@/pages/History";
 import Results from "@/pages/Results";
+import Settings from "@/pages/Settings";
 import { AppStateProvider } from "@/state/AppState";
 
 // The chart library is only needed on the Music DNA page, so it loads on demand
@@ -24,6 +26,8 @@ export default function App() {
               <Route path="dna" element={<Suspense fallback={null}><MusicDna /></Suspense>} />
               <Route path="curate" element={<Curate />} />
               <Route path="results" element={<Results />} />
+              <Route path="history" element={<History />} />
+              <Route path="settings" element={<Settings />} />
               <Route path="*" element={<Discover />} />
             </Route>
           </Routes>

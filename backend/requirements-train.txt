@@ -2,4 +2,4 @@
 # Not needed to run the app or the tests.
 -r requirements.txt
 pandas==3.0.6
-pyarrow==26.0.0
+pyarrow==26.0.1

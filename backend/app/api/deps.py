@@ -13,7 +13,9 @@ from app.db.repositories.oauth_states import OAuthStateRepository
 from app.db.repositories.preferences import PreferencesRepository
 from app.db.repositories.sessions import SessionRepository
 from app.db.repositories.users import UserRepository
+from app.schemas.curate import Taste
 from app.services.auth import SESSION_COOKIE, AuthService
+from app.services.preferences import to_taste
 
 NOT_LOGGED_IN = {"message": "Log in with Spotify first: open /api/v1/auth/login"}
 
@@ -87,7 +89,18 @@ def get_preferences_repository(request: Request) -> PreferencesRepository:
     return PreferencesRepository(database)
 
 
+async def saved_taste(
+    request: Request, user: Annotated[User | None, Depends(optional_user)]
+) -> Taste | None:
+    """The logged-in user's saved taste profile, if they have one."""
+    if user is None or request.app.state.db is None:
+        return None
+    saved = await PreferencesRepository(request.app.state.db).get(user.id)
+    return to_taste(saved) if saved else None
+
+
 CurrentUser = Annotated[User, Depends(current_user)]
+SavedTaste = Annotated[Taste | None, Depends(saved_taste)]
 OptionalUser = Annotated[User | None, Depends(optional_user)]
 PreferencesRepo = Annotated[PreferencesRepository, Depends(get_preferences_repository)]
 Auth = Annotated[AuthService, Depends(get_auth_service)]

@@ -228,3 +228,43 @@ def test_full_chain_with_only_the_network_faked(monkeypatch: pytest.MonkeyPatch)
 
     assert response.status_code == 200
     assert len(response.json()["tracks"]) == 15
+
+
+def test_saved_profile_is_used_when_no_taste_is_sent(app: FastAPI) -> None:
+    from app.api.deps import saved_taste
+    from app.schemas.curate import Taste
+
+    catalogue = FakeCatalogue()
+    client = client_with(app, catalogue)
+    app.dependency_overrides[saved_taste] = lambda: Taste(artists=["Anuv Jain"], genres=["lo-fi"])
+
+    body = client.post(URL, json={"mood": {"chips": ["calm"]}, "size": 10}).json()
+
+    assert body["taste_source"] == "saved_profile"
+    assert 'artist:"Anuv Jain"' in catalogue.queries
+    assert any("Anuv Jain" in t["reason"] for t in body["tracks"])
+
+
+def test_taste_in_the_request_wins_over_the_saved_profile(app: FastAPI) -> None:
+    from app.api.deps import saved_taste
+    from app.schemas.curate import Taste
+
+    catalogue = FakeCatalogue()
+    client = client_with(app, catalogue)
+    app.dependency_overrides[saved_taste] = lambda: Taste(artists=["Anuv Jain"])
+
+    body = client.post(URL, json=CALM_REQUEST).json()
+
+    assert body["taste_source"] == "request"
+    assert 'artist:"Anuv Jain"' not in catalogue.queries
+
+
+def test_without_login_or_taste_curation_uses_mood_only(app: FastAPI) -> None:
+    body = (
+        client_with(app, FakeCatalogue())
+        .post(URL, json={"mood": {"chips": ["calm"]}, "size": 10})
+        .json()
+    )
+
+    assert body["taste_source"] == "none"
+    assert len(body["tracks"]) == 10

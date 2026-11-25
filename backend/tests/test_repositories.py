@@ -107,6 +107,18 @@ async def test_user_can_be_read_and_deleted(database: AsyncDatabase) -> None:
     assert await users.delete(user.id) is False
 
 
+async def test_encrypted_tokens_are_stored_on_the_user(database: AsyncDatabase) -> None:
+    users = UserRepository(database)
+    user = await users.upsert_on_login("spotify-user-4", "Ath")
+    tokens = {"access_token": "enc-a", "refresh_token": "enc-r", "expires_at": 1.0, "scope": ""}
+
+    await users.save_tokens(user.id, tokens)
+
+    assert await users.get_tokens(user.id) == tokens
+    assert await users.get(user.id) == user  # tokens never leak into the User model
+    assert await users.get_tokens("not-an-id") is None
+
+
 async def test_unknown_or_malformed_user_ids_return_nothing(database: AsyncDatabase) -> None:
     users = UserRepository(database)
 

@@ -90,6 +90,24 @@ Muse stores users, sessions and preferences in MongoDB. Locally it's optional: w
 
 On startup Muse creates its indexes (unique IDs and auto-expiry for sessions and pending logins), so the `muse` database and its collections appear in Atlas after the first run. If your IP address changes, `/ready` shows `"database": "unavailable"` until you add the new one in Network Access.
 
+## Log in with Spotify
+
+Logging in lets Muse save your taste and create playlists in your Spotify account. It needs Spotify credentials, MongoDB (above) and an encryption key for stored tokens.
+
+1. In the Spotify dashboard, open your app → **Settings** and make sure this **Redirect URI** is listed exactly: `http://127.0.0.1:8000/api/v1/auth/callback`
+2. Under **User Management**, add the Spotify account(s) that will log in (Development Mode allows 5).
+3. Generate an encryption key and add it to `.env`:
+   ```powershell
+   cd backend
+   python -c "from app.core.crypto import generate_key; print(generate_key())"
+   ```
+   ```
+   TOKEN_ENCRYPTION_KEY=<the printed key>
+   ```
+4. Start the backend and open **http://127.0.0.1:8000/api/v1/auth/login** in the browser (use `127.0.0.1`, not `localhost`, so the cookie matches). After approving on Spotify you land on `/docs`, logged in; try **GET /api/v1/me**.
+
+The browser only receives a random session ID in an `HttpOnly` cookie. Spotify tokens stay on the server, encrypted. **POST /api/v1/auth/logout** ends the session immediately.
+
 ## Technology stack
 
 Python 3.12 · FastAPI · scikit-learn · MongoDB · Spotify Web API · pytest · Docker · GitHub Actions · Render

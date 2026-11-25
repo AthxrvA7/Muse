@@ -9,7 +9,7 @@ services:
     plan: free
     region: singapore # closest Render region to India and to the Atlas cluster in Mumbai
     branch: main
-    autoDeployTrigger: checksPass # deploy each merge to main only after GitHub Actions pass
+    autoDeployTrigger: commit # deploy each merge to main (PRs already pass CI before merging)
     # Build the website (Node is included in Render's Python runtime), then the backend.
     # The backend serves the built site at /app/ (FRONTEND_DIST below).
     buildCommand: cd frontend && npm ci && npm run build && cd ../backend && pip install -r requirements.txt

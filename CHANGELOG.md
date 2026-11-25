@@ -68,6 +68,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 - `GET /api/v1/mood/options`: mood chips with their valence and energy, and the modes, for clients
 - The built website is served at `/app/` by the backend (`FRONTEND_DIST`), with its own Content-Security-Policy
 
+### Strict language
+- A playlist now holds only songs Muse knows are in its language (plus instrumental genres); songs of unknown language are never used. If there are too few, Muse first searches more genres in that language, and otherwise returns a shorter playlist with a note instead of mixing
+- Render deploys on every commit to main (`autoDeployTrigger: commit`); pull requests already pass CI before they are merged
+
 ### Engine fixes and a new look
 - Language and genre now come mainly from each artist's Last.fm tags (one lookup per artist), plus title words ("Tum Hi Ho" is Hindi) and the title's script; an artist's known language and genre fill their other songs
 - Stricter focus: songs in other languages or unrelated genres are left out unless there aren't enough; a single language in your taste is used automatically
@@ -88,7 +92,6 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 - `familiarity` (0–1) and a Familiar ↔ New slider on the website; defaults by mode
 - Never the same playlist twice: a small random nudge, recent picks are less likely (`recent_picks`, 30 days), and "Give me another" leaves out the songs on screen
 - `LASTFM_API_KEY` setting (optional); `GET /me/top/tracks` added to the read-only allow-list
-- Render deploys automatically after CI passes (`autoDeployTrigger: checksPass`)
 
 ### Import from Spotify
 - `GET /api/v1/preferences/from-spotify` suggests a taste profile from your Spotify top artists (about the last 6 months): artists, plus the genres and languages Muse knows among their Spotify genres. Nothing is saved: the website puts it in the Music DNA form for you to edit and save

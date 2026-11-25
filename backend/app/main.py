@@ -9,6 +9,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pymongo.errors import PyMongoError
 
 from app import __version__
@@ -17,6 +18,7 @@ from app.api.v1.router import api_router
 from app.core.config import Settings, get_settings
 from app.core.logging import configure_logging
 from app.core.middleware import RequestIDMiddleware
+from app.core.security import SecurityHeadersMiddleware
 from app.db.indexes import ensure_indexes
 from app.db.mongo import create_client
 from app.schemas.meta import ServiceInfo
@@ -63,6 +65,19 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.settings = settings
     app.state.db = None  # set by the lifespan when MongoDB is configured
 
+    # Middleware runs outside-in in the reverse order of these lines: the last one added
+    # sees the request first. Request IDs are outermost so every response, including
+    # rejections, gets an ID and an access-log line.
+    if settings.allowed_origins:
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=settings.allowed_origins,  # never "*"
+            allow_credentials=True,  # the session cookie (Spotify login, slice 3)
+            allow_methods=["GET", "POST", "PUT", "DELETE"],
+            allow_headers=["Content-Type", "X-Request-ID"],
+            max_age=600,
+        )
+    app.add_middleware(SecurityHeadersMiddleware, hsts=settings.app_env == "production")
     app.add_middleware(RequestIDMiddleware)
     app.include_router(health_router)
     app.include_router(api_router, prefix=settings.api_v1_prefix)

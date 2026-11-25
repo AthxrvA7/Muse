@@ -116,7 +116,7 @@ The browser only receives a random session ID in an `HttpOnly` cookie. Spotify t
 
 The backend deploys to **Render** from `main` using [`render.yaml`](render.yaml), with MongoDB Atlas as the database. Step-by-step setup, rollback and troubleshooting are in the [deployment runbook](docs/DEPLOYMENT.md).
 
-**Live demo:** https://muse-api-mu05.onrender.com/docs (interactive API docs). The free instance sleeps when idle, so the first request can take about a minute. Logging in works only for Spotify accounts added to the app's Development Mode list.
+**Live demo:** https://muse-api-mu05.onrender.com/app/ (the website) · https://muse-api-mu05.onrender.com/docs (API docs). The free instance sleeps when idle, so the first request can take about a minute. Logging in works only for Spotify accounts added to the app's Development Mode list.
 
 ## Technology stack
 

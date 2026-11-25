@@ -60,6 +60,11 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 - Render Blueprint (`render.yaml`): one web service built from `main`, health-checked on `/health`, behind Render's HTTPS proxy (`--proxy-headers`); secrets entered in Render, never committed
 - Deployment runbook (`docs/DEPLOYMENT.md`): first deployment, rollback, demo checks, troubleshooting
 
+### Privacy
+- `GET /api/v1/me/data` downloads everything Muse holds about you as JSON (account, taste profile, playlists it created; never tokens), and lists what is never stored
+- `DELETE /api/v1/me` deletes your account, taste profile, playlist records and every login session, and logs you out
+
+
 ### Website support
 - `GET /api/v1/mood/options`: mood chips with their valence and energy, and the modes, for clients
 - The built website is served at `/app/` by the backend (`FRONTEND_DIST`), with its own Content-Security-Policy

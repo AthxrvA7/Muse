@@ -120,7 +120,7 @@ The app is built in vertical slices so a working "mood → explained songs" demo
 
 ### `feature/privacy-controls` 🅰
 - [ ] `feat(privacy): add privacy notice endpoint and consent versioning`
-- [ ] `feat(privacy): add personal data export and account deletion`
+- [x] `feat(privacy): add personal data export and account deletion`
 - [ ] `feat(audit): add audit events for security-relevant actions`
 - [ ] `test(privacy): add export, deletion and audit tests`
 

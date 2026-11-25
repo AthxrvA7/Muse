@@ -16,7 +16,7 @@ export function LoginPrompt({ title, children }: { title: string; children?: Rea
       <h2 className="mt-4 font-display text-2xl">{title}</h2>
       <p className="mt-2 text-sm text-ink-soft">
         {children ??
-          "Muse asks Spotify only for your name and permission to create new playlists. It never reads your listening history and never changes your existing playlists."}
+          "Muse asks Spotify for your name, permission to create new playlists, and your top artists (read only when you press Import from Spotify). It never reads your play history and never changes your existing playlists."}
       </p>
       {loginAvailable ? (
         <Button asChild variant="spotify" size="lg" className="mt-6">

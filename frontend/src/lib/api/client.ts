@@ -3,10 +3,21 @@
 
 export class ApiError extends Error {
   status: number;
-  constructor(status: number, message: string) {
+  code?: string; // machine-readable reason when the API sends one, e.g. "relogin_needed"
+  constructor(status: number, message: string, code?: string) {
     super(message);
     this.status = status;
+    this.code = code;
   }
+}
+
+/** The `detail.code` the API adds to some errors, if any. */
+export function errorCode(body: ErrorBody): string | undefined {
+  const detail = body?.detail;
+  if (detail && typeof detail === "object" && !Array.isArray(detail) && "code" in detail) {
+    return String((detail as { code: unknown }).code);
+  }
+  return undefined;
 }
 
 type ErrorBody = { detail?: unknown } | null;
@@ -42,6 +53,6 @@ export async function request<T>(path: string, options: { method?: string; body?
   }
   if (response.status === 204) return undefined as T;
   const data = await response.json().catch(() => null);
-  if (!response.ok) throw new ApiError(response.status, errorMessage(response.status, data));
+  if (!response.ok) throw new ApiError(response.status, errorMessage(response.status, data), errorCode(data));
   return data as T;
 }

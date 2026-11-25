@@ -85,7 +85,7 @@ export default function Settings() {
         <Card className="space-y-4">
           <CardTitle className="flex items-center gap-2"><ShieldCheck className="size-4 text-plum" /> Your data</CardTitle>
           <CardDescription>
-            Muse stores your Spotify ID and name, your taste profile, login sessions and the playlists it created. Never your listening history, never the text you type.
+            Muse stores your Spotify ID and name, your taste profile, login sessions and the playlists it created. Never your play history or the text you type. Your top artists are read only when you press Import from Spotify, and are not stored.
           </CardDescription>
           <div className="flex flex-wrap gap-2">
             <Button asChild variant="outline">

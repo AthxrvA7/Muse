@@ -11,6 +11,7 @@ import type {
   MusicPreferences,
   Playlist,
   ReadyStatus,
+  SpotifyTasteSuggestion,
   TasteOptions,
   Track,
   User,
@@ -30,6 +31,7 @@ const realServices = {
     save: (body: Omit<MusicPreferences, "updated_at">) =>
       request<MusicPreferences>("/api/v1/preferences", { method: "PUT", body }),
     dna: () => request<MusicDNA>("/api/v1/preferences/dna"),
+    fromSpotify: () => request<SpotifyTasteSuggestion>("/api/v1/preferences/from-spotify"),
     options: () => request<TasteOptions>("/api/v1/curate/options"),
   },
   mood: {

@@ -1,6 +1,6 @@
 # Deployment runbook (Render + MongoDB Atlas)
 
-Muse's backend runs as one Render **web service** built from `main` ([ADR-0007](adr/0007-render-and-atlas-deployment.md)). The configuration is in [`render.yaml`](../render.yaml); secrets are entered in Render's dashboard, never committed.
+Muse runs as one Render **web service** built from `main`: the build compiles the React website (`frontend/`) and installs the backend, which serves the site at `/app/` and the API at `/api/v1` ([ADR-0007](adr/0007-render-and-atlas-deployment.md)). The configuration is in [`render.yaml`](../render.yaml); secrets are entered in Render's dashboard, never committed.
 
 | | Local | Deployed |
 |---|---|---|
@@ -19,7 +19,7 @@ Muse's backend runs as one Render **web service** built from `main` ([ADR-0007](
    - `SPOTIFY_REDIRECT_URI`: `https://muse-api.onrender.com/api/v1/auth/callback` (if Render gives the service a different URL, update it in step 4)
 3. Click **Apply**. The first build takes a few minutes. When it is live, open `https://<service>.onrender.com/ready`; it should show `"database": "ok"`.
 4. **Spotify dashboard → your app → Settings → Redirect URIs:** add `https://<service>.onrender.com/api/v1/auth/callback` (keep the `127.0.0.1` one for local work). If the URL differs from what you entered in step 2, fix `SPOTIFY_REDIRECT_URI` in Render → **Environment** (Render redeploys by itself).
-5. Check the deployed app: open `/docs`, log in at `/api/v1/auth/login`, then try `/api/v1/me`, `/api/v1/curate` and `/api/v1/playlists`.
+5. Check the deployed app: open `/app/` (the website) and click **Connect Spotify**, then curate and save a playlist. `/docs` is the API documentation.
 
 ## Every later deployment
 

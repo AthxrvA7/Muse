@@ -8,13 +8,14 @@ services:
     runtime: python
     plan: free
     region: singapore # closest Render region to India and to the Atlas cluster in Mumbai
-    rootDir: backend
     branch: main
-    buildCommand: pip install -r requirements.txt
+    # Build the website (Node is included in Render's Python runtime), then the backend.
+    # The backend serves the built site at /app/ (FRONTEND_DIST below).
+    buildCommand: cd frontend && npm ci && npm run build && cd ../backend && pip install -r requirements.txt
     # --proxy-headers: Render terminates HTTPS in front of the app, so the real client IP
     # (rate limiting) and the https scheme (Origin check, secure cookies) come from its
     # X-Forwarded-* headers. Only Render's proxy can reach the app, so trusting it is safe.
-    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips "*"
+    startCommand: cd backend && uvicorn app.main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips "*"
     healthCheckPath: /health
     envVars:
       - key: PYTHON_VERSION
@@ -24,11 +25,13 @@ services:
       - key: LOG_LEVEL
         value: INFO
       - key: DOCS_ENABLED
-        value: "true" # Swagger is the demo UI until the frontend exists
+        value: "true" # interactive API docs at /docs, shown in the demo
       - key: SPOTIFY_MARKET
         value: IN
       - key: POST_LOGIN_REDIRECT
-        value: /docs
+        value: /app/ # after logging in with Spotify, land on the website
+      - key: FRONTEND_DIST
+        value: ../frontend/dist # relative to backend/, where the app starts
       - key: SPOTIFY_CLIENT_ID
         sync: false
       - key: SPOTIFY_CLIENT_SECRET
@@ -41,4 +44,4 @@ services:
         value: muse
       - key: TOKEN_ENCRYPTION_KEY
         sync: false
-      # CORS_ORIGINS: add the frontend's URL here once it is deployed
+      # CORS_ORIGINS is not needed: the website is served from this same origin

@@ -123,3 +123,39 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             content={"detail": {"message": "Too many requests; try again shortly"}},
             headers={"Retry-After": str(retry_after)},
         )
+
+
+class OriginCheckMiddleware(BaseHTTPMiddleware):
+    """Blocks state-changing requests sent by other websites (CSRF defence, threat T4).
+
+    Once login exists, the browser attaches Muse's session cookie to every request to
+    Muse, even one triggered by another website. Browsers always send an ``Origin``
+    header on cross-site POST/PUT/PATCH/DELETE requests, so a request whose Origin is
+    neither Muse itself nor a listed frontend is refused. Requests without an Origin
+    (curl, Postman, server-to-server) carry no browser cookies and are allowed.
+    """
+
+    _STATE_CHANGING = {"POST", "PUT", "PATCH", "DELETE"}
+
+    def __init__(self, app: object, *, allowed_origins: list[str]) -> None:
+        super().__init__(app)  # type: ignore[arg-type]
+        self.allowed_origins = set(allowed_origins)
+
+    async def dispatch(
+        self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    ) -> Response:
+        origin = request.headers.get("origin")
+        if request.method not in self._STATE_CHANGING or origin is None:
+            return await call_next(request)
+
+        own_origin = f"{request.url.scheme}://{request.url.netloc}"  # e.g. Swagger at /docs
+        if origin.rstrip("/") in self.allowed_origins or origin.rstrip("/") == own_origin:
+            return await call_next(request)
+
+        logger.warning(
+            "cross-site request blocked", extra={"method": request.method, "path": request.url.path}
+        )
+        return JSONResponse(
+            status_code=status.HTTP_403_FORBIDDEN,
+            content={"detail": {"message": "Requests from this website are not allowed"}},
+        )

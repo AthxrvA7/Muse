@@ -20,6 +20,7 @@ from app.core.logging import configure_logging
 from app.core.middleware import RequestIDMiddleware
 from app.core.security import (
     FixedWindowRateLimiter,
+    OriginCheckMiddleware,
     RateLimitMiddleware,
     SecurityHeadersMiddleware,
 )
@@ -72,6 +73,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # Middleware runs outside-in in the reverse order of these lines: the last one added
     # sees the request first. Request IDs are outermost so every response, including
     # rejections, gets an ID and an access-log line.
+    app.add_middleware(OriginCheckMiddleware, allowed_origins=settings.allowed_origins)
     prefix = settings.api_v1_prefix
     app.add_middleware(
         RateLimitMiddleware,

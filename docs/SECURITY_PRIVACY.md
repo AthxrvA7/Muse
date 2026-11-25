@@ -35,13 +35,13 @@ Everything that crosses into the backend (request bodies, query strings, headers
 | T1 | **S**poofing | Attacker forges the OAuth callback (login CSRF) | Random `state` stored server-side, single use, 10-min TTL | `test_callback_rejects_bad_state` |
 | T2 | **S**poofing | Stolen session cookie | `httpOnly`, `Secure`, `SameSite=Lax`; 7-day idle expiry; ID rotated on login; logout deletes it server-side | auth security tests |
 | T3 | **T**ampering | NoSQL injection, e.g. `{"$ne": null}` in a body | Pydantic strict types; queries built from typed fields only | injection test |
-| T4 | **T**ampering | Cross-site request to `DELETE /me` | `SameSite=Lax` + JSON-only + `Origin` check on state-changing routes | CSRF test |
+| T4 | **T**ampering | Cross-site request to `DELETE /me` | `SameSite=Lax` + `Origin` check on state-changing routes | `tests/test_origin_check.py` |
 | T5 | **R**epudiation | "I didn't delete my account" | `audit_events` for login, logout, export, delete (no content) | audit test |
 | T6 | **I**nformation disclosure | Tokens or mood text in logs | Redaction filter; mood text never logged | log-redaction test |
 | T7 | **I**nformation disclosure | Database leak exposes tokens | Fernet encryption of tokens, plus Atlas encryption at rest; DB user limited to the `muse` database | encryption test |
 | T8 | **I**nformation disclosure | Stack traces in error responses | Global exception handler with a generic body | error-handling test |
 | T9 | **I**nformation disclosure | User A reads user B's session | Every repository query filters by `user_id` from the session, never from the request | access-control test |
-| T10 | **D**enial of service | Spamming `/curate` (each call makes ~20 Spotify requests) | Per-user and per-IP rate limits; candidate cap; request size limits | rate-limit test |
+| T10 | **D**enial of service | Spamming `/curate` (each call makes ~20 Spotify requests) | Per-IP rate limits (per-user after login); candidate cap; request size limits | `tests/test_rate_limit.py` |
 | T11 | **E**levation of privilege | Malicious dependency | Pinned versions, pip-audit, Dependabot, CodeQL | CI |
 | T12 | **E**levation of privilege | Leaked secret in git | `.gitignore`, secret scanning + push protection, rotation runbook | GitHub settings |
 

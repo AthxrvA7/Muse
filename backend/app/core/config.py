@@ -50,6 +50,16 @@ class Settings(BaseSettings):
     mongodb_db: str = Field(default="muse", pattern=r"^[A-Za-z0-9_-]{1,38}$")
     mongodb_timeout_ms: int = Field(default=5000, ge=500, le=30000)
 
+    # Browser origins allowed to call the API (the React frontend), comma-separated,
+    # e.g. "http://localhost:5173". Empty = no cross-origin browser access at all.
+    cors_origins: str = ""
+
+    # Requests per minute from one IP address. Curate is stricter because each call makes
+    # about 20 Spotify requests; auth is stricter to slow down abuse of the login flow.
+    rate_limit_per_minute: int = Field(default=120, ge=1)
+    rate_limit_curate_per_minute: int = Field(default=10, ge=1)
+    rate_limit_auth_per_minute: int = Field(default=10, ge=1)
+
     @field_validator("spotify_client_id", "spotify_client_secret", "mongodb_uri", mode="before")
     @classmethod
     def _empty_is_unset(cls, value: object) -> object:
@@ -59,6 +69,21 @@ class Settings(BaseSettings):
     @property
     def spotify_configured(self) -> bool:
         return bool(self.spotify_client_id and self.spotify_client_secret)
+
+    @property
+    def allowed_origins(self) -> list[str]:
+        return [
+            origin.strip().rstrip("/") for origin in self.cors_origins.split(",") if origin.strip()
+        ]
+
+    @field_validator("cors_origins")
+    @classmethod
+    def _check_origins(cls, value: str) -> str:
+        for origin in (part.strip() for part in value.split(",") if part.strip()):
+            if origin == "*" or not origin.startswith(("http://", "https://")):
+                # A wildcard would let any website call the API from a user's browser
+                raise ValueError("CORS_ORIGINS must list full origins like https://app.example.com")
+        return value
 
     @property
     def mongodb_configured(self) -> bool:

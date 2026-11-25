@@ -78,3 +78,13 @@ Never paste secrets, tokens or real user data into an AI tool.
 - **Changes made by us:** Created the Atlas M0 cluster (Mumbai), the database user and the IP allow-list myself, and kept the connection string only in `.env`. My first attempt saved the URI with an empty password, and the app refused to start with "A password is required"; I fixed `.env` and `/ready` then showed `"database": "ok"`. While writing the settings tests we found that a validation error would have printed the whole invalid value, password included, so settings errors now hide their input and logs mask passwords inside connection strings.
 - **Verification:** `pytest` (CI): 192 passed, 11 skipped. `pytest --db` on my laptop against Atlas: 203 passed, which was the first time the repository code ran against a real database. Checked `/ready` and the collections in Atlas by hand.
 - **Reflection:** The repository code couldn't be run against a real database in Claude's workspace, so the `--db` run on my laptop was the real check. The database tests take about a minute because every call goes to Atlas over the internet; CI skips them so it never needs the password.
+
+### 2026-11-25 — Security hardening (slice 3, `feature/security-hardening`)
+- **Member:** Atharva
+- **Tool:** Claude (Anthropic)
+- **Purpose:** code suggestion, testing
+- **Prompt (summary):** Add security headers, strict CORS, per-IP rate limiting and an Origin check for state-changing requests, before Spotify login adds cookies.
+- **Output used:** `backend/app/core/security.py`, middleware wiring in `main.py`, `CORS_ORIGINS` and rate-limit settings in `config.py`, `tests/test_security_headers.py`, `tests/test_rate_limit.py`, `tests/test_origin_check.py`.
+- **Changes made by us:** Chose a small hand-written fixed-window limiter instead of slowapi (ARCHITECTURE §8 updated) so the whole mechanism can be explained. Kept the strict Content-Security-Policy off `/docs`, because it blocked Swagger's scripts.
+- **Verification:** 217 tests pass (25 new): headers on every route, CORS preflight from allowed and other websites, 429 with `Retry-After`, a separate stricter curate budget, exempt health checks, and blocked look-alike origins.
+- **Reflection:** The Origin check only matters once there is a login cookie, which is why it goes in before `feature/spotify-auth`. The limiter lives in memory, so it resets on restart and won't work across several instances; that's fine for one instance and noted as the scale-out path.

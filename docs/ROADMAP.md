@@ -94,9 +94,10 @@ The app is built in vertical slices so a working "mood → explained songs" demo
 - [x] `docs: document MongoDB setup and database tests`
 
 ### `feature/security-hardening` 🅰
-- [ ] `feat(security): add security headers, strict CORS and rate limiting`
-- [ ] `feat(security): add origin check for state-changing requests`
-- [ ] `test(security): add header, CORS, rate-limit and CSRF tests`
+- [x] `feat(security): add security headers and strict CORS`
+- [x] `feat(security): add per-IP rate limiting`
+- [x] `feat(security): add origin check for state-changing requests`
+- [x] `docs: document security hardening`
 
 ### `feature/spotify-auth` 🅰
 - [ ] `feat(auth): add Spotify OAuth login and callback with state check`

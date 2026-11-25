@@ -28,8 +28,10 @@ from app.clients.spotify import (
 logger = logging.getLogger(__name__)
 
 AUTHORIZE_URL = "https://accounts.spotify.com/authorize"
-# The minimum Muse needs: create playlists and read the user's Spotify ID and name
-SCOPES = ("playlist-modify-private", "playlist-modify-public", "user-read-private")
+# The minimum Muse needs: create playlists, read the user's Spotify ID and name, and
+# read their top artists (only to suggest a taste profile the user then edits and saves)
+SCOPES = ("playlist-modify-private", "playlist-modify-public", "user-read-private", "user-top-read")
+TOP_ARTISTS_SCOPE = "user-top-read"
 MAX_ITEMS_PER_REQUEST = 100  # Spotify's limit for adding items to a playlist
 
 # Safety guard: the ONLY calls Muse may make with a user's token. Muse never deletes,
@@ -37,6 +39,7 @@ MAX_ITEMS_PER_REQUEST = 100  # Spotify's limit for adding items to a playlist
 # refused before it leaves the server (tested in test_spotify_user.py).
 ALLOWED_USER_CALLS = (
     ("GET", re.compile(r"^/me$")),  # read the user's Spotify ID and display name
+    ("GET", re.compile(r"^/me/top/artists$")),  # read-only: suggest a taste profile
     ("POST", re.compile(r"^/me/playlists$")),  # create a NEW playlist
     ("POST", re.compile(r"^/playlists/[A-Za-z0-9]+/items$")),  # add tracks to it
 )
@@ -69,6 +72,12 @@ class UserTokens:
 class SpotifyProfile:
     id: str
     display_name: str | None
+
+
+@dataclass(frozen=True)
+class TopArtist:
+    name: str
+    genres: list[str]  # often empty in Development Mode
 
 
 @dataclass(frozen=True)
@@ -151,6 +160,19 @@ class SpotifyUserClient:
         body = await self._request("GET", "/me")
         return SpotifyProfile(id=body["id"], display_name=body.get("display_name"))
 
+    async def top_artists(
+        self, limit: int = 10, time_range: str = "medium_term"
+    ) -> list[TopArtist]:
+        """The user's most-played artists (about the last 6 months). Read-only."""
+        body = await self._request(
+            "GET", "/me/top/artists", params={"limit": limit, "time_range": time_range}
+        )
+        return [
+            TopArtist(name=item["name"], genres=list(item.get("genres") or []))
+            for item in body.get("items", [])
+            if item.get("name")
+        ]
+
     async def create_playlist(self, name: str, description: str) -> CreatedPlaylist:
         """Creates a NEW private playlist in the user's account (Feb-2026 endpoint)."""
         body = await self._request(
@@ -176,7 +198,11 @@ class SpotifyUserClient:
             )
 
     async def _request(
-        self, method: str, path: str, json: dict[str, Any] | None = None
+        self,
+        method: str,
+        path: str,
+        json: dict[str, Any] | None = None,
+        params: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         if not any(method == m and pattern.match(path) for m, pattern in ALLOWED_USER_CALLS):
             raise ForbiddenCallError(f"Muse may not call {method} {path} with a user's token")
@@ -184,7 +210,7 @@ class SpotifyUserClient:
         while True:
             try:
                 response = await self._http.request(
-                    method, f"{API_URL}{path}", json=json, headers=self._headers
+                    method, f"{API_URL}{path}", json=json, params=params, headers=self._headers
                 )
             except httpx2.TransportError as error:
                 if retried or method != "GET":  # never repeat a write that may have happened

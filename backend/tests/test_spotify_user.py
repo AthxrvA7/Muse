@@ -157,6 +157,8 @@ async def test_a_failed_write_is_never_repeated() -> None:
         ("PUT", "/playlists/pl1"),
         ("GET", "/playlists/pl1/items"),
         ("GET", "/me/playlists"),
+        ("GET", "/me/top/tracks"),
+        ("GET", "/me/player/recently-played"),
         ("POST", "/me/library"),
     ],
 )
@@ -180,9 +182,37 @@ async def test_tracks_can_only_be_added_to_a_playlist_muse_just_created() -> Non
     assert recorder.requests == []
 
 
-def test_only_three_kinds_of_user_call_exist() -> None:
+def test_only_four_kinds_of_user_call_exist() -> None:
     assert [(m, p.pattern) for m, p in ALLOWED_USER_CALLS] == [
         ("GET", "^/me$"),
+        ("GET", "^/me/top/artists$"),
         ("POST", "^/me/playlists$"),
         ("POST", "^/playlists/[A-Za-z0-9]+/items$"),
     ]
+
+
+async def test_top_artists_are_read_with_the_users_token() -> None:
+    recorder = Recorder(
+        httpx2.Response(
+            200,
+            json={
+                "items": [
+                    {"name": "Arijit Singh", "genres": ["filmi", "modern bollywood"]},
+                    {"name": "Taylor Swift"},  # Development Mode often omits genres
+                ]
+            },
+        )
+    )
+
+    artists = await SpotifyUserClient(_http(recorder), "user-token").top_artists(limit=10)
+
+    assert [(a.name, a.genres) for a in artists] == [
+        ("Arijit Singh", ["filmi", "modern bollywood"]),
+        ("Taylor Swift", []),
+    ]
+    (request,) = recorder.requests
+    assert request.method == "GET"
+    assert request.url.path == "/v1/me/top/artists"
+    assert request.url.params["limit"] == "10"
+    assert request.url.params["time_range"] == "medium_term"
+    assert request.headers["Authorization"] == "Bearer user-token"

@@ -99,3 +99,32 @@ jobs:
         run: npm test
       - name: Production build
         run: npm run build
+
+  docker:
+    name: Docker
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Only build an image from code whose lint and tests passed
+    needs: [lint, test, frontend]
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Build the image and start Muse with MongoDB
+        # --wait returns once both containers report healthy (or fails after 2 minutes)
+        run: docker compose up --detach --build --wait --wait-timeout 120
+      - name: Smoke test the running container
+        run: |
+          curl --fail --silent --show-error http://127.0.0.1:8000/health
+          curl --fail --silent --show-error http://127.0.0.1:8000/ready | tee ready.json
+          grep -q '"status":"ready"' ready.json
+          curl --fail --silent --show-error http://127.0.0.1:8000/app/ | grep -q '<div id="root">'
+          test "$(docker compose exec -T api id -u)" = "10001" # not running as root
+          docker image ls muse:local
+      - name: Show container logs
+        if: failure()
+        run: docker compose logs
+      - name: Stop and remove containers
+        if: always()
+        run: docker compose down --volumes

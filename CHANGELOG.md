@@ -68,6 +68,14 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 - `GET /api/v1/mood/options`: mood chips with their valence and energy, and the modes, for clients
 - The built website is served at `/app/` by the backend (`FRONTEND_DIST`), with its own Content-Security-Policy
 
+### Engine fixes and a new look
+- Language and genre now come mainly from each artist's Last.fm tags (one lookup per artist), plus title words ("Tum Hi Ho" is Hindi) and the title's script; an artist's known language and genre fill their other songs
+- Stricter focus: songs in other languages or unrelated genres are left out unless there aren't enough; a single language in your taste is used automatically
+- Songs you know but whose listener-tagged feel doesn't fit the mood drop back
+- Last.fm rate-limit and key errors are no longer cached as "no tags"; fewer, better-ordered lookups
+- "Under the hood" on the playlist page shows how many songs had a known feel, language, genre and tempo
+- New look: dark and light themes with a toggle, burger menu, record-and-pulse logo, warm tangerine/mint palette, draggable mood orb, beating BPM dots, equaliser hover, turntable loading screen, confetti on save
+
 ### Coherent playlists
 - One language per playlist: chosen automatically from your songs and taste, or picked on Discover ("Mix languages" turns it off). Each song's language comes from Last.fm tags and the title's script
 - One genre per playlist, with close genres allowed: every genre now has a family in `genre_kb.json`, and families list related ones; unrelated genres are left out while there are enough songs. Pick a genre on Discover or let Muse choose

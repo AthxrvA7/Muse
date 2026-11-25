@@ -158,3 +158,13 @@ Never paste secrets, tokens or real user data into an AI tool.
 - **Changes made by us:** We chose the families and related families ourselves, kept "Mix languages" as an option, and made an explicitly chosen genre count more than an automatic one.
 - **Verification:** 339 backend tests and 12 website tests pass.
 - **Reflection:** Language and genre come from the same listener tags as mood, so one lookup per song now does three jobs.
+
+### 2026-11-26 — Engine fixes and redesign (`feature/engine-v3`)
+- **Member:** Atharva
+- **Tool:** Claude (Anthropic)
+- **Purpose:** debugging, code generation, UI design, testing
+- **Prompt (summary):** On the live site Hindi and English were still mixed, the genre wasn't holding and the vibe was off. I also wanted dark/light themes, a collapsible menu, a better logo, warmer colours and a more playful UI.
+- **Output used:** artist-level language/genre detection, title-word language hints, stricter focus rules, off-vibe penalty for known songs, a fix for Last.fm errors being cached, coverage diagnostics; theme tokens, burger drawer, logo, mood orb and micro-interactions.
+- **Changes made by us:** Chose the "late-night record store" palette and the record logo; kept the user's own songs even when Muse can't tell their language or genre.
+- **Verification:** 345 backend tests and 12 website tests pass; the site was clicked through in both themes and on the loading, playlist and menu screens.
+- **Reflection:** The coverage numbers turned a vague "it feels wrong" into something we can check: if language is known for few songs, the cause is missing data, not scoring.

@@ -1,0 +1,70 @@
+@import "tailwindcss";
+@import "@fontsource-variable/inter";
+@import "@fontsource-variable/fraunces";
+
+/* Muse design tokens: "soft digital sanctuary". Purple is the brand, green means
+   positive / success / Spotify, charcoal carries the text. */
+@theme {
+  --color-canvas: #faf9fc;
+  --color-surface: #ffffff;
+  --color-lavender: #c9b6f0;
+  --color-lavender-soft: #eae2f8;
+  --color-lavender-faint: #f4f0fb;
+  --color-plum: #6e58a8;
+  --color-plum-muted: #9883c5;
+  --color-ink: #201d27;
+  --color-ink-soft: #77717f;
+  --color-line: #e9e4ef;
+  --color-sage: #a8c9b0;
+  --color-sage-soft: #e6f0e8;
+  --color-moss: #547a60;
+  --color-danger: #b4475a;
+  --color-danger-soft: #fbe9ec;
+  --color-amber-soft: #fdf3dc;
+  --color-amber: #8a6100;
+
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Fraunces Variable", ui-serif, Georgia, serif;
+
+  --radius-xl: 1rem;
+  --radius-2xl: 1.25rem;
+  --radius-3xl: 1.75rem;
+
+  --shadow-soft: 0 1px 2px rgb(32 29 39 / 0.04), 0 8px 24px -12px rgb(110 88 168 / 0.18);
+  --shadow-lift: 0 2px 4px rgb(32 29 39 / 0.05), 0 18px 40px -18px rgb(110 88 168 / 0.35);
+}
+
+@layer base {
+  html {
+    background: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--color-canvas);
+  }
+  ::selection {
+    background: var(--color-lavender-soft);
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-plum);
+    outline-offset: 2px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@utility font-display {
+  font-family: var(--font-display);
+  font-optical-sizing: auto;
+  letter-spacing: -0.02em;
+}

@@ -64,6 +64,9 @@ CALM_REQUEST: dict[str, Any] = {
     "mood": {"chips": ["tired", "low"]},
     "taste": {"artists": ["Prateek Kuhad"], "genres": ["lo-fi", "metal", "indie folk"]},
     "size": 12,
+    # These fakes give songs no language, so these tests use a mixed-language playlist
+    # (the one-language rule has its own tests in test_focus.py)
+    "language": "mix",
 }
 
 

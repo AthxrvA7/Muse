@@ -2,8 +2,10 @@
 
 1. Language: "auto" picks the language with the most weight among the best candidates
    (so it follows the user's own songs and taste); a code forces it; "mix" turns this off.
-   Songs in another language are left out; songs of unknown language stay, slightly
-   lower, unless their genre is instrumental (language doesn't matter there).
+   The playlist then holds ONLY songs known to be in that language (plus instrumental
+   genres, where language doesn't matter). Songs of unknown language are never used:
+   a shorter playlist is better than a mixed one. (Curate searches for more songs in
+   the language first when there are too few.)
 2. Genre: the anchor is the genre with the most weight among the best candidates (or
    the one the user asked for). Each song gets a coherence 0-1 from genre_kb.json
    (same genre, same family, related family, unrelated) that nudges its score, and
@@ -22,10 +24,8 @@ from app.services.recommender.knowledge import GenreKnowledge
 from app.services.recommender.scoring import ScoredTrack
 
 VOTERS_PER_SLOT = 3  # the top (3 x playlist size) candidates vote for language and genre
-UNKNOWN_LANGUAGE_PENALTY = 0.1  # only used if the language's own songs are too few
 UNKNOWN_GENRE_PENALTY = 0.05
 PREFERRED_LANGUAGE_BOOST = 1.5  # languages in the user's taste count more in the auto vote
-OTHER_LANGUAGE_PENALTY = 0.3  # only used if there aren't enough songs in the language
 COHERENCE_WEIGHT = 0.3  # score += 0.3 x (coherence - 0.5): -0.15 .. +0.15
 CHOSEN_GENRE_WEIGHT = 0.6  # stronger when the user picked the genre themselves
 ROOM = 1.5  # leave unrelated genres out while 1.5x the playlist size remains
@@ -56,6 +56,21 @@ def _language_neutral(item: ScoredTrack, kb: GenreKnowledge) -> bool:
     return genre is not None and (not genre.langs or genre.family == "chill & instrumental")
 
 
+def choose_language(
+    scored: list[ScoredTrack], size: int, language: str = "auto", preferred: list[str] | None = None
+) -> str | None:
+    """The playlist's language: the one asked for, none for "mix", or for "auto" the
+    user's only taste language (if there are songs in it) or the best candidates' vote."""
+    if language == "mix":
+        return None
+    if language != "auto":
+        return language
+    preferred = preferred or []
+    if len(preferred) == 1 and sum(s.language == preferred[0] for s in scored) >= size // 2:
+        return preferred[0]
+    return _vote(scored, "language", size, frozenset(preferred))
+
+
 def focus_playlist(
     scored: list[ScoredTrack],
     size: int,
@@ -69,35 +84,15 @@ def focus_playlist(
     `preferred` are the languages in the user's taste: with exactly one, "auto" uses it
     (if there are songs in it); with several, they count more in the vote.
     """
-    preferred = preferred or []
-    target = None if language == "mix" else (language if language != "auto" else None)
-    if language == "auto":
-        in_preferred = [s for s in scored if len(preferred) == 1 and s.language == preferred[0]]
-        if len(in_preferred) >= size // 2:
-            target = preferred[0]
-        else:
-            target = _vote(scored, "language", size, frozenset(preferred))
+    target = choose_language(scored, size, language, preferred)
 
     pool = scored
-    if target:
-        same = [s for s in scored if s.language == target]
-        unknown = [s for s in scored if s.language is None]
-        neutral = [s for s in unknown if _language_neutral(s, kb)]
-        # Songs the user knows stay even when their language is unknown, a little lower
-        known = [s for s in unknown if s.known and not _language_neutral(s, kb)]
-        unsure = [s for s in unknown if not s.known and not _language_neutral(s, kb)]
-        for item in known:
-            item.score -= UNKNOWN_LANGUAGE_PENALTY
-        pool = same + neutral + known
-        if len(pool) < size * ROOM:  # need more choice: songs of unknown language, lower
-            for item in unsure:
-                item.score -= UNKNOWN_LANGUAGE_PENALTY
-            pool += unsure
-        if len(pool) < size:  # not enough in that language: let others fill, lower down
-            others = [s for s in scored if s.language not in (target, None)]
-            for item in others:
-                item.score -= OTHER_LANGUAGE_PENALTY
-            pool += others
+    if target:  # only songs known to be in the language, plus instrumental ones
+        pool = [
+            s
+            for s in scored
+            if s.language == target or (s.language is None and _language_neutral(s, kb))
+        ]
 
     # The anchor comes from songs in the playlist's language when there are any
     voters = [s for s in pool if s.language == target] if target else pool

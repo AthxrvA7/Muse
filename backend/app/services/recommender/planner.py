@@ -106,3 +106,25 @@ def plan_searches(
         plans += [genre_search(g, "discovery") for g in closest(allowed, DISCOVERY_GENRES)]
 
     return plans
+
+
+def language_searches(
+    mood: MoodProfile, language: str, kb: GenreKnowledge, skip: set[str], count: int = 4
+) -> list[SearchPlan]:
+    """Extra genre searches in one language, closest to the mood first (when a playlist
+    in that language would otherwise be short). `skip` holds genre ids already searched."""
+    target = MoodPoint(valence=mood.valence, energy=mood.energy)
+    genres = sorted(
+        (g for g, genre in kb.genres.items() if language in genre.langs and g not in skip),
+        key=lambda g: (len(kb.genres[g].langs), distance(kb.genres[g], target), g),
+    )[:count]
+    return [
+        SearchPlan(
+            kind="genre",
+            value=g,
+            reason="language",
+            query=build_query(genre=kb.genres[g].spotify_genre),
+            fallback_query=build_query(kb.genres[g].keywords),
+        )
+        for g in genres
+    ]

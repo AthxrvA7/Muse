@@ -37,7 +37,7 @@ from app.schemas.curate import (
     Taste,
     TasteOptions,
 )
-from app.schemas.mood import Mode
+from app.schemas.mood import Mode, MoodProfile
 from app.services.mood import get_mood_analyzer
 from app.services.mood.analyzer import MoodAnalyzer
 from app.services.recommender.candidates import (
@@ -46,9 +46,15 @@ from app.services.recommender.candidates import (
     gather_candidates,
 )
 from app.services.recommender.explain import explain
-from app.services.recommender.focus import TempoSource, add_tempo, focus_playlist
+from app.services.recommender.focus import (
+    ROOM,
+    TempoSource,
+    add_tempo,
+    choose_language,
+    focus_playlist,
+)
 from app.services.recommender.knowledge import GenreKnowledge, get_genre_knowledge
-from app.services.recommender.planner import SearchPlan, plan_searches
+from app.services.recommender.planner import SearchPlan, language_searches, plan_searches
 from app.services.recommender.ranking import pick_mixed
 from app.services.recommender.scoring import ScoredTrack, keep_allowed, score_candidates
 from app.services.recommender.tags import (
@@ -249,6 +255,37 @@ class CurateService:
         self._rng = rng or random.Random()  # noqa: S311 - variety, not security
         self._deezer = deezer
 
+    async def _score(
+        self, candidates: list[Candidate], mood: MoodProfile, taste: Taste, recently: set[str]
+    ) -> tuple[list[ScoredTrack], dict[str, TrackProfile]]:
+        """Profiles (Last.fm or fallback), scores, freshness and variety for candidates."""
+        if self._lastfm:
+            ordered = sorted(candidates, key=_tagging_order)
+            hints = {c.track.id: _hints(c, self._kb) for c in ordered}
+            profiles = await profile_tracks(
+                self._lastfm, [c.track for c in ordered], self._kb, hints=hints
+            )
+        else:
+            profiles = {c.track.id: _fallback_profile(c, self._kb) for c in candidates}
+        moods = {i: p.mood for i, p in profiles.items() if p.mood is not None}
+
+        scored = score_candidates(candidates, mood, taste, self._kb, self._analyzer, moods)
+        for item in scored:
+            if item.candidate.track.id in recently:
+                item.score -= RECENT_PENALTY
+            if self._variety:
+                item.score += self._rng.uniform(0, self._variety)
+            # A song you know but whose feel (per listeners) is wrong for now: less likely
+            if item.known and item.mood_source == "lastfm" and item.mood_fit < OFF_VIBE:
+                item.score -= OFF_VIBE_PENALTY
+            item.score = round(max(0.0, min(1.0, item.score)), 3)
+            profile = profiles.get(item.candidate.track.id) or _fallback_profile(
+                item.candidate, self._kb
+            )
+            item.genre, item.language = profile.genre, profile.language
+        _share_by_artist(scored)
+        return scored, profiles
+
     async def preview(
         self, request: CurateRequest, personal: Personal | None = None
     ) -> CuratePreview:
@@ -283,35 +320,32 @@ class CurateService:
             c for c in keep_allowed(_merge(searched, familiar), taste) if c.track.id not in excluded
         ]
 
-        if self._lastfm:
-            ordered = sorted(candidates, key=_tagging_order)
-            hints = {c.track.id: _hints(c, self._kb) for c in ordered}
-            profiles = await profile_tracks(
-                self._lastfm, [c.track for c in ordered], self._kb, hints=hints
-            )
-        else:
-            profiles = {c.track.id: _fallback_profile(c, self._kb) for c in candidates}
-        moods = {i: p.mood for i, p in profiles.items() if p.mood is not None}
-
-        scored = score_candidates(candidates, mood, taste, self._kb, self._analyzer, moods)
         recently = set(recent_ids)
-        for item in scored:
-            if item.candidate.track.id in recently:
-                item.score -= RECENT_PENALTY
-            if self._variety:
-                item.score += self._rng.uniform(0, self._variety)
-            # A song you know but whose feel (per listeners) is wrong for now: less likely
-            if item.known and item.mood_source == "lastfm" and item.mood_fit < OFF_VIBE:
-                item.score -= OFF_VIBE_PENALTY
-            item.score = round(max(0.0, min(1.0, item.score)), 3)
-            profile = profiles.get(item.candidate.track.id) or _fallback_profile(
-                item.candidate, self._kb
-            )
-            item.genre, item.language = profile.genre, profile.language
+        scored, profiles = await self._score(candidates, mood, taste, recently)
 
-        _share_by_artist(scored)
+        # One language per playlist: if too few songs are known to be in it, search more
+        target = choose_language(scored, request.size, request.language, taste.languages)
+        in_language = sum(1 for s in scored if s.language == target)
+        if target and in_language < request.size * ROOM:
+            searched_genres = {p.value for p in plans if p.kind == "genre"}
+            more_plans = language_searches(mood, target, self._kb, searched_genres)
+            seen = {c.track.id for c in candidates} | excluded
+            more = [
+                c
+                for c in keep_allowed(await gather_candidates(self._spotify, more_plans), taste)
+                if c.track.id not in seen
+            ]
+            if more:
+                plans += more_plans
+                candidates += more
+                more_scored, more_profiles = await self._score(more, mood, taste, recently)
+                scored += more_scored
+                profiles |= more_profiles
+                _share_by_artist(scored)
+
+        moods = {i: p.mood for i, p in profiles.items() if p.mood is not None}
         scored, focus = focus_playlist(
-            scored, request.size, self._kb, request.language, request.genre, taste.languages
+            scored, request.size, self._kb, target or "mix", request.genre, taste.languages
         )
         if self._deezer:
             await add_tempo(self._deezer, scored, mood.tempo, request.size)
@@ -351,7 +385,13 @@ class CurateService:
             for item in picked
         ]
         note = None
-        if len(tracks) < request.size:
+        if len(tracks) < request.size and focus.language:
+            name = self._kb.languages.get(focus.language, focus.language)
+            note = (
+                f"Found {len(tracks)} {name} songs that fit. Muse only uses songs it knows are "
+                f"in {name}; add {name} artists to your Music DNA for longer playlists."
+            )
+        elif len(tracks) < request.size:
             note = (
                 f"Found {len(tracks)} of {request.size} tracks. "
                 "Try adding artists or genres, or allowing explicit songs."

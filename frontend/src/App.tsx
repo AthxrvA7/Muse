@@ -3,9 +3,9 @@ import { Toaster } from "sonner";
 
 import { Layout } from "@/components/Layout";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { Sparkles } from "lucide-react";
-
-import { EmptyState } from "@/components/EmptyState";
+import Curate from "@/pages/Curate";
+import Discover from "@/pages/Discover";
+import Results from "@/pages/Results";
 import { AppStateProvider } from "@/state/AppState";
 
 // Hash routing (/app/#/dna) keeps every page reachable on refresh without server rules
@@ -16,14 +16,10 @@ export default function App() {
         <HashRouter>
           <Routes>
             <Route element={<Layout />}>
-              <Route
-                path="*"
-                element={
-                  <EmptyState icon={Sparkles} title="Muse is being set up">
-                    The design system, API layer and demo mode are in place. Pages arrive next.
-                  </EmptyState>
-                }
-              />
+              <Route index element={<Discover />} />
+              <Route path="curate" element={<Curate />} />
+              <Route path="results" element={<Results />} />
+              <Route path="*" element={<Discover />} />
             </Route>
           </Routes>
         </HashRouter>

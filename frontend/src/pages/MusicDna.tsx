@@ -225,7 +225,7 @@ export default function MusicDna() {
                 const on = prefs.genres.includes(g.id);
                 return (
                   <motion.button layout key={g.id} type="button" whileTap={{ scale: 0.95 }} onClick={() => toggle("genres", g.id)} aria-pressed={on}
-                    className={cn("rounded-full border px-3.5 py-1.5 text-sm transition", on ? "border-plum bg-plum text-white shadow-soft" : "border-line bg-surface hover:border-lavender hover:bg-lavender-faint")}>
+                    className={cn("rounded-full border px-3.5 py-1.5 text-sm transition", on ? "border-plum bg-plum text-on-accent shadow-soft" : "border-line bg-surface hover:border-lavender hover:bg-lavender-faint")}>
                     {g.name}
                   </motion.button>
                 );

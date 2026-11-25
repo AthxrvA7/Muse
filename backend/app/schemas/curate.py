@@ -117,6 +117,16 @@ class CuratedTrack(BaseModel):
     language: str | None = Field(default=None, description="The song's language, when known")
 
 
+class Coverage(BaseModel):
+    """How much Muse knew about the songs it considered (for transparency and debugging)."""
+
+    candidates: int = 0
+    with_mood: int = Field(default=0, description="Songs with a mood from listener tags")
+    with_language: int = Field(default=0, description="Songs whose language Muse could tell")
+    with_genre: int = Field(default=0, description="Songs whose genre Muse could tell")
+    with_tempo: int = Field(default=0, description="Songs with a BPM from Deezer")
+
+
 class CuratePreview(BaseModel):
     mood: MoodProfile
     tracks: list[CuratedTrack]
@@ -143,6 +153,7 @@ class CuratePreview(BaseModel):
         default=None, description="The playlist's language (None: mixed or unknown)"
     )
     genre: str | None = Field(default=None, description="The genre the playlist is built around")
+    coverage: Coverage = Field(default_factory=Coverage)
 
 
 class GenreOption(BaseModel):

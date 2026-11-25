@@ -3,6 +3,7 @@ import { AlertCircle, Check, Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 
+import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { api } from "@/lib/api/services";
@@ -69,7 +70,19 @@ export default function Curate() {
 
   return (
     <div className="mx-auto max-w-xl py-6">
-      <p className="text-center text-sm font-medium text-plum">Muse is listening</p>
+      {/* A record on a turntable: spins while Muse works, the arm drops in */}
+      <div className="relative mx-auto mb-6 size-40" aria-hidden="true">
+        <Logo className="size-40" spinning={!error} />
+        <motion.div
+          className="absolute -right-3 top-1 h-24 w-2 origin-top rounded-full bg-ink-soft"
+          initial={{ rotate: -35 }}
+          animate={{ rotate: error ? -35 : 18 }}
+          transition={{ type: "spring", stiffness: 120, damping: 12, delay: 0.3 }}
+        >
+          <span className="absolute -bottom-1 -left-1 size-4 rounded-sm bg-plum" />
+        </motion.div>
+      </div>
+      <p className="text-center text-sm font-semibold uppercase tracking-[0.18em] text-plum">Muse is listening</p>
       <AnimatePresence mode="wait">
         <motion.h1
           key={error ? "error" : Math.min(step, STEPS.length - 1)}
@@ -100,7 +113,7 @@ export default function Curate() {
                 <span
                   className={cn(
                     "grid size-7 shrink-0 place-items-center rounded-full text-xs font-semibold",
-                    done ? "bg-moss text-white" : active ? "bg-plum text-white" : "bg-lavender-faint text-ink-soft",
+                    done ? "bg-moss text-on-accent" : active ? "bg-plum text-on-accent" : "bg-lavender-faint text-ink-soft",
                   )}
                 >
                   {done ? <Check className="size-4" /> : active ? <Loader2 className="size-4 animate-spin" /> : i + 1}

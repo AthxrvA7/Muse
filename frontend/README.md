@@ -77,4 +77,6 @@ src/
   index.css               design tokens (palette, fonts, shadows)
 ```
 
-**Design tokens** (in `index.css`): background `#FAF9FC`, lavender `#C9B6F0` / `#EAE2F8`, deep purple `#6E58A8`, text `#201D27` / `#77717F`, border `#E9E4EF`, sage `#A8C9B0`, deep green `#547A60`. Purple is the brand; green means success, positive states and Spotify. Fonts: Inter (UI) and Fraunces (display), bundled with the site.
+**Design tokens** (in `index.css`): a "late-night record store" look with a dark theme (warm vinyl black `#12100E`, cream text `#F4ECE2`) and a light theme (paper `#F5EFE6`, ink `#221B16`). The accent is a tangerine needle (`#FF7A45` dark / `#E4572E` light) with coral `#FF6B81`; mint (`#3DDC97` / `#13875A`) means success, positive states and Spotify. Every colour is a CSS variable, so the theme toggle (top bar; remembered per browser, defaulting to the device setting) switches the whole site. Fonts: Inter (UI) and Fraunces (display), bundled with the site.
+
+**Interactions:** burger menu with a slide-in drawer (Esc or tap outside to close), a draggable mood orb whose colour follows positivity and whose pulse follows energy, wiggling mood chips, an equaliser on hovered tracks, a dot that beats at each song's own BPM, a spinning record while Muse curates, and a burst of notes when a playlist is saved. All motion respects "reduce motion".

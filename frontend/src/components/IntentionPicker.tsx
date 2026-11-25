@@ -26,7 +26,7 @@ export function IntentionPicker({ value, onChange }: { value: string; onChange: 
               on ? "border-moss/50 bg-sage-soft shadow-soft" : "border-line bg-surface hover:border-sage hover:bg-sage-soft/40",
             )}
           >
-            <span className={cn("grid size-8 place-items-center rounded-xl", on ? "bg-moss text-white" : "bg-sage-soft text-moss")}>
+            <span className={cn("grid size-8 place-items-center rounded-xl", on ? "bg-moss text-on-accent" : "bg-sage-soft text-moss")}>
               <Icon className="size-4" />
             </span>
             <span className="text-sm font-semibold text-ink">{intention.label}</span>

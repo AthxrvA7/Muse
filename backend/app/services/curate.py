@@ -16,6 +16,7 @@ IDs it recently picked, so the next playlist isn't the same one again.
 import asyncio
 import logging
 import random
+from collections import Counter
 from collections.abc import AsyncIterator
 from dataclasses import dataclass
 from typing import Annotated, Protocol
@@ -28,6 +29,7 @@ from app.clients.lastfm import LastFmClient
 from app.clients.spotify import SpotifyClient, SpotifyError
 from app.schemas.catalog import Track
 from app.schemas.curate import (
+    Coverage,
     CuratedTrack,
     CuratePreview,
     CurateRequest,
@@ -48,8 +50,14 @@ from app.services.recommender.focus import TempoSource, add_tempo, focus_playlis
 from app.services.recommender.knowledge import GenreKnowledge, get_genre_knowledge
 from app.services.recommender.planner import SearchPlan, plan_searches
 from app.services.recommender.ranking import pick_mixed
-from app.services.recommender.scoring import keep_allowed, score_candidates
-from app.services.recommender.tags import TrackProfile, profile_tracks, script_language
+from app.services.recommender.scoring import ScoredTrack, keep_allowed, score_candidates
+from app.services.recommender.tags import (
+    Hints,
+    TrackProfile,
+    decide_genre,
+    decide_language,
+    profile_tracks,
+)
 from app.services.spotify_session import open_spotify
 
 logger = logging.getLogger(__name__)
@@ -66,6 +74,8 @@ SIMILAR_FROM_FAVOURITES = 3  # ask Last.fm about this many favourite artists
 SIMILAR_PER_FAVOURITE = 6
 RECENT_PENALTY = 0.15  # picked for this user recently: still possible, but less likely
 VARIETY = 0.04  # random nudge, so equally good songs take turns
+OFF_VIBE = 0.45  # a known song whose listener-tagged feel fits worse than this...
+OFF_VIBE_PENALTY = 0.15  # ...drops back, so familiar songs still match the mood
 
 
 class UnknownTasteError(ValueError):
@@ -163,25 +173,61 @@ def _merge(searched: list[Candidate], familiar: list[Candidate]) -> list[Candida
     return list(merged.values())
 
 
-def _fallback_profile(candidate: Candidate, kb: GenreKnowledge) -> TrackProfile:
-    """Without Last.fm: the genre search that found the song, and the title's script."""
+def _hints(candidate: Candidate, kb: GenreKnowledge) -> Hints:
+    """What the search that found a song says: its genre, and that genre's language."""
     genre = next(
         (p.value for p in candidate.sources if p.kind == "genre" and p.value in kb.genres), None
     )
-    track = candidate.track
-    language = script_language(track.name + " " + " ".join(a.name for a in track.artists))
-    if language is None and genre and len(kb.genres[genre].langs) == 1:
-        language = kb.genres[genre].langs[0]
-    return TrackProfile(mood=None, genre=genre, language=language)
+    language = kb.genres[genre].langs[0] if genre and len(kb.genres[genre].langs) == 1 else None
+    return Hints(genre=genre, language=language)
 
 
-def _tagging_order(candidate: Candidate) -> int:
+def _fallback_profile(candidate: Candidate, kb: GenreKnowledge) -> TrackProfile:
+    """Without Last.fm: the search that found the song, its title words and script."""
+    hint = _hints(candidate, kb)
+    return TrackProfile(
+        mood=None,
+        genre=decide_genre([], [], kb, hint.genre),
+        language=decide_language(candidate.track, [], [], kb, hint.language),
+    )
+
+
+def _tagging_order(candidate: Candidate) -> tuple[int, int]:
     """Look up the songs most likely to be picked first (Last.fm has a time budget)."""
     reasons = {plan.reason for plan in candidate.sources}
     for position, reason in enumerate(("familiar", "favourite_artist", "similar_artist")):
         if reason in reasons:
-            return position
-    return 3
+            return position, candidate.best_rank
+    return 3, candidate.best_rank
+
+
+def _share_by_artist(scored: list[ScoredTrack]) -> None:
+    """A song whose language or genre is unknown takes its artist's usual one."""
+    by_artist: dict[str, dict[str, Counter[str]]] = {}
+    for item in scored:
+        artist = item.candidate.track.artists[0].id if item.candidate.track.artists else ""
+        seen = by_artist.setdefault(artist, {"language": Counter(), "genre": Counter()})
+        if item.language:
+            seen["language"][item.language] += 1
+        if item.genre:
+            seen["genre"][item.genre] += 1
+    for item in scored:
+        artist = item.candidate.track.artists[0].id if item.candidate.track.artists else ""
+        seen = by_artist.get(artist)
+        if not seen:
+            continue
+        if not item.language and seen["language"]:
+            item.language = seen["language"].most_common(1)[0][0]
+        if not item.genre and seen["genre"]:
+            item.genre = seen["genre"].most_common(1)[0][0]
+
+
+def _planning_taste(taste: Taste, request: CurateRequest) -> Taste:
+    """A chosen genre or language is searched for too, and counts as part of the taste."""
+    genres = list(dict.fromkeys(([request.genre] if request.genre else []) + taste.genres))
+    chosen = request.language not in ("auto", "mix")
+    languages = list(dict.fromkeys(([request.language] if chosen else []) + taste.languages))
+    return taste.model_copy(update={"genres": genres[:10], "languages": languages[:5]})
 
 
 class CurateService:
@@ -229,6 +275,7 @@ class CurateService:
             similar_task, familiar_task, recent_task
         )
 
+        taste = _planning_taste(taste, request)
         plans = plan_searches(mood, taste, self._kb, similar)
         searched = await gather_candidates(self._spotify, plans)
         excluded = set(request.exclude_track_ids)
@@ -236,10 +283,14 @@ class CurateService:
             c for c in keep_allowed(_merge(searched, familiar), taste) if c.track.id not in excluded
         ]
 
-        profiles: dict[str, TrackProfile] = {}
         if self._lastfm:
             ordered = sorted(candidates, key=_tagging_order)
-            profiles = await profile_tracks(self._lastfm, [c.track for c in ordered], self._kb)
+            hints = {c.track.id: _hints(c, self._kb) for c in ordered}
+            profiles = await profile_tracks(
+                self._lastfm, [c.track for c in ordered], self._kb, hints=hints
+            )
+        else:
+            profiles = {c.track.id: _fallback_profile(c, self._kb) for c in candidates}
         moods = {i: p.mood for i, p in profiles.items() if p.mood is not None}
 
         scored = score_candidates(candidates, mood, taste, self._kb, self._analyzer, moods)
@@ -249,14 +300,18 @@ class CurateService:
                 item.score -= RECENT_PENALTY
             if self._variety:
                 item.score += self._rng.uniform(0, self._variety)
+            # A song you know but whose feel (per listeners) is wrong for now: less likely
+            if item.known and item.mood_source == "lastfm" and item.mood_fit < OFF_VIBE:
+                item.score -= OFF_VIBE_PENALTY
             item.score = round(max(0.0, min(1.0, item.score)), 3)
-            profile = profiles.get(item.candidate.track.id)
-            fallback = _fallback_profile(item.candidate, self._kb)
-            item.genre = (profile.genre if profile else None) or fallback.genre
-            item.language = (profile.language if profile else None) or fallback.language
+            profile = profiles.get(item.candidate.track.id) or _fallback_profile(
+                item.candidate, self._kb
+            )
+            item.genre, item.language = profile.genre, profile.language
 
+        _share_by_artist(scored)
         scored, focus = focus_playlist(
-            scored, request.size, self._kb, request.language, request.genre
+            scored, request.size, self._kb, request.language, request.genre, taste.languages
         )
         if self._deezer:
             await add_tempo(self._deezer, scored, mood.tempo, request.size)
@@ -265,6 +320,14 @@ class CurateService:
             request.familiarity if request.familiarity is not None else MODE_FAMILIARITY[mood.mode]
         )
         picked = pick_mixed(scored, request.size, familiarity)
+        coverage = Coverage(
+            candidates=len(candidates),
+            with_mood=len(moods),
+            with_language=sum(1 for p in profiles.values() if p.language),
+            with_genre=sum(1 for p in profiles.values() if p.genre),
+            with_tempo=sum(1 for s in scored if s.bpm),
+        )
+        logger.info("Curated", extra={"coverage": coverage.model_dump(), "focus": focus.__dict__})
         if recent and personal and picked:
             try:
                 await recent.remember(personal.user_id, [p.candidate.track.id for p in picked])
@@ -305,6 +368,7 @@ class CurateService:
             similar_artists=list(similar),
             language=focus.language,
             genre=focus.genre,
+            coverage=coverage,
         )
 
 

@@ -29,15 +29,25 @@ export function TrackRow({ item, index, onRemove }: { item: CuratedTrack; index:
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, x: -24, transition: { duration: 0.18 } }}
       transition={{ delay: Math.min(index * 0.03, 0.4) }}
-      className="group rounded-2xl border border-transparent bg-surface transition hover:border-line hover:shadow-soft"
+      whileHover={{ x: 4 }}
+      className="group rounded-2xl border border-transparent bg-surface transition-colors hover:border-plum/30 hover:bg-raised hover:shadow-soft"
     >
       <div className="flex items-center gap-3 p-2.5 sm:gap-4">
-        <span className="hidden w-6 text-right text-sm tabular-nums text-ink-soft sm:block">{index + 1}</span>
-        {track.image_url ? (
-          <img src={track.image_url} alt="" className="size-12 shrink-0 rounded-xl object-cover sm:size-14" loading="lazy" />
-        ) : (
-          <div className="size-12 shrink-0 rounded-xl bg-gradient-to-br from-lavender to-sage sm:size-14" />
-        )}
+        <span className="relative hidden h-5 w-6 sm:block">
+          <span className="absolute inset-0 text-right text-sm tabular-nums text-ink-soft transition group-hover:opacity-0">{index + 1}</span>
+          <span className="absolute inset-0 flex items-end justify-end gap-[2px] opacity-0 transition group-hover:opacity-100" aria-hidden="true">
+            {[0, 0.2, 0.1, 0.3].map((delay) => (
+              <span key={delay} className="eq-bar h-4 w-[3px] rounded-full bg-plum" style={{ animationDelay: `${delay}s` }} />
+            ))}
+          </span>
+        </span>
+        <motion.div whileHover={{ rotate: -4, scale: 1.06 }} className="relative shrink-0">
+          {track.image_url ? (
+            <img src={track.image_url} alt="" className="size-12 rounded-xl object-cover shadow-soft sm:size-14" loading="lazy" />
+          ) : (
+            <div className="size-12 rounded-xl bg-gradient-to-br from-plum to-coral sm:size-14" />
+          )}
+        </motion.div>
         <button
           type="button"
           onClick={() => setOpen((o) => !o)}
@@ -48,7 +58,15 @@ export function TrackRow({ item, index, onRemove }: { item: CuratedTrack; index:
             <span className="truncate font-semibold text-ink">{track.name}</span>
             {track.explicit && <span className="rounded bg-ink-soft/20 px-1 text-[10px] font-bold text-ink-soft">E</span>}
             {!!item.bpm && (
-              <span className="shrink-0 rounded-full bg-surface px-2 py-0.5 text-[10px] font-semibold tabular-nums text-ink-soft ring-1 ring-line">
+              <span
+                className="inline-flex shrink-0 items-center gap-1 rounded-full bg-canvas px-2 py-0.5 text-[10px] font-semibold tabular-nums text-ink-soft ring-1 ring-line"
+                title={`${Math.round(item.bpm)} beats per minute`}
+              >
+                <span
+                  className="beat size-1.5 rounded-full bg-coral"
+                  style={{ "--beat": `${(60 / item.bpm).toFixed(3)}s` } as React.CSSProperties}
+                  aria-hidden="true"
+                />
                 {Math.round(item.bpm)} BPM{item.tempo ? ` · ${item.tempo}` : ""}
               </span>
             )}

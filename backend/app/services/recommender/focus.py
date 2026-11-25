@@ -22,7 +22,9 @@ from app.services.recommender.knowledge import GenreKnowledge
 from app.services.recommender.scoring import ScoredTrack
 
 VOTERS_PER_SLOT = 3  # the top (3 x playlist size) candidates vote for language and genre
-UNKNOWN_LANGUAGE_PENALTY = 0.08
+UNKNOWN_LANGUAGE_PENALTY = 0.1  # only used if the language's own songs are too few
+UNKNOWN_GENRE_PENALTY = 0.05
+PREFERRED_LANGUAGE_BOOST = 1.5  # languages in the user's taste count more in the auto vote
 OTHER_LANGUAGE_PENALTY = 0.3  # only used if there aren't enough songs in the language
 COHERENCE_WEIGHT = 0.3  # score += 0.3 x (coherence - 0.5): -0.15 .. +0.15
 CHOSEN_GENRE_WEIGHT = 0.6  # stronger when the user picked the genre themselves
@@ -38,12 +40,14 @@ class Focus:
     genre: str | None
 
 
-def _vote(items: list[ScoredTrack], key: str, size: int) -> str | None:
+def _vote(
+    items: list[ScoredTrack], key: str, size: int, boost: frozenset[str] = frozenset()
+) -> str | None:
     weights: dict[str, float] = defaultdict(float)
     for item in sorted(items, key=lambda s: -s.score)[: size * VOTERS_PER_SLOT]:
         value = getattr(item, key)
         if value:
-            weights[value] += item.score
+            weights[value] += item.score * (PREFERRED_LANGUAGE_BOOST if value in boost else 1.0)
     return max(weights, key=lambda v: (weights[v], v)) if weights else None
 
 
@@ -58,20 +62,37 @@ def focus_playlist(
     kb: GenreKnowledge,
     language: str = "auto",
     genre: str | None = None,
+    preferred: list[str] | None = None,
 ) -> tuple[list[ScoredTrack], Focus]:
-    """Scores adjusted and off-language / off-genre songs removed (while enough remain)."""
+    """Scores adjusted and off-language / off-genre songs removed (while enough remain).
+
+    `preferred` are the languages in the user's taste: with exactly one, "auto" uses it
+    (if there are songs in it); with several, they count more in the vote.
+    """
+    preferred = preferred or []
     target = None if language == "mix" else (language if language != "auto" else None)
     if language == "auto":
-        target = _vote(scored, "language", size)
+        in_preferred = [s for s in scored if len(preferred) == 1 and s.language == preferred[0]]
+        if len(in_preferred) >= size // 2:
+            target = preferred[0]
+        else:
+            target = _vote(scored, "language", size, frozenset(preferred))
 
     pool = scored
     if target:
         same = [s for s in scored if s.language == target]
         unknown = [s for s in scored if s.language is None]
-        for item in unknown:
-            if not _language_neutral(item, kb):
+        neutral = [s for s in unknown if _language_neutral(s, kb)]
+        # Songs the user knows stay even when their language is unknown, a little lower
+        known = [s for s in unknown if s.known and not _language_neutral(s, kb)]
+        unsure = [s for s in unknown if not s.known and not _language_neutral(s, kb)]
+        for item in known:
+            item.score -= UNKNOWN_LANGUAGE_PENALTY
+        pool = same + neutral + known
+        if len(pool) < size * ROOM:  # need more choice: songs of unknown language, lower
+            for item in unsure:
                 item.score -= UNKNOWN_LANGUAGE_PENALTY
-        pool = same + unknown
+            pool += unsure
         if len(pool) < size:  # not enough in that language: let others fill, lower down
             others = [s for s in scored if s.language not in (target, None)]
             for item in others:
@@ -87,9 +108,18 @@ def focus_playlist(
         fits = {id(item): kb.coherence(item.genre, anchor) for item in pool}
         for item in pool:
             item.score += weight * (fits[id(item)] - 0.5)
-        related = [s for s in pool if fits[id(s)] > 0]
-        if len(related) >= size * ROOM:
-            pool = related
+        # Same or related genres; songs the user knows count as close when their genre is
+        # unknown (their own taste is never "off-genre" just because Muse can't tell)
+        close = [s for s in pool if (s.genre and fits[id(s)] > 0) or (s.known and not s.genre)]
+        unknown_genre = [s for s in pool if not s.genre and not s.known]
+        unrelated = [s for s in pool if s.genre and fits[id(s)] == 0]
+        pool = close
+        if len(pool) < size * ROOM:
+            for item in unknown_genre:
+                item.score -= UNKNOWN_GENRE_PENALTY
+            pool += unknown_genre
+        if len(pool) < size:
+            pool += unrelated
 
     for item in pool:
         item.score = round(max(0.0, min(1.0, item.score)), 3)

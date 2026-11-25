@@ -61,7 +61,7 @@ class LastFm:
         return SAD if "sad" in track.lower() else PARTY
 
     async def artist_tags(self, artist: str) -> list[Tag]:
-        return []
+        return [Tag("indie folk", 100)]  # every artist here is English indie folk
 
 
 class TopTracks:
@@ -219,6 +219,9 @@ async def test_spotify_or_last_fm_trouble_still_gives_a_playlist() -> None:
             raise RuntimeError("down")
 
         async def similar_artists(self, artist: str, limit: int = 8) -> list[str]:
+            raise RuntimeError("down")
+
+        async def artist_tags(self, artist: str) -> list[Tag]:
             raise RuntimeError("down")
 
     preview = await service(Broken()).preview(

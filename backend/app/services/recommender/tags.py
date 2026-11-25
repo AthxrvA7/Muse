@@ -152,13 +152,146 @@ def mood_from_tags(
     )
 
 
+def _words(text: str) -> frozenset[str]:
+    return frozenset(text.split())
+
+
+# Words that give a romanised title away (most Hindi and Punjabi songs on Spotify are
+# written in Latin letters, so the script alone can't tell)
+HINDI_WORDS = _words(
+    "mereya channa raataan lambiyan hawayein pehla nasha kalank khairiyat humsafar "
+    "bekhayali shayad hawa kaun tujhpe chaiyya chhaiya mahiya sooraj chaand "
+    "hai hain mein main tum tumhe tumse tera tere teri mera mere meri dil pyaar pyar "
+    "ishq jaan zindagi kya nahi nahin yeh woh aankhein aankhon ankhon sajna sanam yaara "
+    "raat baarish baarishein khwab duniya mohabbat tujhe mujhe tujhko hum humko kabhi "
+    "jab bin tu kaise kyun dekha chal chalo aaja jaana jaane maahi mahi rabba khuda ek "
+    "aur bhi kar karle hoon hoga tha thi phir saath pal lamhe dard yaad yaadein bewafa "
+    "kesariya mann naina nain jiya piya sajan kahani galliyan shaam subah sapne bahut "
+    "pehli dobara zara thoda dooriyan tujh mujh jahan jaha tujhse mujhse khamoshiyan "
+    "judaa milke tujhme humnava hamari tumhari humari meherbaan ishqa raabta kabira "
+    "ilahi agar teraa "
+)
+PUNJABI_WORDS = _words(
+    "tenu mainu tainu jatt gabru kudi munda lagdi pind sardar nachna sohneya soniye "
+    "mutiyaar wargi jehi vekh dekhda karda kardi rehnda rehndi chann pyaar ve "
+)
+ENGLISH_WORDS = _words(
+    "the you your me my i i'm im love and of in to it is on for with we all be this that "
+    "night heart baby don't dont can't cant feel like what when how never know girl time "
+    "life go one just want need home light day dream away back up down out good bad "
+    "little still again forever alone world without everything nothing somebody someone "
+    "tonight yeah oh are was were been am she he they them her his our us do does did "
+    "not no yes if so too more over under into from about after before every "
+)
+
+
+def title_language(name: str) -> str | None:
+    """A guess from the words of a title: 'Tum Hi Ho' -> hi, 'Shape of You' -> en."""
+    words = re.findall(r"[a-z']+", clean_title(name).lower())
+    hindi = sum(w in HINDI_WORDS for w in words)
+    punjabi = sum(w in PUNJABI_WORDS and w not in HINDI_WORDS for w in words)
+    english = sum(w in ENGLISH_WORDS for w in words)
+    if punjabi and punjabi + hindi > english:
+        return "pa"
+    if hindi > english:
+        return "hi"
+    if english > hindi:
+        return "en"
+    return None
+
+
+def _language_votes(tags: list[Tag], genre_kb: GenreKnowledge) -> dict[str, float]:
+    """Shares (summing to 1) of how much the tags point to each language."""
+    votes: dict[str, float] = {}
+    for tag in tags:
+        if tag.count < MIN_TAG_COUNT:
+            continue
+        if tag.name in LANGUAGE_TAGS:
+            language, weight = LANGUAGE_TAGS[tag.name], float(tag.count)
+        elif (genre_id := match_genre(tag.name, genre_kb)) and len(
+            langs := genre_kb.genres[genre_id].langs
+        ) == 1:
+            language, weight = langs[0], tag.count * 0.6
+        else:
+            continue
+        votes[language] = votes.get(language, 0.0) + weight
+    total = sum(votes.values())
+    return {code: weight / total for code, weight in votes.items()} if total else {}
+
+
+def _genre_votes(tags: list[Tag], genre_kb: GenreKnowledge) -> dict[str, float]:
+    votes: dict[str, float] = {}
+    for tag in tags:
+        if tag.count >= MIN_TAG_COUNT and (genre_id := match_genre(tag.name, genre_kb)):
+            votes[genre_id] = votes.get(genre_id, 0.0) + tag.count
+    total = sum(votes.values())
+    return {g: weight / total for g, weight in votes.items()} if total else {}
+
+
+@dataclass(frozen=True)
+class Hints:
+    """What Muse already knows about a song without Last.fm (the search that found it)."""
+
+    genre: str | None = None
+    language: str | None = None
+
+
+def decide_language(
+    track: Track,
+    own: list[Tag],
+    artist: list[Tag],
+    genre_kb: GenreKnowledge,
+    hint: str | None = None,
+) -> str | None:
+    """Script decides outright; otherwise artist tags, song tags, title words and the
+    search that found it vote. Needs a clear winner, or the language stays unknown."""
+    names = track.name + " " + " ".join(a.name for a in track.artists)
+    if script := script_language(names):
+        return script
+    votes: dict[str, float] = {}
+    for weight, shares in (
+        (3.0, _language_votes(artist, genre_kb)),
+        (2.0, _language_votes(own, genre_kb)),
+    ):
+        for code, share in shares.items():
+            votes[code] = votes.get(code, 0.0) + weight * share
+    if from_title := title_language(track.name):
+        votes[from_title] = votes.get(from_title, 0.0) + 2.0
+    if hint:
+        votes[hint] = votes.get(hint, 0.0) + 1.0
+    if not votes:
+        return None
+    best = max(votes, key=lambda code: (votes[code], code))
+    runner_up = max((v for code, v in votes.items() if code != best), default=0.0)
+    return best if votes[best] >= 1.0 and votes[best] >= 1.5 * runner_up else None
+
+
+def decide_genre(
+    own: list[Tag], artist: list[Tag], genre_kb: GenreKnowledge, hint: str | None = None
+) -> str | None:
+    votes: dict[str, float] = {}
+    for weight, shares in (
+        (1.0, _genre_votes(artist, genre_kb)),
+        (1.0, _genre_votes(own, genre_kb)),
+    ):
+        for genre_id, share in shares.items():
+            votes[genre_id] = votes.get(genre_id, 0.0) + weight * share
+    if hint:
+        votes[hint] = votes.get(hint, 0.0) + 0.8
+    return max(votes, key=lambda g: (votes[g], g)) if votes else None
+
+
 @dataclass(frozen=True)
 class TrackProfile:
-    """What Last.fm listeners (and the title's script) say about one song."""
+    """What Last.fm listeners, the title and the search say about one song."""
 
     mood: TagMood | None
     genre: str | None  # genre id from genre_kb.json
     language: str | None  # ISO 639-1 code
+
+
+MAX_ARTISTS_TAGGED = 50  # artist tags carry language and genre: looked up first
+MAX_SONGS_TAGGED = 50  # song tags carry the finer mood: for the likeliest picks
 
 
 async def profile_tracks(
@@ -166,41 +299,50 @@ async def profile_tracks(
     tracks: list[Track],
     genre_kb: GenreKnowledge,
     budget: float = LOOKUP_BUDGET_SECONDS,
+    hints: dict[str, Hints] | None = None,
 ) -> dict[str, TrackProfile]:
-    """Profiles for as many tracks as Last.fm answers within the time budget (id -> profile)."""
-    tag_kb = get_tag_knowledge()
-    artist_tags: dict[str, asyncio.Task[list[Tag]]] = {}
+    """A profile for every track (id -> profile), from whatever Last.fm answers in time.
 
-    async def one(track: Track) -> tuple[str, TrackProfile]:
-        artist = track.artists[0].name if track.artists else ""
-        script = script_language(track.name + " " + " ".join(a.name for a in track.artists))
-        if not artist:
-            return track.id, TrackProfile(None, None, script)
-        if artist not in artist_tags:  # looked up once per artist
-            artist_tags[artist] = asyncio.ensure_future(lastfm.artist_tags(artist))
-        own = await lastfm.track_tags(artist, clean_title(track.name))
-        theirs = await artist_tags[artist]
+    `tracks` should be ordered likeliest-pick first: song tags are only looked up for
+    the first ones, artist tags for the first artists.
+    """
+    tag_kb = get_tag_knowledge()
+    hints = hints or {}
+
+    def main_artist(track: Track) -> str:
+        return track.artists[0].name if track.artists else ""
+
+    artists = list(dict.fromkeys(a for a in map(main_artist, tracks) if a))[:MAX_ARTISTS_TAGGED]
+    artist_jobs = {a: asyncio.ensure_future(lastfm.artist_tags(a)) for a in artists}
+    song_jobs = {
+        t.id: asyncio.ensure_future(lastfm.track_tags(main_artist(t), clean_title(t.name)))
+        for t in tracks[:MAX_SONGS_TAGGED]
+        if main_artist(t)
+    }
+    jobs = [*artist_jobs.values(), *song_jobs.values()]
+    if jobs:
+        _, pending = await asyncio.wait(jobs, timeout=budget)
+        for job in pending:
+            job.cancel()
+
+    def answer(job: asyncio.Task[list[Tag]] | None) -> list[Tag]:
+        if job is None or not job.done() or job.cancelled() or job.exception() is not None:
+            return []
+        return job.result()
+
+    profiles: dict[str, TrackProfile] = {}
+    for track in tracks:
+        own = answer(song_jobs.get(track.id))
+        theirs = answer(artist_jobs.get(main_artist(track)))
+        hint = hints.get(track.id, Hints())
         mood = mood_from_tags(own, tag_kb, genre_kb) or mood_from_tags(
             theirs, tag_kb, genre_kb, "artist"
         )
-        both = own + theirs
-        return track.id, TrackProfile(
+        profiles[track.id] = TrackProfile(
             mood=mood,
-            genre=tag_genre(own, genre_kb) or tag_genre(theirs, genre_kb),
-            language=script or tag_language(both, genre_kb),
+            genre=decide_genre(own, theirs, genre_kb, hint.genre),
+            language=decide_language(track, own, theirs, genre_kb, hint.language),
         )
-
-    tasks = [asyncio.ensure_future(one(t)) for t in tracks[:MAX_TRACKS_TAGGED]]
-    if not tasks:
-        return {}
-    done, pending = await asyncio.wait(tasks, timeout=budget)
-    for task in pending | set(artist_tags.values()):
-        task.cancel()
-    profiles: dict[str, TrackProfile] = {}
-    for task in done:
-        if not task.cancelled() and task.exception() is None:
-            track_id, profile = task.result()
-            profiles[track_id] = profile
     return profiles
 
 

@@ -20,9 +20,10 @@ from pymongo.errors import DuplicateKeyError
 
 from app.core.config import Settings
 from app.db.indexes import OAUTH_STATE_SECONDS, SESSION_IDLE_SECONDS, ensure_indexes
-from app.db.models import SCHEMA_VERSION, Preferences
+from app.db.models import SCHEMA_VERSION, PlaylistRecord, Preferences
 from app.db.mongo import create_client
 from app.db.repositories.oauth_states import OAuthStateRepository
+from app.db.repositories.playlists import PlaylistRepository
 from app.db.repositories.preferences import PreferencesRepository
 from app.db.repositories.sessions import SessionRepository
 from app.db.repositories.users import UserRepository
@@ -217,3 +218,31 @@ async def test_preferences_are_saved_replaced_and_deleted(database: AsyncDatabas
 
     assert await preferences.delete("user-1") is True
     assert await preferences.get("user-1") is None
+
+
+# ---------------------------------------------------------------- playlists
+
+
+async def test_playlist_history_is_per_user_and_newest_first(database: AsyncDatabase) -> None:
+    playlists = PlaylistRepository(database)
+    older, newer = _now() - timedelta(days=1), _now()
+
+    def record(user_id: str, name: str, at: datetime) -> PlaylistRecord:
+        return PlaylistRecord(
+            user_id=user_id,
+            spotify_playlist_id=f"sp-{name}",
+            url=f"https://open.spotify.com/playlist/sp-{name}",
+            name=name,
+            track_count=15,
+            created_at=at,
+        )
+
+    saved = await playlists.add(record("user-1", "old", older))
+    await playlists.add(record("user-1", "new", newer))
+    await playlists.add(record("user-2", "other", newer))
+
+    history = await playlists.list_for_user("user-1")
+
+    assert saved.id is not None
+    assert [p.name for p in history] == ["new", "old"]
+    assert await playlists.delete_all_for_user("user-1") == 2

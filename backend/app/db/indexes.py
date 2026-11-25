@@ -40,6 +40,7 @@ INDEXES: tuple[IndexSpec, ...] = (
         "oauth_states", "created_at", "pending_ttl", expire_after_seconds=OAUTH_STATE_SECONDS
     ),
     IndexSpec("preferences", "user_id", "user_id_unique", unique=True),
+    IndexSpec("playlists", "user_id", "user_id"),  # a user's playlist history
 )
 
 

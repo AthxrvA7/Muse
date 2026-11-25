@@ -116,7 +116,7 @@ The browser only receives a random session ID in an `HttpOnly` cookie. Spotify t
 
 The backend deploys to **Render** from `main` using [`render.yaml`](render.yaml), with MongoDB Atlas as the database. Step-by-step setup, rollback and troubleshooting are in the [deployment runbook](docs/DEPLOYMENT.md).
 
-**Live demo:** *(add the `onrender.com` URL here after the first deployment)*
+**Live demo:** https://muse-api-mu05.onrender.com/docs (interactive API docs). The free instance sleeps when idle, so the first request can take about a minute. Logging in works only for Spotify accounts added to the app's Development Mode list.
 
 ## Technology stack
 
@@ -173,7 +173,27 @@ CI runs these automatically on every push and pull request (see the **Actions** 
 
 ## Screenshots
 
-*Added as features land.*
+Taken on the deployed app, using Swagger UI as the client until the frontend exists.
+
+**1. Logged in with Spotify:** `GET /api/v1/me`. The response headers show the security headers.
+
+![Logged-in user](docs/screenshots/01-login-me.png)
+
+**2. Saved taste profile:** `PUT /api/v1/preferences`
+
+![Saved preferences](docs/screenshots/02-saved-preferences.png)
+
+**3. Music DNA:** `GET /api/v1/preferences/dna`, a summary of the stated taste and the average feel of its genres
+
+![Music DNA](docs/screenshots/03-music-dna.png)
+
+**4. Curated, explained playlist:** `POST /api/v1/curate` with mood chips "tired" and "low", using the saved profile. Each track has a score, its mood fit and taste fit, and a reason.
+
+![Curate response](docs/screenshots/04-curate-explained.png)
+
+**5. Saved to Spotify:** `POST /api/v1/playlists` creates a private playlist in the user's own account
+
+![Playlist in Spotify](docs/screenshots/05-playlist-in-spotify.png)
 
 ## Git workflow
 

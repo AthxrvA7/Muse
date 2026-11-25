@@ -48,6 +48,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 - `POST /api/v1/curate` without `taste` uses the logged-in user's saved profile; the response's `taste_source` says which was used
 
 ### Fixed
+- The Swagger example for `POST /api/v1/playlists` used real track IDs, which added two unrelated songs when run as-is; it now asks for IDs from `/curate`
 - A database outage during a request (e.g. Atlas blocking a new IP address) now returns a clear `503` instead of a generic 500 error page
 
 ### Fixed (found in the first run against real Spotify)

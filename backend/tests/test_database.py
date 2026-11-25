@@ -127,3 +127,24 @@ def test_app_starts_even_if_indexes_cannot_be_created(
     lines = [json.loads(line) for line in capsys.readouterr().out.splitlines()]
     warning = next(line for line in lines if line["message"] == "Could not ensure MongoDB indexes")
     assert warning["error_type"] == "ServerSelectionTimeoutError"
+
+
+def test_database_errors_in_a_request_become_a_clean_503(settings: Settings) -> None:
+    from app.api.deps import current_user, get_preferences_repository
+    from tests.test_preferences import USER
+
+    class BrokenPreferences:
+        async def get(self, user_id: str) -> None:
+            raise ServerSelectionTimeoutError("SSL handshake failed: secret-host:27017")
+
+    app = create_app(settings)
+    app.dependency_overrides[current_user] = lambda: USER
+    app.dependency_overrides[get_preferences_repository] = lambda: BrokenPreferences()
+
+    response = TestClient(app).get("/api/v1/preferences")
+
+    assert response.status_code == 503
+    assert response.json() == {
+        "detail": {"message": "The database is unavailable right now; try again shortly"}
+    }
+    assert "secret-host" not in response.text

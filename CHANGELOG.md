@@ -44,7 +44,11 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 - `GET /api/v1/auth/login`, `GET /api/v1/auth/callback`, `POST /api/v1/auth/logout`, `GET /api/v1/me`
 - Taste profile: `GET`/`PUT /api/v1/preferences` (artists, genres, languages, styles, reference tracks, exclusions), validated against the genre knowledge base
 - Music DNA: `GET /api/v1/preferences/dna` with top artists, genres and languages, and the average feel of the user's genres on the valence-energy map
+- `POST /api/v1/playlists` creates a private playlist with the curated tracks in the user's Spotify account (Spotify's February 2026 endpoints `POST /me/playlists` and `POST /playlists/{id}/items`) and records it; `GET /api/v1/playlists` lists them
 - `POST /api/v1/curate` without `taste` uses the logged-in user's saved profile; the response's `taste_source` says which was used
+
+### Fixed
+- A database outage during a request (e.g. Atlas blocking a new IP address) now returns a clear `503` instead of a generic 500 error page
 
 ### Fixed (found in the first run against real Spotify)
 - The 2-per-artist limit now counts every credited artist; Arijit Singh appeared 3 times because he was credited second
@@ -52,6 +56,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 - Explanations name every genre that shaped a track's estimated feel, don't repeat a genre already named, and keep proper names ("Bollywood", "R&B")
 
 ### Security
+- Hard allow-list for calls made with a user's Spotify token: only reading the profile, creating a new playlist, and adding tracks to a playlist Muse just created. Deleting, editing, reordering or reading existing playlists is refused before any request is sent
 - Spotify login (Authorization Code flow): single-use `state` checked on the callback and expired after 10 minutes; minimal scopes (`playlist-modify-private`, `playlist-modify-public`, `user-read-private`)
 - Server-side sessions: the browser holds only a random ID in an `HttpOnly`, `SameSite=Lax` cookie (`Secure` in production); Muse stores its SHA-256 hash; a new ID on every login; logout is immediate
 - Spotify tokens encrypted at rest with Fernet (`TOKEN_ENCRYPTION_KEY`), refreshed automatically before they expire, never logged or sent to the browser

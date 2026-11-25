@@ -231,7 +231,8 @@ All under `/api/v1` except health checks. Interactive docs are auto-generated at
 | POST | `/mood/analyze` | Mood → MoodProfile (preview) | 1 |
 | POST | `/curate` | Generate a ranked, explained playlist preview *(implemented, stateless)* | 1 |
 | GET | `/curate/options` | Genres and languages allowed in `taste` *(implemented)* | 1 |
-| POST | `/curate/{session_id}/export` | Save it to Spotify | 1 |
+| POST | `/playlists` | Save a curated playlist (its track IDs) to Spotify *(implemented; replaces `/curate/{session_id}/export`)* | 1 |
+| GET | `/playlists` | Playlists Muse has saved for me *(implemented)* | 1 |
 | GET | `/sessions` | Past sessions | 3 |
 | POST | `/sessions/{id}/feedback` | Like/dislike tracks | 3 |
 

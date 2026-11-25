@@ -43,3 +43,15 @@ class Preferences(BaseModel):
     reference_tracks: list[str] = Field(default_factory=list)  # Spotify track IDs
     exclusions: list[str] = Field(default_factory=list)  # artists or genres to leave out
     updated_at: datetime
+
+
+class PlaylistRecord(BaseModel):
+    """A playlist Muse created in the user's Spotify account (only the reference is kept)."""
+
+    id: str | None = None
+    user_id: str
+    spotify_playlist_id: str
+    url: str
+    name: str
+    track_count: int
+    created_at: datetime

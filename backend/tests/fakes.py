@@ -7,7 +7,7 @@ are tested against MongoDB in test_repositories.py (pytest --db).
 from datetime import UTC, datetime
 from typing import Any
 
-from app.db.models import Preferences, Session, User
+from app.db.models import PlaylistRecord, Preferences, Session, User
 
 
 class FakeUsers:
@@ -99,3 +99,22 @@ class FakePreferences:
 
     async def delete(self, user_id: str) -> bool:
         return self.by_user.pop(user_id, None) is not None
+
+
+class FakePlaylists:
+    def __init__(self) -> None:
+        self.records: list[PlaylistRecord] = []
+
+    async def add(self, record: PlaylistRecord) -> PlaylistRecord:
+        saved = record.model_copy(update={"id": f"pl-{len(self.records) + 1}"})
+        self.records.append(saved)
+        return saved
+
+    async def list_for_user(self, user_id: str, limit: int = 20) -> list[PlaylistRecord]:
+        mine = [r for r in self.records if r.user_id == user_id]
+        return sorted(mine, key=lambda r: r.created_at, reverse=True)[:limit]
+
+    async def delete_all_for_user(self, user_id: str) -> int:
+        before = len(self.records)
+        self.records = [r for r in self.records if r.user_id != user_id]
+        return before - len(self.records)

@@ -7,6 +7,7 @@ obtained when they log in with Spotify. Tokens are never logged or sent to the b
 
 import asyncio
 import logging
+import re
 import time
 from dataclasses import dataclass
 from typing import Any
@@ -30,6 +31,19 @@ AUTHORIZE_URL = "https://accounts.spotify.com/authorize"
 # The minimum Muse needs: create playlists and read the user's Spotify ID and name
 SCOPES = ("playlist-modify-private", "playlist-modify-public", "user-read-private")
 MAX_ITEMS_PER_REQUEST = 100  # Spotify's limit for adding items to a playlist
+
+# Safety guard: the ONLY calls Muse may make with a user's token. Muse never deletes,
+# edits, reorders or reads anyone's existing playlists or library. Any other request is
+# refused before it leaves the server (tested in test_spotify_user.py).
+ALLOWED_USER_CALLS = (
+    ("GET", re.compile(r"^/me$")),  # read the user's Spotify ID and display name
+    ("POST", re.compile(r"^/me/playlists$")),  # create a NEW playlist
+    ("POST", re.compile(r"^/playlists/[A-Za-z0-9]+/items$")),  # add tracks to it
+)
+
+
+class ForbiddenCallError(RuntimeError):
+    """Code tried to make a Spotify call outside ALLOWED_USER_CALLS (a programming error)."""
 
 
 class SpotifyLoginError(SpotifyError):
@@ -131,13 +145,14 @@ class SpotifyUserClient:
     def __init__(self, http: httpx2.AsyncClient, access_token: str) -> None:
         self._http = http
         self._headers = {"Authorization": f"Bearer {access_token}"}
+        self._created: set[str] = set()  # playlists this client created (the only ones it may fill)
 
     async def me(self) -> SpotifyProfile:
         body = await self._request("GET", "/me")
         return SpotifyProfile(id=body["id"], display_name=body.get("display_name"))
 
     async def create_playlist(self, name: str, description: str) -> CreatedPlaylist:
-        """Creates a private playlist in the user's account (Feb-2026 endpoint)."""
+        """Creates a NEW private playlist in the user's account (Feb-2026 endpoint)."""
         body = await self._request(
             "POST", "/me/playlists", {"name": name, "description": description, "public": False}
         )
@@ -145,9 +160,13 @@ class SpotifyUserClient:
             body.get("external_urls", {}).get("spotify")
             or f"https://open.spotify.com/playlist/{body['id']}"
         )
+        self._created.add(body["id"])
         return CreatedPlaylist(id=body["id"], url=url)
 
     async def add_tracks(self, playlist_id: str, track_ids: list[str]) -> None:
+        """Adds tracks, but only to a playlist this client has just created."""
+        if playlist_id not in self._created:
+            raise ForbiddenCallError("Muse only adds tracks to playlists it has just created")
         uris = [f"spotify:track:{track_id}" for track_id in track_ids]
         for start in range(0, len(uris), MAX_ITEMS_PER_REQUEST):
             await self._request(
@@ -159,6 +178,8 @@ class SpotifyUserClient:
     async def _request(
         self, method: str, path: str, json: dict[str, Any] | None = None
     ) -> dict[str, Any]:
+        if not any(method == m and pattern.match(path) for m, pattern in ALLOWED_USER_CALLS):
+            raise ForbiddenCallError(f"Muse may not call {method} {path} with a user's token")
         waited = retried = False
         while True:
             try:

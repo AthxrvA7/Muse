@@ -10,11 +10,13 @@ from app.clients.spotify_user import SpotifyUserAuth, SpotifyUserClient
 from app.core.crypto import TokenCipher
 from app.db.models import User
 from app.db.repositories.oauth_states import OAuthStateRepository
+from app.db.repositories.playlists import PlaylistRepository
 from app.db.repositories.preferences import PreferencesRepository
 from app.db.repositories.sessions import SessionRepository
 from app.db.repositories.users import UserRepository
 from app.schemas.curate import Taste
 from app.services.auth import SESSION_COOKIE, AuthService
+from app.services.playlists import PlaylistService
 from app.services.preferences import to_taste
 
 NOT_LOGGED_IN = {"message": "Log in with Spotify first: open /api/v1/auth/login"}
@@ -97,6 +99,14 @@ async def saved_taste(
         return None
     saved = await PreferencesRepository(request.app.state.db).get(user.id)
     return to_taste(saved) if saved else None
+
+
+def get_playlist_service(
+    request: Request,
+    auth: Annotated[AuthService, Depends(get_auth_service)],
+    http: Annotated[httpx2.AsyncClient, Depends(get_http)],
+) -> PlaylistService:
+    return PlaylistService(auth, http, PlaylistRepository(request.app.state.db))
 
 
 CurrentUser = Annotated[User, Depends(current_user)]

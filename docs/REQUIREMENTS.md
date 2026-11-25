@@ -9,27 +9,27 @@
 
 | ID | Requirement | Acceptance criteria | Status | Evidence |
 |---|---|---|---|---|
-| C1 | GitHub repository | Meaningful name; ≥ 15 commits with meaningful messages | Planned | |
-| C2 | Branching | `main` + `feature/*` branches; every member merges via PR | Planned | |
-| C3 | README | Title, problem, team, features, stack, setup, screenshots, git workflow | Planned | |
-| C4 | Automated tests | ≥ 3 automated tests (we target ≥ 80% backend coverage) | Verified | 60 pytest tests run in CI on every push |
-| C5 | CI | GitHub Actions on push showing pass/fail | Planned | |
-| C6 | Deployment | A public deployment URL with documented setup | Planned | |
+| C1 | GitHub repository | Meaningful name; ≥ 15 commits with meaningful messages | Verified | 60+ commits on `main` in Conventional Commit format (`git log --oneline main`) |
+| C2 | Branching | `main` + `feature/*` branches; every member merges via PR | Verified | Protected `main`; feature/docs/chore branches merged through PRs with review: Atharva (backend), Darsh (#3 templates, #4 CI), Piyush (#11 monitoring) |
+| C3 | README | Title, problem, team, features, stack, setup, screenshots, git workflow | Implemented | All sections present; screenshots to be added from the deployed demo |
+| C4 | Automated tests | ≥ 3 automated tests (we target ≥ 80% backend coverage) | Verified | 285 pytest tests run in CI on every push (plus 13 database tests with `pytest --db`) |
+| C5 | CI | GitHub Actions on push showing pass/fail | Verified | `.github/workflows/ci.yml`: Lint and Tests jobs on every push and PR (Actions tab) |
+| C6 | Deployment | A public deployment URL with documented setup | Implemented | `render.yaml` + [deployment runbook](DEPLOYMENT.md); URL added to README after the first deploy |
 
 ## 2. Functional requirements
 
 | ID | Requirement | Acceptance criteria | Phase | Status |
 |---|---|---|---|---|
-| FR1 | Spotify authentication | Login redirects to Spotify; callback rejects a missing or mismatched `state` with `400`; success creates a session cookie; logout invalidates it server-side | 1 | Planned |
-| FR2 | Preference input | Save/read artists, genres, languages, styles, reference tracks and exclusions; invalid or oversized input rejected with `422` | 1 | Planned |
-| FR3 | Music DNA | Returns a genre spread, top artists, language mix and default mood centre, computed only from stated preferences | 1 | Planned |
+| FR1 | Spotify authentication | Login redirects to Spotify; callback rejects a missing or mismatched `state` with `400`; success creates a session cookie; logout invalidates it server-side | 1 | Verified (`test_auth.py`, `test_spotify_user.py`) |
+| FR2 | Preference input | Save/read artists, genres, languages, styles, reference tracks and exclusions; invalid or oversized input rejected with `422` | 1 | Verified (`test_preferences.py`) |
+| FR3 | Music DNA | Returns a genre spread, top artists, language mix and default mood centre, computed only from stated preferences | 1 | Verified (`test_preferences.py`) |
 | FR4 | Mood input | Accepts chips (≤ 5) and/or text (≤ 500 chars); at least one is required | 1 | Verified (`test_mood_api.py`) |
 | FR5 | Mood processing | Returns valence, energy (0–1), tempo, labels, mode and confidence; chips-only input is deterministic | 1 | Verified (`test_mood_analyzer.py`, `test_mood_classifier.py`) |
 | FR6 | Preference + mood scoring | Every candidate gets `mood_fit`, `taste_fit` and `score`; ranking is deterministic for the same input and candidates | 1 | Verified (`test_recommender_scoring.py`, `test_recommender_ranking.py`) |
 | FR7 | Playlist generation | Returns 10–30 tracks (default 15); ≤ 2 tracks per artist when there's enough choice; ≤ 40% from one search; excluded artists never appear | 1 | Verified (`test_curate_api.py`) |
 | FR8 | Explanations | Every track has a sentence that only refers to factors that actually contributed to its score | 1 | Verified (`test_recommender_ranking.py`) |
-| FR9 | Spotify catalogue + playlist creation | Catalogue search returns tracks/artists from Spotify (`GET /api/v1/catalog/search`); export creates a playlist in the user's account containing exactly the curated tracks; the Spotify URL is returned and stored | 1 | Search verified (`test_spotify_*.py`, `test_catalog_api.py`, real call checked locally); export planned |
-| FR10 | Persistence | Preferences, mood sessions and playlist records are stored in MongoDB | 1 | Planned |
+| FR9 | Spotify catalogue + playlist creation | Catalogue search returns tracks/artists from Spotify (`GET /api/v1/catalog/search`); export creates a playlist in the user's account containing exactly the curated tracks; the Spotify URL is returned and stored | 1 | Verified (`test_spotify_*.py`, `test_catalog_api.py`, `test_playlists.py`) |
+| FR10 | Persistence | Preferences, sessions and playlist records are stored in MongoDB (mood sessions are not stored: curate stays stateless) | 1 | Verified (`test_repositories.py` with `pytest --db`) |
 | FR11 | Data access & deletion *(added)* | `GET /me/data` returns all of the user's Muse data as JSON; `DELETE /me` removes every document for that user and ends all sessions | 1 | Planned |
 | FR12 | Wellbeing notice *(added)* | Text matching the crisis-phrase list returns a `support` notice with helpline information; music is still returned; the text is not stored | 1 | Verified (`test_wellbeing.py`); phrase list awaits counsellor/faculty review |
 | FR13 | Feedback loop | Like/dislike per track | 3 | Deferred |

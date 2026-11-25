@@ -44,6 +44,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 - `GET /api/v1/auth/login`, `GET /api/v1/auth/callback`, `POST /api/v1/auth/logout`, `GET /api/v1/me`
 - Taste profile: `GET`/`PUT /api/v1/preferences` (artists, genres, languages, styles, reference tracks, exclusions), validated against the genre knowledge base
 - Music DNA: `GET /api/v1/preferences/dna` with top artists, genres and languages, and the average feel of the user's genres on the valence-energy map
+- `POST /api/v1/playlists` creates a private playlist with the curated tracks in the user's Spotify account (Spotify's February 2026 endpoints `POST /me/playlists` and `POST /playlists/{id}/items`) and records it; `GET /api/v1/playlists` lists them
 - `POST /api/v1/curate` without `taste` uses the logged-in user's saved profile; the response's `taste_source` says which was used
 
 ### Fixed (found in the first run against real Spotify)

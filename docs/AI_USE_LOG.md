@@ -108,3 +108,13 @@ Never paste secrets, tokens or real user data into an AI tool.
 - **Changes made by us:** Music DNA uses only what the user stated (no Spotify listening history, as the synopsis requires). Its "mood centre" is the average position of the chosen genres on the same valence-energy map the recommender uses. Styles and reference tracks are stored and shown but don't affect scoring yet; we say so rather than pretend.
 - **Verification:** 266 tests pass, including validation, replacing a profile, the DNA numbers worked out by hand from `genre_kb.json`, and curate choosing saved vs sent taste.
 - **Reflection:** Keeping the saved-profile lookup in one dependency meant the curate logic didn't change at all; it still receives a `Taste`.
+
+### 2026-11-25 — Saving playlists to Spotify (slice 4, `feature/playlist-export`)
+- **Member:** Atharva
+- **Tool:** Claude (Anthropic)
+- **Purpose:** code suggestion, testing
+- **Prompt (summary):** Create the curated playlist in the logged-in user's Spotify account and keep a history of saved playlists.
+- **Output used:** `backend/app/services/playlists.py`, `backend/app/api/v1/playlists.py`, `backend/app/schemas/playlists.py`, `backend/app/db/repositories/playlists.py`, `PlaylistRecord`, a `playlists` index, `tests/test_playlists.py`, a repository test.
+- **Changes made by us:** We changed the plan from `POST /curate/{session_id}/export` to `POST /playlists` with the track IDs from the preview. That way curate stays stateless and we don't store mood sessions just to export them. Playlists are created private. Only the playlist's reference (ID, link, name, track count) is stored.
+- **Verification:** 275 tests pass with a fake Spotify: request shapes for the two new endpoints, duplicate track IDs removed, a 403 explained, an expired login asking to log in again, and nothing recorded when Spotify refuses.
+- **Reflection:** Spotify's February 2026 changes removed the playlist endpoints most tutorials use; checking the official changelog first avoided building on dead endpoints.

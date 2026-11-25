@@ -29,7 +29,7 @@ Muse is an independent personalisation layer. It uses Spotify for login, catalog
 | Stage | Feature | Status |
 |---|---|---|
 | Classics: "Know your music" | Database ✅, Spotify login ✅, preference profile ✅, reference tracks ✅, Music DNA ✅ | Done (backend) |
-| Essential: "Curate for me" | Mood analysis ✅, preference + mood scoring ✅, explained playlist ✅, export to Spotify | In progress |
+| Essential: "Curate for me" | Mood analysis ✅, preference + mood scoring ✅, explained playlist ✅, export to Spotify ✅ | Done (backend) |
 | Advanced: "Learn from me" | Feedback loop, session history, mood trajectory | Future |
 
 ## Try the mood engine
@@ -107,6 +107,8 @@ Logging in lets Muse save your taste and create playlists in your Spotify accoun
 4. Start the backend and open **http://127.0.0.1:8000/api/v1/auth/login** in the browser (use `127.0.0.1`, not `localhost`, so the cookie matches). After approving on Spotify you land on `/docs`, logged in; try **GET /api/v1/me**.
 
 Once logged in, save your taste with **PUT /api/v1/preferences**, see a summary with **GET /api/v1/preferences/dna** (Music DNA), and call **POST /api/v1/curate** without `taste` to curate from your saved profile (the response says `"taste_source": "saved_profile"`).
+
+To save a playlist, copy the track IDs from a curate response (`tracks[].track.id`) into **POST /api/v1/playlists** with a name. Muse creates a **private** playlist in your Spotify account and returns its link; **GET /api/v1/playlists** lists the ones it has saved.
 
 The browser only receives a random session ID in an `HttpOnly` cookie. Spotify tokens stay on the server, encrypted. **POST /api/v1/auth/logout** ends the session immediately.
 

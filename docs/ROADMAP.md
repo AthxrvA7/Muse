@@ -114,9 +114,9 @@ The app is built in vertical slices so a working "mood → explained songs" demo
 ## Slice 4 — Save to Spotify & privacy
 
 ### `feature/playlist-export` 🅰
-- [ ] `feat(playlist): store curate sessions`
-- [ ] `feat(playlist): export curated playlist to Spotify`
-- [ ] `test(playlist): add end-to-end curate and export test with mocked Spotify`
+- [x] `feat(playlists): save curated playlists to the user's Spotify account` (tests in the same commit)
+- [x] `docs: document saving playlists to Spotify`
+- Changed: curate sessions are not stored. The preview's track IDs are sent back to `POST /playlists`, which keeps the curate endpoint stateless and avoids storing mood data.
 
 ### `feature/privacy-controls` 🅰
 - [ ] `feat(privacy): add privacy notice endpoint and consent versioning`

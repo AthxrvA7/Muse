@@ -163,3 +163,17 @@ async def test_slow_last_fm_never_holds_the_playlist_up() -> None:
     moods = await tag_moods(Slow(), [track("t1", "A", "B")], get_genre_knowledge(), budget=0.05)
 
     assert moods == {}
+
+
+async def test_rate_limits_and_bad_keys_are_not_remembered() -> None:
+    answers = iter(
+        [
+            httpx2.Response(200, json={"error": 29, "message": "Rate limit exceeded"}),
+            httpx2.Response(200, json={"toptags": {"tag": [{"name": "sad", "count": 100}]}}),
+        ]
+    )
+    http = httpx2.AsyncClient(transport=httpx2.MockTransport(lambda request: next(answers)))
+    lastfm = LastFmClient(http, "k", TTLCache())
+
+    assert await lastfm.artist_tags("X") == []  # refused this time...
+    assert await lastfm.artist_tags("X") == [Tag("sad", 100)]  # ...asked again next time

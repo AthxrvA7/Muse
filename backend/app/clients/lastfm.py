@@ -21,8 +21,9 @@ import httpx2
 
 API_URL = "https://ws.audioscrobbler.com/2.0/"
 CACHE_SECONDS = 24 * 3600
+NOT_FOUND = 6  # Last.fm error code for an unknown artist or track
 CACHE_ENTRIES = 20_000
-MAX_PARALLEL = 8
+MAX_PARALLEL = 5  # Last.fm asks apps to stay around 5 requests a second
 
 logger = logging.getLogger(__name__)
 
@@ -120,7 +121,13 @@ class LastFmClient:
                 extra={"lastfm_method": method, "status_code": response.status_code},
             )
             return {}
-        if "error" in body:  # e.g. 6 = not found: a real answer, cache it as "nothing"
-            body = {}
+        if "error" in body:
+            if body.get("error") != NOT_FOUND:  # rate limit, bad key...: don't remember it
+                logger.warning(
+                    "Last.fm refused a request",
+                    extra={"lastfm_method": method, "lastfm_error": body.get("error")},
+                )
+                return {}
+            body = {}  # "not found" is a real answer: remember it as "nothing"
         self._cache.put(key, body)
         return body

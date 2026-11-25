@@ -78,11 +78,20 @@ def test_auto_language_keeps_the_main_language_and_drops_others() -> None:
     ids = {s.candidate.track.id for s in pool}
     assert focus.language == "hi"
     assert not any(i.startswith("e") for i in ids)
-    assert {"lofi", "x"} <= ids  # unknown language stays
-    x = next(s for s in pool if s.candidate.track.id == "x")
-    lofi = next(s for s in pool if s.candidate.track.id == "lofi")
-    assert x.score == 0.52  # unknown language costs a little (genre unknown: no change)
-    assert lofi.score == 0.45  # instrumental: no language cost, but lo-fi is off-genre
+    assert "x" in ids  # unknown language and genre: allowed while choice is thin, lower
+    assert next(s for s in pool if s.candidate.track.id == "x").score == 0.45
+    assert "lofi" not in ids  # language-neutral, but off-genre for a Bollywood playlist
+
+
+def test_one_taste_language_is_used_when_there_are_songs_in_it() -> None:
+    items = [item(f"e{i}", 0.9, "en", "pop") for i in range(12)]
+    items += [item(f"h{i}", 0.6, "hi", "bollywood") for i in range(6)]
+
+    _, focus = focus_playlist(items, 10, KB, preferred=["hi"])
+    _, none_preferred = focus_playlist(items, 10, KB)
+
+    assert focus.language == "hi"
+    assert none_preferred.language == "en"
 
 
 def test_a_chosen_language_or_mix_is_respected() -> None:
@@ -265,3 +274,55 @@ async def test_unknown_language_or_genre_choice_is_rejected() -> None:
         request = CurateRequest.model_validate({"mood": {"chips": ["calm"]}, **extra})
         with pytest.raises(UnknownTasteError):
             await service.preview(request)
+
+
+# ---------------------------------------------------------------- language detection
+
+
+def test_romanised_titles_give_their_language_away() -> None:
+    from app.services.recommender.tags import title_language
+
+    assert title_language("Tum Hi Ho") == "hi"
+    assert title_language("Channa Mereya - From Ae Dil Hai Mushkil") == "hi"
+    assert title_language("Tenu Leke") == "pa"
+    assert title_language("Shape of You") == "en"
+    assert title_language("Kasoor") is None  # not enough to tell
+
+
+def test_language_needs_a_clear_winner() -> None:
+    from app.services.recommender.tags import decide_language
+
+    hindi_artist = [Tag("bollywood", 100), Tag("hindi", 70)]
+    song = track("t", "Arijit Singh", "Perfect")  # an English-looking title...
+
+    assert decide_language(song, [], hindi_artist, KB) == "hi"  # ...the artist wins
+    assert decide_language(track("t", "X", "Kasoor"), [], [], KB) is None
+    assert decide_language(track("t", "X", "Kasoor"), [], [], KB, hint="hi") == "hi"
+
+
+def test_an_artists_known_language_and_genre_fill_their_other_songs() -> None:
+    from app.services.curate import _share_by_artist
+
+    known = item("a", 0.6, "hi", "bollywood", "Arijit Singh")
+    unknown = item("b", 0.6, None, None, "Arijit Singh")
+    known.candidate.track.artists[0].id = unknown.candidate.track.artists[0].id = "arijit"
+
+    _share_by_artist([known, unknown])
+
+    assert (unknown.language, unknown.genre) == ("hi", "bollywood")
+
+
+async def test_coverage_says_how_much_muse_knew() -> None:
+    service = CurateService(
+        Catalogue(), MoodAnalyzer(load_vocabulary()), KB, LastFm(), deezer=FakeTempo({})
+    )
+    request = CurateRequest.model_validate(
+        {"mood": {"chips": ["calm"]}, "taste": {"artists": ["Arijit Singh"]}, "size": 10}
+    )
+
+    preview = await service.preview(request)
+
+    assert preview.coverage.candidates == 8
+    assert preview.coverage.with_language == 8
+    assert preview.coverage.with_genre == 8
+    assert preview.coverage.with_tempo == 0

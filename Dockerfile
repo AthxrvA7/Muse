@@ -13,7 +13,7 @@ COPY frontend/ ./
 RUN npm run build
 
 # ---- Stage 2: the backend, which serves the API and the website ----
-FROM python:3.12.10-slim-bookworm
+FROM python:3.15.1-slim-bookworm
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \

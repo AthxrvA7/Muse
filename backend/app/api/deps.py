@@ -19,6 +19,8 @@ from app.services.auth import SESSION_COOKIE, AuthService
 from app.services.playlists import PlaylistService
 from app.services.preferences import to_taste
 from app.services.privacy import PrivacyService
+from app.services.recommender.knowledge import get_genre_knowledge
+from app.services.taste_import import TasteImportService
 
 NOT_LOGGED_IN = {"message": "Log in with Spotify first: open /api/v1/auth/login"}
 
@@ -108,6 +110,13 @@ def get_playlist_service(
     http: Annotated[httpx2.AsyncClient, Depends(get_http)],
 ) -> PlaylistService:
     return PlaylistService(auth, http, PlaylistRepository(request.app.state.db))
+
+
+def get_taste_import_service(
+    auth: Annotated[AuthService, Depends(get_auth_service)],
+    http: Annotated[httpx2.AsyncClient, Depends(get_http)],
+) -> TasteImportService:
+    return TasteImportService(auth, http, get_genre_knowledge())
 
 
 def get_privacy_service(request: Request) -> PrivacyService:

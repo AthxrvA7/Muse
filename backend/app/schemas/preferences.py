@@ -89,3 +89,14 @@ class MusicDNA(BaseModel):
     )
     reference_track_count: int
     exclusion_count: int
+
+
+class SpotifyTasteSuggestion(BaseModel):
+    """A taste profile suggested from your Spotify top artists. Not saved: review it in
+    the Music DNA form, change anything, then save it with PUT /preferences."""
+
+    artists: list[str]
+    genres: list[str]
+    languages: list[str]
+    source: str = "Your top artists on Spotify (about the last 6 months)"
+    saved: bool = False

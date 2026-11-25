@@ -128,3 +128,27 @@ jobs:
       - name: Stop and remove containers
         if: always()
         run: docker compose down --volumes
+
+  audit:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22"
+      - name: Audit backend packages (known vulnerabilities)
+        run: |
+          pip install pip-audit==2.10.1
+          pip-audit -r backend/requirements.txt --progress-spinner off
+      - name: Audit website packages shipped to users
+        # Dev-only tools (linters, build) are not shipped, so only runtime packages fail the build
+        working-directory: frontend
+        run: npm audit --omit=dev --audit-level=high

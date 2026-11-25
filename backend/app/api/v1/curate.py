@@ -4,6 +4,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
+from app.api.deps import SavedTaste
 from app.api.errors import spotify_http_error
 from app.clients.spotify import SpotifyError
 from app.schemas.curate import CuratePreview, CurateRequest, TasteOptions
@@ -18,10 +19,18 @@ router = APIRouter(prefix="/curate", tags=["curate"])
 async def curate(
     request: CurateRequest,
     service: Annotated[CurateService, Depends(get_curate_service)],
+    saved_taste: SavedTaste,
 ) -> CuratePreview:
-    """Returns ranked tracks, each with a reason. Nothing is saved; mood text is never stored."""
+    """Returns ranked tracks, each with a reason. Mood text is never stored.
+
+    Logged in and no `taste` sent? Your saved taste profile is used.
+    """
+    source = "request" if request.taste is not None else "none"
+    if request.taste is None and saved_taste is not None:
+        request = request.model_copy(update={"taste": saved_taste})
+        source = "saved_profile"
     try:
-        return await service.preview(request)
+        preview = await service.preview(request)
     except UnknownChipError as error:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
@@ -34,6 +43,7 @@ async def curate(
         ) from error
     except SpotifyError as error:
         raise spotify_http_error(error) from error
+    return preview.model_copy(update={"taste_source": source})
 
 
 @router.get("/options", summary="Genres and languages you can use in taste")

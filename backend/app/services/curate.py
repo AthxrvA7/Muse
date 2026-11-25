@@ -20,6 +20,7 @@ from app.schemas.curate import (
     CuratePreview,
     CurateRequest,
     GenreOption,
+    Taste,
     TasteOptions,
 )
 from app.services.mood import get_mood_analyzer
@@ -59,7 +60,7 @@ class CurateService:
         self._kb = kb
 
     async def preview(self, request: CurateRequest) -> CuratePreview:
-        taste = request.taste
+        taste = request.taste or Taste()
         bad_genres = [g for g in taste.genres if g not in self._kb.genres]
         bad_languages = [code for code in taste.languages if code not in self._kb.languages]
         if bad_genres or bad_languages:

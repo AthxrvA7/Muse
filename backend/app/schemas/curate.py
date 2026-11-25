@@ -1,5 +1,7 @@
 """Request and response models for curation (mood + taste -> ranked playlist)."""
 
+from typing import Literal
+
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.schemas.catalog import Track
@@ -63,7 +65,10 @@ class CurateRequest(BaseModel):
     )
 
     mood: MoodRequest
-    taste: Taste = Taste()
+    taste: Taste | None = Field(
+        default=None,
+        description="Leave out to use your saved taste profile (when logged in)",
+    )
     size: int = Field(default=15, ge=10, le=30, description="Number of tracks (10-30)")
 
 
@@ -80,6 +85,9 @@ class CuratePreview(BaseModel):
     tracks: list[CuratedTrack]
     searches: int = Field(description="Spotify searches planned")
     candidates_considered: int
+    taste_source: Literal["request", "saved_profile", "none"] = Field(
+        default="request", description="Where the taste used for this playlist came from"
+    )
     note: str | None = Field(
         default=None, description="Set when fewer tracks than asked were found"
     )

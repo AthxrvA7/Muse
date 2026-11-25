@@ -98,3 +98,13 @@ Never paste secrets, tokens or real user data into an AI tool.
 - **Changes made by us:** Used the playlist endpoints from Spotify's February 2026 changelog (`POST /me/playlists`, `POST /playlists/{id}/items`), since older tutorials use removed ones. Made the post-login redirect accept only a path on this server, so it can't become an open redirect. Writes to Spotify are never retried, so a timeout can't create a playlist twice.
 - **Verification:** 252 tests pass with a fake Spotify and in-memory storage: state reuse, expired and unknown states, cancelled login, rejected code, a Development Mode 403, cookie flags, hashed session IDs, encrypted tokens, automatic refresh and immediate logout.
 - **Reflection:** The tests use fakes, so the real check is logging in with my own Spotify account on my laptop.
+
+### 2026-11-25 — Taste profile and Music DNA (slice 3, `feature/user-preferences`)
+- **Member:** Atharva
+- **Tool:** Claude (Anthropic)
+- **Purpose:** code suggestion, testing
+- **Prompt (summary):** Let a logged-in user save their taste, summarise it as Music DNA, and curate from the saved profile.
+- **Output used:** `backend/app/schemas/preferences.py`, `backend/app/services/preferences.py`, `backend/app/api/v1/preferences.py`, the `saved_taste` dependency, curate changes, `tests/test_preferences.py`, new curate tests.
+- **Changes made by us:** Music DNA uses only what the user stated (no Spotify listening history, as the synopsis requires). Its "mood centre" is the average position of the chosen genres on the same valence-energy map the recommender uses. Styles and reference tracks are stored and shown but don't affect scoring yet; we say so rather than pretend.
+- **Verification:** 266 tests pass, including validation, replacing a profile, the DNA numbers worked out by hand from `genre_kb.json`, and curate choosing saved vs sent taste.
+- **Reflection:** Keeping the saved-profile lookup in one dependency meant the curate logic didn't change at all; it still receives a `Taste`.

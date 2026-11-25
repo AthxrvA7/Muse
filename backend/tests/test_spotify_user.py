@@ -8,7 +8,9 @@ import pytest
 
 from app.clients.spotify import TOKEN_URL, SpotifyRateLimitError
 from app.clients.spotify_user import (
+    ALLOWED_USER_CALLS,
     SCOPES,
+    ForbiddenCallError,
     SpotifyForbiddenError,
     SpotifyLoginError,
     SpotifyUserAuth,
@@ -141,3 +143,46 @@ async def test_a_failed_write_is_never_repeated() -> None:
     with pytest.raises(Exception, match="502"):
         await SpotifyUserClient(_http(recorder), "user-token").create_playlist("n", "d")
     assert len(recorder.requests) == 1
+
+
+# ---------------------------------------------------------------- safety guard
+
+
+@pytest.mark.parametrize(
+    ("method", "path"),
+    [
+        ("DELETE", "/me/library"),
+        ("DELETE", "/playlists/pl1/items"),
+        ("PUT", "/playlists/pl1/items"),
+        ("PUT", "/playlists/pl1"),
+        ("GET", "/playlists/pl1/items"),
+        ("GET", "/me/playlists"),
+        ("POST", "/me/library"),
+    ],
+)
+async def test_any_call_that_could_change_or_read_existing_music_is_refused(
+    method: str, path: str
+) -> None:
+    recorder = Recorder()
+
+    with pytest.raises(ForbiddenCallError):
+        await SpotifyUserClient(_http(recorder), "user-token")._request(method, path)  # noqa: SLF001
+    assert recorder.requests == []  # refused before anything was sent
+
+
+async def test_tracks_can_only_be_added_to_a_playlist_muse_just_created() -> None:
+    recorder = Recorder()
+
+    with pytest.raises(ForbiddenCallError):
+        await SpotifyUserClient(_http(recorder), "user-token").add_tracks(
+            "users-old-playlist", ["t1"]
+        )
+    assert recorder.requests == []
+
+
+def test_only_three_kinds_of_user_call_exist() -> None:
+    assert [(m, p.pattern) for m, p in ALLOWED_USER_CALLS] == [
+        ("GET", "^/me$"),
+        ("POST", "^/me/playlists$"),
+        ("POST", "^/playlists/[A-Za-z0-9]+/items$"),
+    ]

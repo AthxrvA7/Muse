@@ -47,8 +47,10 @@ class FakeSpotifyPlaylists:
             return httpx2.Response(
                 201,
                 json={
-                    "id": "spotify-pl-1",
-                    "external_urls": {"spotify": "https://open.spotify.com/playlist/spotify-pl-1"},
+                    "id": "3cEYpjA9oz9GiPac4AsH4n",
+                    "external_urls": {
+                        "spotify": "https://open.spotify.com/playlist/3cEYpjA9oz9GiPac4AsH4n"
+                    },
                 },
             )
         return httpx2.Response(self.add_status, json={"snapshot_id": "s"})
@@ -75,13 +77,13 @@ def test_playlist_is_created_in_spotify_and_recorded() -> None:
 
     assert response.status_code == 201
     body = response.json()
-    assert body["url"] == "https://open.spotify.com/playlist/spotify-pl-1"
+    assert body["url"] == "https://open.spotify.com/playlist/3cEYpjA9oz9GiPac4AsH4n"
     assert body["track_count"] == 2  # duplicate removed
     create, add = world.spotify.requests
     assert create.headers["Authorization"] == "Bearer user-token"
     assert json.loads(create.content)["public"] is False
     assert json.loads(add.content)["uris"] == [f"spotify:track:{t}" for t in TRACKS]
-    assert world.store.records[0].spotify_playlist_id == "spotify-pl-1"
+    assert world.store.records[0].spotify_playlist_id == "3cEYpjA9oz9GiPac4AsH4n"
 
 
 def test_history_lists_saved_playlists() -> None:

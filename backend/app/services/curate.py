@@ -23,6 +23,7 @@ from typing import Annotated, Protocol
 import httpx2
 from fastapi import Depends, Request
 
+from app.clients.deezer import DeezerClient
 from app.clients.lastfm import LastFmClient
 from app.clients.spotify import SpotifyClient, SpotifyError
 from app.schemas.catalog import Track
@@ -43,11 +44,12 @@ from app.services.recommender.candidates import (
     gather_candidates,
 )
 from app.services.recommender.explain import explain
+from app.services.recommender.focus import TempoSource, add_tempo, focus_playlist
 from app.services.recommender.knowledge import GenreKnowledge, get_genre_knowledge
 from app.services.recommender.planner import SearchPlan, plan_searches
 from app.services.recommender.ranking import pick_mixed
 from app.services.recommender.scoring import keep_allowed, score_candidates
-from app.services.recommender.tags import tag_moods
+from app.services.recommender.tags import TrackProfile, profile_tracks, script_language
 from app.services.spotify_session import open_spotify
 
 logger = logging.getLogger(__name__)
@@ -161,6 +163,18 @@ def _merge(searched: list[Candidate], familiar: list[Candidate]) -> list[Candida
     return list(merged.values())
 
 
+def _fallback_profile(candidate: Candidate, kb: GenreKnowledge) -> TrackProfile:
+    """Without Last.fm: the genre search that found the song, and the title's script."""
+    genre = next(
+        (p.value for p in candidate.sources if p.kind == "genre" and p.value in kb.genres), None
+    )
+    track = candidate.track
+    language = script_language(track.name + " " + " ".join(a.name for a in track.artists))
+    if language is None and genre and len(kb.genres[genre].langs) == 1:
+        language = kb.genres[genre].langs[0]
+    return TrackProfile(mood=None, genre=genre, language=language)
+
+
 def _tagging_order(candidate: Candidate) -> int:
     """Look up the songs most likely to be picked first (Last.fm has a time budget)."""
     reasons = {plan.reason for plan in candidate.sources}
@@ -179,6 +193,7 @@ class CurateService:
         lastfm: LastFm | None = None,
         variety: float = 0.0,
         rng: random.Random | None = None,
+        deezer: TempoSource | None = None,
     ) -> None:
         self._spotify = spotify
         self._analyzer = analyzer
@@ -186,6 +201,7 @@ class CurateService:
         self._lastfm = lastfm
         self._variety = variety
         self._rng = rng or random.Random()  # noqa: S311 - variety, not security
+        self._deezer = deezer
 
     async def preview(
         self, request: CurateRequest, personal: Personal | None = None
@@ -193,6 +209,10 @@ class CurateService:
         taste = request.taste or Taste()
         bad_genres = [g for g in taste.genres if g not in self._kb.genres]
         bad_languages = [code for code in taste.languages if code not in self._kb.languages]
+        if request.genre and request.genre not in self._kb.genres:
+            bad_genres.append(request.genre)
+        if request.language not in ("auto", "mix", *self._kb.languages):
+            bad_languages.append(request.language)
         if bad_genres or bad_languages:
             raise UnknownTasteError(bad_genres, bad_languages)
 
@@ -216,10 +236,11 @@ class CurateService:
             c for c in keep_allowed(_merge(searched, familiar), taste) if c.track.id not in excluded
         ]
 
-        moods = {}
+        profiles: dict[str, TrackProfile] = {}
         if self._lastfm:
             ordered = sorted(candidates, key=_tagging_order)
-            moods = await tag_moods(self._lastfm, [c.track for c in ordered], self._kb)
+            profiles = await profile_tracks(self._lastfm, [c.track for c in ordered], self._kb)
+        moods = {i: p.mood for i, p in profiles.items() if p.mood is not None}
 
         scored = score_candidates(candidates, mood, taste, self._kb, self._analyzer, moods)
         recently = set(recent_ids)
@@ -229,6 +250,16 @@ class CurateService:
             if self._variety:
                 item.score += self._rng.uniform(0, self._variety)
             item.score = round(max(0.0, min(1.0, item.score)), 3)
+            profile = profiles.get(item.candidate.track.id)
+            fallback = _fallback_profile(item.candidate, self._kb)
+            item.genre = (profile.genre if profile else None) or fallback.genre
+            item.language = (profile.language if profile else None) or fallback.language
+
+        scored, focus = focus_playlist(
+            scored, request.size, self._kb, request.language, request.genre
+        )
+        if self._deezer:
+            await add_tempo(self._deezer, scored, mood.tempo, request.size)
 
         familiarity = (
             request.familiarity if request.familiarity is not None else MODE_FAMILIARITY[mood.mode]
@@ -249,6 +280,10 @@ class CurateService:
                 reason=explain(item, mood, taste, self._kb),
                 known=item.known,
                 tags=item.tag_words,
+                bpm=item.bpm,
+                tempo=item.tempo,  # type: ignore[arg-type]
+                genre=self._kb.genres[item.genre].name if item.genre in self._kb.genres else None,
+                language=item.language,
             )
             for item in picked
         ]
@@ -268,6 +303,8 @@ class CurateService:
             personal=bool(familiar),
             mood_data="lastfm" if moods else "estimated",
             similar_artists=list(similar),
+            language=focus.language,
+            genre=focus.genre,
         )
 
 
@@ -281,6 +318,15 @@ async def _no_candidates() -> list[Candidate]:
 
 async def _no_ids() -> list[str]:
     return []
+
+
+async def open_deezer(request: Request) -> AsyncIterator[DeezerClient | None]:
+    """FastAPI dependency: a Deezer client for song tempo (no key needed; can be switched off)."""
+    if not request.app.state.settings.deezer_enabled:
+        yield None
+        return
+    async with httpx2.AsyncClient(timeout=3.0) as http:
+        yield DeezerClient(http)
 
 
 async def open_lastfm(request: Request) -> AsyncIterator[LastFmClient | None]:
@@ -297,6 +343,9 @@ def get_curate_service(
     spotify: Annotated[SpotifyClient, Depends(open_spotify)],
     analyzer: Annotated[MoodAnalyzer, Depends(get_mood_analyzer)],
     lastfm: Annotated[LastFmClient | None, Depends(open_lastfm)],
+    deezer: Annotated[DeezerClient | None, Depends(open_deezer)],
 ) -> CurateService:
     """FastAPI dependency: a curate service for this request."""
-    return CurateService(spotify, analyzer, get_genre_knowledge(), lastfm, variety=VARIETY)
+    return CurateService(
+        spotify, analyzer, get_genre_knowledge(), lastfm, variety=VARIETY, deezer=deezer
+    )

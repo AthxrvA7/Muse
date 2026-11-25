@@ -47,6 +47,8 @@ const realServices = {
           size,
           ...(options.familiarity != null ? { familiarity: options.familiarity } : {}),
           ...(options.exclude?.length ? { exclude_track_ids: options.exclude.slice(-100) } : {}),
+          ...(options.language && options.language !== "auto" ? { language: options.language } : {}),
+          ...(options.genre ? { genre: options.genre } : {}),
         },
       }),
   },

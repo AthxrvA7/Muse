@@ -26,3 +26,7 @@ Spotify gives Development Mode apps no audio features, popularity or recommendat
 - A new external dependency (free Last.fm API key, `LASTFM_API_KEY`) with attribution on the results page. Without a key, Muse works as before.
 - The synopsis said Muse would not use Spotify listening data. We read the user's top artists and tracks only on their action (curate or import), never store them, never analyse skips or completion, and never train on them. Recent picks are Muse's own data and are included in export and deletion.
 - Results are no longer deterministic for the same input (FR6 updated); tests pin the random source where order matters.
+
+## Addendum (26 Nov 2026): coherence and tempo
+- Listeners also tag language and genre ("hindi", "bollywood"), so each song gets a language and a genre from Last.fm tags (track and artist) and its title's script. A playlist keeps one language and builds around one genre; `genre_kb.json` gives every genre a family and lists related families.
+- Tempo (BPM) comes from Deezer's free public API, matched by ISRC. It is shown on each song and gives a small bonus when the pace fits the mood. No key is needed; `DEEZER_ENABLED=false` switches it off.

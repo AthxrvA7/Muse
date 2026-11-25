@@ -19,6 +19,7 @@ class Track(BaseModel):
     uri: str
     explicit: bool
     duration_ms: int
+    isrc: str | None = None  # standard recording code: lets Muse find the song elsewhere
 
 
 class Artist(BaseModel):

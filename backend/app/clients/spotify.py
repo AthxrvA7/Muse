@@ -234,6 +234,7 @@ def _parse_track(item: dict[str, Any]) -> Track | None:
             uri=item["uri"],
             explicit=bool(item.get("explicit")),
             duration_ms=int(item.get("duration_ms") or 0),
+            isrc=(item.get("external_ids") or {}).get("isrc") or None,
         )
     except (KeyError, TypeError, ValueError):
         logger.warning("Skipping malformed track from Spotify search")

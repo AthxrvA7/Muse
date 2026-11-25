@@ -68,6 +68,11 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 - `GET /api/v1/mood/options`: mood chips with their valence and energy, and the modes, for clients
 - The built website is served at `/app/` by the backend (`FRONTEND_DIST`), with its own Content-Security-Policy
 
+### Coherent playlists
+- One language per playlist: chosen automatically from your songs and taste, or picked on Discover ("Mix languages" turns it off). Each song's language comes from Last.fm tags and the title's script
+- One genre per playlist, with close genres allowed: every genre now has a family in `genre_kb.json`, and families list related ones; unrelated genres are left out while there are enough songs. Pick a genre on Discover or let Muse choose
+- Tempo: BPM for each song from Deezer's free public API (matched by ISRC), shown next to the song; songs whose pace fits the mood rank a little higher
+
 ### Smarter curation (ADR-0011)
 - Songs you already play: your Spotify top tracks (last ~4 weeks and ~6 months) are mixed in, marked "You know this"
 - Song moods from Last.fm listener tags ("chill", "sad", "party"), so Muse knows which of your songs fit tonight; explanations quote the tags

@@ -64,6 +64,10 @@ class ScoredTrack:
     known: bool = False  # the user already plays it, or it's by a favourite artist
     familiar_range: str | None = None  # "short_term" / "medium_term" if in their top tracks
     similar_to: str | None = None  # favourite artist this one resembles
+    genre: str | None = None  # the song's genre id, when known
+    language: str | None = None  # the song's language, when known
+    bpm: float | None = None  # tempo from Deezer
+    tempo: str | None = None  # "slow" / "medium" / "fast" from the BPM
 
 
 def similarity(a: MoodPoint, b: MoodPoint) -> float:

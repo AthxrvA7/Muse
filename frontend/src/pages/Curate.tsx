@@ -48,14 +48,14 @@ export default function Curate() {
     }, STEP_MS);
     const minimum = new Promise((resolve) => setTimeout(resolve, STEP_MS * (STEPS.length - 1)));
 
-    Promise.all([api.curation.curate(mood, draft.size, { familiarity: draft.familiarity, exclude: draft.exclude }), minimum])
+    Promise.all([api.curation.curate(mood, draft.size, { familiarity: draft.familiarity, exclude: draft.exclude, language: draft.language, genre: draft.genre }), minimum])
       .then(([preview]) => {
         clearInterval(timer);
         setStep(STEPS.length);
         setSession({
           id: crypto.randomUUID(),
           created_at: new Date().toISOString(),
-          request: { chips: draft.chips, text: draft.text, intention: draft.intention, size: draft.size, familiarity: draft.familiarity, exclude: draft.exclude },
+          request: { chips: draft.chips, text: draft.text, intention: draft.intention, size: draft.size, familiarity: draft.familiarity, exclude: draft.exclude, language: draft.language, genre: draft.genre },
           preview: preview as CuratePreview,
         });
         setTimeout(() => navigate("/results"), 350);

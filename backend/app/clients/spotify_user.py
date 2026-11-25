@@ -23,13 +23,16 @@ from app.clients.spotify import (
     SpotifyError,
     SpotifyRateLimitError,
     SpotifyUnavailableError,
+    _parse_track,
 )
+from app.schemas.catalog import Track
 
 logger = logging.getLogger(__name__)
 
 AUTHORIZE_URL = "https://accounts.spotify.com/authorize"
 # The minimum Muse needs: create playlists, read the user's Spotify ID and name, and
-# read their top artists (only to suggest a taste profile the user then edits and saves)
+# read their top artists and tracks (to suggest a taste profile, and to start playlists
+# from songs the user already plays; never stored)
 SCOPES = ("playlist-modify-private", "playlist-modify-public", "user-read-private", "user-top-read")
 TOP_ARTISTS_SCOPE = "user-top-read"
 MAX_ITEMS_PER_REQUEST = 100  # Spotify's limit for adding items to a playlist
@@ -40,6 +43,7 @@ MAX_ITEMS_PER_REQUEST = 100  # Spotify's limit for adding items to a playlist
 ALLOWED_USER_CALLS = (
     ("GET", re.compile(r"^/me$")),  # read the user's Spotify ID and display name
     ("GET", re.compile(r"^/me/top/artists$")),  # read-only: suggest a taste profile
+    ("GET", re.compile(r"^/me/top/tracks$")),  # read-only: songs the user plays most
     ("POST", re.compile(r"^/me/playlists$")),  # create a NEW playlist
     ("POST", re.compile(r"^/playlists/[A-Za-z0-9]+/items$")),  # add tracks to it
 )
@@ -172,6 +176,14 @@ class SpotifyUserClient:
             for item in body.get("items", [])
             if item.get("name")
         ]
+
+    async def top_tracks(self, time_range: str = "short_term", limit: int = 50) -> list[Track]:
+        """The user's most-played tracks: short_term ~4 weeks, medium_term ~6 months."""
+        body = await self._request(
+            "GET", "/me/top/tracks", params={"limit": limit, "time_range": time_range}
+        )
+        tracks = (_parse_track(item) for item in body.get("items", []) if item)
+        return [track for track in tracks if track is not None]
 
     async def create_playlist(self, name: str, description: str) -> CreatedPlaylist:
         """Creates a NEW private playlist in the user's account (Feb-2026 endpoint)."""

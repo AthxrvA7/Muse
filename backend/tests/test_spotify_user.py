@@ -157,7 +157,7 @@ async def test_a_failed_write_is_never_repeated() -> None:
         ("PUT", "/playlists/pl1"),
         ("GET", "/playlists/pl1/items"),
         ("GET", "/me/playlists"),
-        ("GET", "/me/top/tracks"),
+        ("GET", "/me/tracks"),
         ("GET", "/me/player/recently-played"),
         ("POST", "/me/library"),
     ],
@@ -182,10 +182,11 @@ async def test_tracks_can_only_be_added_to_a_playlist_muse_just_created() -> Non
     assert recorder.requests == []
 
 
-def test_only_four_kinds_of_user_call_exist() -> None:
+def test_only_five_kinds_of_user_call_exist() -> None:
     assert [(m, p.pattern) for m, p in ALLOWED_USER_CALLS] == [
         ("GET", "^/me$"),
         ("GET", "^/me/top/artists$"),
+        ("GET", "^/me/top/tracks$"),
         ("POST", "^/me/playlists$"),
         ("POST", "^/playlists/[A-Za-z0-9]+/items$"),
     ]
@@ -216,3 +217,25 @@ async def test_top_artists_are_read_with_the_users_token() -> None:
     assert request.url.params["limit"] == "10"
     assert request.url.params["time_range"] == "medium_term"
     assert request.headers["Authorization"] == "Bearer user-token"
+
+
+async def test_top_tracks_are_read_and_parsed() -> None:
+    item = {
+        "id": "4uLU6hMCjMI75M1A2tKUQC",
+        "name": "Kasoor",
+        "artists": [{"id": "a1", "name": "Prateek Kuhad"}],
+        "album": {"name": "Kasoor", "release_date": "2020-03-06", "images": []},
+        "external_urls": {"spotify": "https://open.spotify.com/track/4uLU6hMCjMI75M1A2tKUQC"},
+        "uri": "spotify:track:4uLU6hMCjMI75M1A2tKUQC",
+        "explicit": False,
+        "duration_ms": 200000,
+    }
+    recorder = Recorder(httpx2.Response(200, json={"items": [item, {"broken": True}]}))
+
+    tracks = await SpotifyUserClient(_http(recorder), "user-token").top_tracks("medium_term")
+
+    assert [t.name for t in tracks] == ["Kasoor"]  # the malformed item is skipped
+    (request,) = recorder.requests
+    assert request.url.path == "/v1/me/top/tracks"
+    assert request.url.params["time_range"] == "medium_term"
+    assert request.url.params["limit"] == "50"

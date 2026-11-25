@@ -55,3 +55,17 @@ class UserRepository:
             return False
         result = await self._users.delete_one({"_id": object_id})
         return result.deleted_count == 1
+
+    async def save_tokens(self, user_id: str, tokens: dict[str, Any]) -> None:
+        """Store the user's Spotify tokens. The caller passes them already encrypted."""
+        object_id = to_object_id(user_id)
+        if object_id is not None:
+            await self._users.update_one({"_id": object_id}, {"$set": {"tokens": tokens}})
+
+    async def get_tokens(self, user_id: str) -> dict[str, Any] | None:
+        object_id = to_object_id(user_id)
+        if object_id is None:
+            return None
+        document = await self._users.find_one({"_id": object_id}, projection={"tokens": True})
+        tokens: dict[str, Any] | None = document.get("tokens") if document else None
+        return tokens

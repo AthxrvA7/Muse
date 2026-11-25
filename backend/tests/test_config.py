@@ -80,3 +80,36 @@ def test_mongodb_uri_is_hidden_and_checked() -> None:
 def test_invalid_database_name_is_rejected() -> None:
     with pytest.raises(ValidationError):
         Settings(_env_file=None, mongodb_db="muse prod")
+
+
+def test_encryption_key_must_be_a_valid_fernet_key() -> None:
+    from app.core.crypto import generate_key
+
+    key = generate_key()
+    assert Settings(_env_file=None, token_encryption_key=key).token_encryption_key is not None
+    with pytest.raises(ValidationError, match="TOKEN_ENCRYPTION_KEY") as error:
+        Settings(_env_file=None, token_encryption_key="not-a-key-but-a-secret")
+    assert "not-a-key-but-a-secret" not in str(error.value)
+
+
+def test_login_needs_spotify_database_and_key() -> None:
+    from app.core.crypto import generate_key
+
+    partial = Settings(_env_file=None, spotify_client_id="id", spotify_client_secret="secret")
+    full = partial.model_copy(
+        update={
+            "mongodb_uri": Settings(_env_file=None, mongodb_uri="mongodb://h").mongodb_uri,
+            "token_encryption_key": Settings(
+                _env_file=None, token_encryption_key=generate_key()
+            ).token_encryption_key,
+        }
+    )
+
+    assert partial.login_configured is False
+    assert full.login_configured is True
+
+
+@pytest.mark.parametrize("target", ["https://evil.example", "//evil.example", "docs"])
+def test_post_login_redirect_must_stay_on_this_server(target: str) -> None:
+    with pytest.raises(ValidationError, match="POST_LOGIN_REDIRECT"):
+        Settings(_env_file=None, post_login_redirect=target)

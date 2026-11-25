@@ -13,6 +13,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Literal
 
+from cryptography.fernet import Fernet
 from pydantic import Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -50,6 +51,14 @@ class Settings(BaseSettings):
     mongodb_db: str = Field(default="muse", pattern=r"^[A-Za-z0-9_-]{1,38}$")
     mongodb_timeout_ms: int = Field(default=5000, ge=500, le=30000)
 
+    # Spotify login (Authorization Code flow). The redirect URI must also be listed in the
+    # Spotify dashboard, character for character. Spotify rejects "localhost": use 127.0.0.1.
+    spotify_redirect_uri: str = "http://127.0.0.1:8000/api/v1/auth/callback"
+    # Where the browser goes after logging in (no frontend yet, so Swagger)
+    post_login_redirect: str = "/docs"
+    # Fernet key that encrypts stored Spotify tokens; generate one (see README). Never commit.
+    token_encryption_key: SecretStr | None = None
+
     # Browser origins allowed to call the API (the React frontend), comma-separated,
     # e.g. "http://localhost:5173". Empty = no cross-origin browser access at all.
     cors_origins: str = ""
@@ -60,7 +69,13 @@ class Settings(BaseSettings):
     rate_limit_curate_per_minute: int = Field(default=10, ge=1)
     rate_limit_auth_per_minute: int = Field(default=10, ge=1)
 
-    @field_validator("spotify_client_id", "spotify_client_secret", "mongodb_uri", mode="before")
+    @field_validator(
+        "spotify_client_id",
+        "spotify_client_secret",
+        "mongodb_uri",
+        "token_encryption_key",
+        mode="before",
+    )
     @classmethod
     def _empty_is_unset(cls, value: object) -> object:
         # "SPOTIFY_CLIENT_ID=" in .env means "not configured", not an empty ID
@@ -69,6 +84,35 @@ class Settings(BaseSettings):
     @property
     def spotify_configured(self) -> bool:
         return bool(self.spotify_client_id and self.spotify_client_secret)
+
+    @property
+    def login_configured(self) -> bool:
+        """Login needs Spotify credentials, a database and an encryption key."""
+        return (
+            self.spotify_configured
+            and self.mongodb_configured
+            and self.token_encryption_key is not None
+        )
+
+    @field_validator("token_encryption_key")
+    @classmethod
+    def _check_encryption_key(cls, value: SecretStr | None) -> SecretStr | None:
+        if value is not None:
+            try:
+                Fernet(value.get_secret_value().encode())
+            except ValueError:
+                raise ValueError(
+                    "TOKEN_ENCRYPTION_KEY must be a Fernet key (see README: Spotify login)"
+                ) from None
+        return value
+
+    @field_validator("post_login_redirect")
+    @classmethod
+    def _check_post_login_redirect(cls, value: str) -> str:
+        # Only a path on this server: an absolute URL here would be an open redirect
+        if not value.startswith("/") or value.startswith("//"):
+            raise ValueError("POST_LOGIN_REDIRECT must be a path such as /docs")
+        return value
 
     @property
     def allowed_origins(self) -> list[str]:

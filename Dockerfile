@@ -4,7 +4,7 @@
 #   docker build -t muse .        (or: docker compose up --build)
 
 # ---- Stage 1: build the website ----
-FROM node:22-bookworm-slim AS web
+FROM node:25-bookworm-slim AS web
 WORKDIR /web
 # Install dependencies first, so Docker reuses this layer until the package files change
 COPY frontend/package.json frontend/package-lock.json ./

@@ -100,10 +100,9 @@ The app is built in vertical slices so a working "mood → explained songs" demo
 - [x] `docs: document security hardening`
 
 ### `feature/spotify-auth` 🅰
-- [ ] `feat(auth): add Spotify OAuth login and callback with state check`
-- [ ] `feat(auth): add encrypted token storage and server-side sessions`
-- [ ] `feat(auth): add token refresh, logout and me endpoint`
-- [ ] `test(auth): add OAuth, session and token encryption tests`
+- [x] `feat(auth): add Spotify user client and token encryption`
+- [x] `feat(auth): add Spotify login, server-side sessions, logout and me endpoint` (tests in the same commits)
+- [x] `docs: document Spotify login`
 
 ### `feature/user-preferences` 🅰
 - [ ] `feat(preferences): add preference profile endpoints`

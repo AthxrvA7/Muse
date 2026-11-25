@@ -41,6 +41,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 - `/ready` checks the database: `ready` (MongoDB answers), `degraded` (no database configured, e.g. local or CI), `not_ready` with HTTP 503 (configured but not answering)
 - Document models and repositories for `users`, `sessions`, `oauth_states` and `preferences`, with unique indexes and TTL indexes (sessions after 7 idle days, pending logins after 10 minutes), created at startup
 - Repository tests against a real MongoDB, run with `pytest --db` in a throwaway database
+- `GET /api/v1/auth/login`, `GET /api/v1/auth/callback`, `POST /api/v1/auth/logout`, `GET /api/v1/me`
 
 ### Fixed (found in the first run against real Spotify)
 - The 2-per-artist limit now counts every credited artist; Arijit Singh appeared 3 times because he was credited second
@@ -48,6 +49,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 - Explanations name every genre that shaped a track's estimated feel, don't repeat a genre already named, and keep proper names ("Bollywood", "R&B")
 
 ### Security
+- Spotify login (Authorization Code flow): single-use `state` checked on the callback and expired after 10 minutes; minimal scopes (`playlist-modify-private`, `playlist-modify-public`, `user-read-private`)
+- Server-side sessions: the browser holds only a random ID in an `HttpOnly`, `SameSite=Lax` cookie (`Secure` in production); Muse stores its SHA-256 hash; a new ID on every login; logout is immediate
+- Spotify tokens encrypted at rest with Fernet (`TOKEN_ENCRYPTION_KEY`), refreshed automatically before they expire, never logged or sent to the browser
 - Security headers on every response (nosniff, frame denial, no referrer, a nothing-allowed CSP on API responses, `no-store` on `/api/*`, HSTS in production)
 - CORS limited to the origins in `CORS_ORIGINS` (empty by default; `*` rejected at startup)
 - Per-IP rate limiting in one-minute windows: 120/min default, 10/min on `/curate` and `/auth/*`, `/health` and `/ready` exempt; `429` with `Retry-After`

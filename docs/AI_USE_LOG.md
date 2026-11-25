@@ -88,3 +88,13 @@ Never paste secrets, tokens or real user data into an AI tool.
 - **Changes made by us:** Chose a small hand-written fixed-window limiter instead of slowapi (ARCHITECTURE §8 updated) so the whole mechanism can be explained. Kept the strict Content-Security-Policy off `/docs`, because it blocked Swagger's scripts.
 - **Verification:** 217 tests pass (25 new): headers on every route, CORS preflight from allowed and other websites, 429 with `Retry-After`, a separate stricter curate budget, exempt health checks, and blocked look-alike origins.
 - **Reflection:** The Origin check only matters once there is a login cookie, which is why it goes in before `feature/spotify-auth`. The limiter lives in memory, so it resets on restart and won't work across several instances; that's fine for one instance and noted as the scale-out path.
+
+### 2026-11-25 — Spotify login and sessions (slice 3, `feature/spotify-auth`)
+- **Member:** Atharva
+- **Tool:** Claude (Anthropic)
+- **Purpose:** code suggestion, testing
+- **Prompt (summary):** Add Spotify login with the Authorization Code flow, a state check, encrypted token storage, server-side sessions, logout and a `/me` endpoint.
+- **Output used:** `backend/app/clients/spotify_user.py`, `backend/app/core/crypto.py`, `backend/app/services/auth.py`, `backend/app/api/deps.py`, `backend/app/api/v1/auth.py`, token methods in the users repository, `tests/test_auth.py`, `tests/test_spotify_user.py`, `tests/test_crypto.py`, `tests/fakes.py`.
+- **Changes made by us:** Used the playlist endpoints from Spotify's February 2026 changelog (`POST /me/playlists`, `POST /playlists/{id}/items`), since older tutorials use removed ones. Made the post-login redirect accept only a path on this server, so it can't become an open redirect. Writes to Spotify are never retried, so a timeout can't create a playlist twice.
+- **Verification:** 252 tests pass with a fake Spotify and in-memory storage: state reuse, expired and unknown states, cancelled login, rejected code, a Development Mode 403, cookie flags, hashed session IDs, encrypted tokens, automatic refresh and immediate logout.
+- **Reflection:** The tests use fakes, so the real check is logging in with my own Spotify account on my laptop.

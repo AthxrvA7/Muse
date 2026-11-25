@@ -59,6 +59,10 @@ class Settings(BaseSettings):
     # Fernet key that encrypts stored Spotify tokens; generate one (see README). Never commit.
     token_encryption_key: SecretStr | None = None
 
+    # Last.fm API key (free: https://www.last.fm/api/account/create). Gives each song a
+    # mood from listener tags, and similar artists. Optional: without it Muse estimates.
+    lastfm_api_key: SecretStr | None = None
+
     # Folder with the built website (frontend/dist). When set, it is served at /app/ from
     # this same server, so the browser talks to one origin and the login cookie just works.
     frontend_dist: str | None = None
@@ -79,6 +83,7 @@ class Settings(BaseSettings):
         "mongodb_uri",
         "token_encryption_key",
         "frontend_dist",
+        "lastfm_api_key",
         mode="before",
     )
     @classmethod
@@ -89,6 +94,10 @@ class Settings(BaseSettings):
     @property
     def spotify_configured(self) -> bool:
         return bool(self.spotify_client_id and self.spotify_client_secret)
+
+    @property
+    def lastfm_configured(self) -> bool:
+        return self.lastfm_api_key is not None
 
     @property
     def login_configured(self) -> bool:

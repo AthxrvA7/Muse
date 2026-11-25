@@ -21,19 +21,29 @@ MAX_FAVOURITE_GENRES = 3
 MAX_LANGUAGE_GENRES = 2
 DISCOVERY_GENRES = 2
 MOOD_ONLY_GENRES = 4  # when the user gave no taste at all
+MAX_SIMILAR_SEARCHES = 6
 
-Reason = Literal["favourite_artist", "favourite_genre", "language", "discovery", "mood"]
+Reason = Literal[
+    "familiar",  # the user plays it a lot (their Spotify top tracks)
+    "favourite_artist",
+    "similar_artist",  # by an artist similar to a favourite (Last.fm)
+    "favourite_genre",
+    "language",
+    "discovery",
+    "mood",
+]
 
 
 @dataclass(frozen=True)
 class SearchPlan:
     """One Spotify search and why Muse is running it."""
 
-    kind: Literal["artist", "genre"]
-    value: str  # artist name, or genre id from the knowledge base
+    kind: Literal["artist", "genre", "top"]
+    value: str  # artist name, genre id, or time range of the user's top tracks
     reason: Reason
     query: str
     fallback_query: str | None = None  # plain keywords if the genre: filter finds too little
+    related_to: str | None = None  # for similar artists: the favourite they resemble
 
 
 def distance(a: MoodPoint, b: MoodPoint) -> float:
@@ -41,7 +51,13 @@ def distance(a: MoodPoint, b: MoodPoint) -> float:
     return math.dist((a.valence, a.energy), (b.valence, b.energy))
 
 
-def plan_searches(mood: MoodProfile, taste: Taste, kb: GenreKnowledge) -> list[SearchPlan]:
+def plan_searches(
+    mood: MoodProfile,
+    taste: Taste,
+    kb: GenreKnowledge,
+    similar: dict[str, str] | None = None,
+) -> list[SearchPlan]:
+    """`similar` maps an artist similar to a favourite -> that favourite (from Last.fm)."""
     target = MoodPoint(valence=mood.valence, energy=mood.energy)
 
     def closest(genre_ids: list[str], count: int) -> list[str]:
@@ -61,6 +77,10 @@ def plan_searches(mood: MoodProfile, taste: Taste, kb: GenreKnowledge) -> list[S
     plans = [
         SearchPlan("artist", name, "favourite_artist", build_query(artist=name))
         for name in taste.artists[:MAX_ARTIST_SEARCHES]
+    ]
+    plans += [
+        SearchPlan("artist", name, "similar_artist", build_query(artist=name), related_to=favourite)
+        for name, favourite in list((similar or {}).items())[:MAX_SIMILAR_SEARCHES]
     ]
     chosen: list[str] = []
 

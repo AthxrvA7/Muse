@@ -9,6 +9,7 @@ services:
     plan: free
     region: singapore # closest Render region to India and to the Atlas cluster in Mumbai
     branch: main
+    autoDeployTrigger: checksPass # deploy each merge to main only after GitHub Actions pass
     # Build the website (Node is included in Render's Python runtime), then the backend.
     # The backend serves the built site at /app/ (FRONTEND_DIST below).
     buildCommand: cd frontend && npm ci && npm run build && cd ../backend && pip install -r requirements.txt
@@ -44,4 +45,6 @@ services:
         value: muse
       - key: TOKEN_ENCRYPTION_KEY
         sync: false
+      - key: LASTFM_API_KEY
+        sync: false # song moods from Last.fm listener tags; optional
       # CORS_ORIGINS is not needed: the website is served from this same origin

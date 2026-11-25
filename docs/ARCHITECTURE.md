@@ -183,7 +183,14 @@ flowchart LR
 6. **Explain** — template-based sentences built from the actual score components, e.g.
    *"Picked because you love Prateek Kuhad, and its soft indie-folk feel fits your calm, slightly low mood."*
 
-> Honest limitation: Muse's mood fit is estimated at the **genre/artist level**, not from the audio of each song. This is the right trade-off given Spotify's current API, and we say so in the report. A possible stretch goal is adding Last.fm mood tags for track-level signal.
+> Honest limitation: Muse's mood fit is estimated from what listeners and genres say about a song, not from its audio. This is the right trade-off given Spotify's current API, and we say so in the report.
+
+**Since 26 Nov 2026 ([ADR-0011](adr/0011-lastfm-tags-and-own-top-tracks.md)):**
+- **Familiar songs:** for a logged-in user, their Spotify top tracks (~4 weeks and ~6 months) join the candidates, with taste fit 1.0.
+- **Similar artists:** Last.fm's similar artists for the first three favourites are searched too (taste fit 0.8).
+- **Song-level mood:** Last.fm listener tags ("chill", "sad", "party"; `knowledge/mood_tags.json`) place each song on the mood map, ahead of the genre estimate in step 3.
+- **Familiar/new mix:** `familiarity` (0–1, default by mode) sets how many songs the user already knows; each part is diversified on its own, then the playlist is ordered by score.
+- **Freshness:** a random nudge of up to 0.04, a 0.15 penalty for songs picked for the user recently (`recent_picks`, 30-day TTL), and `exclude_track_ids` for "Give me another".
 
 ### 4.6 Playlist service
 - `POST /me/playlists` to create the playlist, then `POST /playlists/{id}/items` to add tracks (Spotify's **new** Feb-2026 endpoints — most old tutorials use the removed ones).

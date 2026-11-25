@@ -98,6 +98,12 @@ Everything that crosses into the backend (request bodies, query strings, headers
 
 Not collected: email, country, listening history, top tracks, followed artists, location, age.
 
+Recent picks: the IDs of the last 90 tracks Muse picked for the user, so playlists don't repeat. Deleted 30 days after the last playlist, included in the data export, removed with the account.
+
+Top tracks: when a logged-in user curates, Muse reads their top tracks (about the last 4 weeks and 6 months) to include songs they already play. They are used for that playlist only and never stored.
+
+Last.fm: Muse sends Last.fm only artist and song names (never anything about the user) to read listener tags and similar artists.
+
 Top artists: only when the user presses **Import from Spotify**, Muse reads their top-artist list once to pre-fill the Music DNA form. The list is not stored, logged or analysed; only what the user then chooses to save becomes their taste profile.
 
 ### 6.2 Notice and consent

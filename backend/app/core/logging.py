@@ -34,6 +34,7 @@ SENSITIVE_KEYS = frozenset(
         "access_token",
         "refresh_token",
         "client_secret",
+        "api_key",
         "code",
         "session_id",
         "mood_text",
@@ -43,7 +44,9 @@ SENSITIVE_KEYS = frozenset(
 # Secrets that can hide inside a message string
 _SECRET_PATTERNS = [
     re.compile(r"(?i)(bearer\s+)[A-Za-z0-9._~+/=-]+"),
-    re.compile(r"(?i)\b(access_token|refresh_token|client_secret|code|password|token)=([^&\s]+)"),
+    re.compile(
+        r"(?i)\b(access_token|refresh_token|client_secret|code|password|token|api_key)=([^&\s]+)"
+    ),
     # user:password inside a connection string, e.g. mongodb+srv://muse:secret@cluster0...
     re.compile(r"(?i)\b([a-z][a-z0-9+.-]*://[^:/@\s]+:)[^@\s]+@"),
 ]

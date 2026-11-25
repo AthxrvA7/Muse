@@ -12,7 +12,7 @@ import { Textarea } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/api/services";
 import { greeting, shortDate } from "@/lib/format";
-import { intentionById } from "@/lib/intentions";
+import { familiarityLabel, intentionById, MODE_FAMILIARITY } from "@/lib/intentions";
 import { MOOD_EMOJI } from "@/lib/moods";
 import type { MoodOptions, Playlist } from "@/lib/types";
 import { useApp } from "@/state/AppState";
@@ -38,6 +38,7 @@ export default function Discover() {
     });
   const canCurate = draft.chips.length > 0 || draft.text.trim().length > 0;
   const intention = intentionById(draft.intention);
+  const familiarity = draft.familiarity ?? MODE_FAMILIARITY[intention.mode];
 
   return (
     <div className="space-y-10">
@@ -110,6 +111,34 @@ export default function Discover() {
             onChange={(e) => setDraft({ ...draft, size: Number(e.target.value) })}
             className="block w-56 accent-plum"
           />
+          {user && (
+            <div className="space-y-1 pt-1">
+              <label htmlFor="familiarity" className="text-sm font-semibold">
+                Familiar <span className="font-normal text-ink-soft">↔</span> New:{" "}
+                <span className="text-plum">{familiarityLabel(familiarity)}</span>
+              </label>
+              <div className="flex items-center gap-2 text-xs text-ink-soft">
+                <span>New</span>
+                <input
+                  id="familiarity"
+                  type="range"
+                  min={0}
+                  max={100}
+                  step={10}
+                  value={Math.round(familiarity * 100)}
+                  onChange={(e) => setDraft({ ...draft, familiarity: Number(e.target.value) / 100 })}
+                  className="block w-44 accent-moss"
+                  aria-valuetext={familiarityLabel(familiarity)}
+                />
+                <span>Familiar</span>
+                {draft.familiarity !== null && (
+                  <button type="button" className="ml-1 text-plum hover:underline" onClick={() => setDraft({ ...draft, familiarity: null })}>
+                    Auto
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
           <div className="flex flex-wrap gap-1.5 text-xs">
             {draft.chips.map((c) => (
               <Badge key={c}>{MOOD_EMOJI[c]} {c}</Badge>
@@ -119,7 +148,15 @@ export default function Discover() {
           </div>
         </div>
         <motion.div whileHover={canCurate ? { scale: 1.02 } : undefined}>
-          <Button size="lg" disabled={!canCurate} onClick={() => navigate("/curate")} className="w-full sm:w-auto">
+          <Button
+            size="lg"
+            disabled={!canCurate}
+            onClick={() => {
+              setDraft({ ...draft, exclude: [] }); // a fresh request, not "give me another"
+              navigate("/curate");
+            }}
+            className="w-full sm:w-auto"
+          >
             <Sparkles /> Curate my playlist <ArrowRight />
           </Button>
         </motion.div>

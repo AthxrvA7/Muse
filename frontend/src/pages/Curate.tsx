@@ -14,10 +14,10 @@ import { useApp } from "@/state/AppState";
 // These mirror what the backend really does for POST /curate, in order.
 const STEPS = [
   { title: "Understanding your mood", message: "Understanding what you're feeling..." },
-  { title: "Mapping your musical direction", message: "Finding your musical direction..." },
-  { title: "Matching your Music DNA", message: "Looking for music that fits your taste..." },
-  { title: "Finding your tracks", message: "Searching Spotify for candidates..." },
-  { title: "Curating your playlist", message: "Putting your playlist together..." },
+  { title: "Gathering songs you love", message: "Looking at what you've been playing..." },
+  { title: "Finding artists like yours", message: "Finding artists close to your favourites..." },
+  { title: "Reading how each song feels", message: "Checking how listeners describe each song..." },
+  { title: "Curating your playlist", message: "Balancing familiar and new..." },
 ];
 const STEP_MS = 650;
 
@@ -48,14 +48,14 @@ export default function Curate() {
     }, STEP_MS);
     const minimum = new Promise((resolve) => setTimeout(resolve, STEP_MS * (STEPS.length - 1)));
 
-    Promise.all([api.curation.curate(mood, draft.size), minimum])
+    Promise.all([api.curation.curate(mood, draft.size, { familiarity: draft.familiarity, exclude: draft.exclude }), minimum])
       .then(([preview]) => {
         clearInterval(timer);
         setStep(STEPS.length);
         setSession({
           id: crypto.randomUUID(),
           created_at: new Date().toISOString(),
-          request: { chips: draft.chips, text: draft.text, intention: draft.intention, size: draft.size },
+          request: { chips: draft.chips, text: draft.text, intention: draft.intention, size: draft.size, familiarity: draft.familiarity, exclude: draft.exclude },
           preview: preview as CuratePreview,
         });
         setTimeout(() => navigate("/results"), 350);

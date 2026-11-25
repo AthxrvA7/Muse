@@ -94,3 +94,33 @@ async def test_delete_removes_every_document_for_that_user_only(world: World) ->
 def test_privacy_endpoints_need_a_login(client: TestClient) -> None:
     assert client.get("/api/v1/me/data").status_code in (401, 503)
     assert client.delete("/api/v1/me").status_code in (401, 503)
+
+
+def test_recent_picks_are_exported_and_deleted() -> None:
+    import asyncio
+
+    class Recent:
+        def __init__(self) -> None:
+            self.ids = ["t1", "t2"]
+
+        async def get(self, user_id: str) -> list[str]:
+            return self.ids
+
+        async def delete(self, user_id: str) -> bool:
+            self.ids = []
+            return True
+
+    async def run() -> tuple[dict, dict]:  # type: ignore[type-arg]
+        world = World()
+        await world.seed()
+        service = PrivacyService(
+            world.users, world.sessions, world.preferences, world.playlists, recent
+        )
+        return await service.export(world.user), await service.delete_account(world.user)
+
+    recent = Recent()
+    exported, removed = asyncio.run(run())
+
+    assert exported["recently_picked_track_ids"] == ["t1", "t2"]
+    assert removed["recent_picks"] == 1
+    assert recent.ids == []

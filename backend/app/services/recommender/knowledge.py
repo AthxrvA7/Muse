@@ -6,6 +6,7 @@ where each genre typically sits on the valence-energy plane, which languages
 it belongs to, and how to search Spotify for it.
 """
 
+import re
 from functools import lru_cache
 from pathlib import Path
 
@@ -50,3 +51,16 @@ def load_genre_knowledge(path: Path = DEFAULT_GENRE_KB_PATH) -> GenreKnowledge:
 @lru_cache
 def get_genre_knowledge() -> GenreKnowledge:
     return load_genre_knowledge()
+
+
+def match_genre(name: str, kb: GenreKnowledge) -> str | None:
+    """Map a Spotify or Last.fm genre ("modern bollywood") to a genre Muse knows ("bollywood")."""
+    name = " ".join(name.lower().split())
+    if name in kb.genres:
+        return name
+    for genre_id, genre in kb.genres.items():
+        if genre.spotify_genre.lower() == name:
+            return genre_id
+    # Longest known genre contained as whole words: "indie pop" beats "pop"
+    contained = [g for g in kb.genres if re.search(rf"(?<![\w-]){re.escape(g)}(?![\w-])", name)]
+    return max(contained, key=len) if contained else None

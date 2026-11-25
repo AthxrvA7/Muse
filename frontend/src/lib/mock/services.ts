@@ -4,6 +4,7 @@
 import type { Services } from "../api/services";
 import type {
   CuratedTrack,
+  CurateOptions,
   CuratePreview,
   Mode,
   MoodProfile,
@@ -49,7 +50,7 @@ function readMood(mood: MoodRequest): MoodProfile {
   };
 }
 
-function curate(mood: MoodRequest, size: number): CuratePreview {
+function curate(mood: MoodRequest, size: number, options: CurateOptions = {}): CuratePreview {
   const profile = readMood(mood);
   const feel = profile.labels.join(" and ") || "current";
   const weights = { comfort: [0.45, 0.55], focus: [0.55, 0.45], energy: [0.6, 0.4], discovery: [0.65, 0.35] };
@@ -70,16 +71,22 @@ function curate(mood: MoodRequest, size: number): CuratePreview {
       mood_fit: Math.round(moodFit * 1000) / 1000,
       taste_fit: tasteFit,
       reason,
+      known: favourite,
+      tags: [],
     };
   });
   scored.sort((a, b) => b.score - a.score);
   return {
     mood: profile,
-    tracks: scored.slice(0, size),
+    tracks: scored.filter((t) => !options.exclude?.includes(t.track.id)).slice(0, size),
     searches: 6,
     candidates_considered: demoTrackPool.length,
     taste_source: "saved_profile",
     note: size > demoTrackPool.length ? "Demo mode has a small track pool." : null,
+    familiarity: options.familiarity ?? 0.7,
+    personal: true,
+    mood_data: "estimated",
+    similar_artists: ["Anuv Jain", "The Local Train"],
   };
 }
 
@@ -129,7 +136,7 @@ export const mockServices: Services = {
       wait({ chips: demoChips, modes: ["comfort", "focus", "energy", "discovery"] as Mode[], max_chips: 5, max_text_length: 500 }),
   },
   curation: {
-    curate: (mood, size) => wait(curate(mood, size), 900),
+    curate: (mood, size, options) => wait(curate(mood, size, options), 900),
   },
   catalog: {
     artists: (q) =>

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { INTENTIONS, intentionById } from "./intentions.ts";
+import { familiarityLabel, INTENTIONS, intentionById, MODE_FAMILIARITY } from "./intentions.ts";
 
 test("every intention maps to a mode the backend supports", () => {
   const modes = new Set(["comfort", "focus", "energy", "discovery"]);
@@ -16,4 +16,11 @@ test("unknown ids fall back to matching the mood", () => {
   assert.equal(intentionById("nope").id, "match");
   assert.equal(intentionById("focus").mode, "focus");
   assert.equal(intentionById("escape").mode, "discovery");
+});
+
+test("familiarity defaults follow the backend and read as plain words", () => {
+  assert.deepEqual(MODE_FAMILIARITY, { comfort: 0.7, focus: 0.6, energy: 0.6, discovery: 0.3 });
+  assert.equal(familiarityLabel(1), "Mostly songs you know");
+  assert.equal(familiarityLabel(0.5), "Half familiar, half new");
+  assert.equal(familiarityLabel(0), "All new to you");
 });

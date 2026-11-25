@@ -31,3 +31,19 @@ export const MODE_LABEL: Record<Mode, string> = {
   energy: "Energy",
   discovery: "Discovery",
 };
+
+/** Share of songs the listener already knows, by mode (the same defaults as the backend). */
+export const MODE_FAMILIARITY: Record<Mode, number> = {
+  comfort: 0.7,
+  focus: 0.6,
+  energy: 0.6,
+  discovery: 0.3,
+};
+
+export function familiarityLabel(value: number): string {
+  if (value >= 0.8) return "Mostly songs you know";
+  if (value >= 0.55) return "Mostly familiar, a few new";
+  if (value >= 0.4) return "Half familiar, half new";
+  if (value >= 0.2) return "Mostly new, a few you know";
+  return "All new to you";
+}

@@ -1,8 +1,9 @@
 """Explanations: one plain sentence per track saying why Muse picked it.
 
 Only factors that actually raised the track's score are mentioned (FR8):
-the favourite artist, the favourite genre / language / discovery genre that
-found it, and the mood match if the track's estimated feel is close.
+the user's own top tracks, a favourite or similar artist, the favourite genre /
+language / discovery genre that found it, and the mood match if the track's feel
+(from Last.fm listener tags, or Muse's estimate) is close.
 """
 
 from app.schemas.curate import Taste
@@ -33,8 +34,15 @@ def explain(item: ScoredTrack, mood: MoodProfile, taste: Taste, kb: GenreKnowled
     parts: list[str] = []
     named: str | None = None  # genre already mentioned, so the mood clause doesn't repeat it
 
-    if item.favourite_artist:
+    if item.familiar_range == "short_term":
+        parts.append("you've been playing it a lot lately")
+    elif item.familiar_range:
+        parts.append("it's one of your most-played songs")
+    elif item.favourite_artist:
         parts.append(f"you like {item.favourite_artist}")
+    elif item.similar_to:
+        artist = item.candidate.track.artists[0].name if item.candidate.track.artists else "it"
+        parts.append(f"{artist} is similar to {item.similar_to}, whom you like")
     elif item.taste_reason == "favourite_genre" and "favourite_genre" in sources:
         named = sources["favourite_genre"].value
         parts.append(f"it's {kb.genres[named].name}, one of your genres")
@@ -47,7 +55,12 @@ def explain(item: ScoredTrack, mood: MoodProfile, taste: Taste, kb: GenreKnowled
         named = sources["discovery"].value
         parts.append(f"it's something new from {kb.genres[named].name}")
 
-    if item.mood_fit >= GOOD_MOOD_FIT and item.mood_source:
+    if item.mood_fit >= GOOD_MOOD_FIT and item.tag_words:
+        words = " and ".join(f"'{w}'" for w in item.tag_words[:2])
+        parts.append(f"listeners tag it {words}, which fits your {mood_phrase(mood)} mood")
+    elif item.mood_fit >= GOOD_MOOD_FIT and item.mood_source == "lastfm":
+        parts.append(f"listeners' tags say it suits a {mood_phrase(mood)} mood")
+    elif item.mood_fit >= GOOD_MOOD_FIT and item.mood_source:
         if item.mood_source in kb.genres:
             genres = [g for g in (item.mood_genres or [item.mood_source]) if g != named]
             names = list(dict.fromkeys(kb.genres[g].name for g in genres))[:2]

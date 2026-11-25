@@ -11,8 +11,8 @@ from app.core.config import Settings
 from app.db.models import User
 from app.main import create_app
 from app.services.auth import NotLoggedInError
-from app.services.recommender.knowledge import get_genre_knowledge
-from app.services.taste_import import TasteImportService, match_genre, suggest_taste
+from app.services.recommender.knowledge import get_genre_knowledge, match_genre
+from app.services.taste_import import TasteImportService, suggest_taste
 
 USER = User(
     id="user-1",

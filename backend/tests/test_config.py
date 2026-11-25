@@ -17,6 +17,7 @@ def test_defaults_are_safe_for_local_development() -> None:
 def test_settings_read_from_environment(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("APP_ENV", "production")
     monkeypatch.setenv("DOCS_ENABLED", "false")
+    monkeypatch.setenv("MONGODB_URI", "mongodb://localhost:27017")
 
     settings = Settings(_env_file=None)
 
@@ -50,3 +51,32 @@ def test_spotify_secret_is_never_shown_in_repr() -> None:
 def test_market_must_be_a_two_letter_country_code() -> None:
     with pytest.raises(ValidationError):
         Settings(_env_file=None, spotify_market="India")
+
+
+def test_mongodb_is_optional_outside_production() -> None:
+    settings = Settings(_env_file=None, mongodb_uri="")
+
+    assert settings.mongodb_uri is None
+    assert settings.mongodb_configured is False
+    assert settings.mongodb_db == "muse"
+
+
+def test_production_requires_mongodb() -> None:
+    with pytest.raises(ValidationError, match="MONGODB_URI is required"):
+        Settings(_env_file=None, app_env="production")
+
+
+def test_mongodb_uri_is_hidden_and_checked() -> None:
+    uri = "mongodb+srv://muse:s3cret-pass@cluster0.example.mongodb.net"
+    settings = Settings(_env_file=None, mongodb_uri=uri)
+
+    assert settings.mongodb_configured is True
+    assert "s3cret-pass" not in repr(settings)
+    with pytest.raises(ValidationError) as error:
+        Settings(_env_file=None, mongodb_uri="https://muse:s3cret-pass@example.com")
+    assert "s3cret-pass" not in str(error.value)
+
+
+def test_invalid_database_name_is_rejected() -> None:
+    with pytest.raises(ValidationError):
+        Settings(_env_file=None, mongodb_db="muse prod")

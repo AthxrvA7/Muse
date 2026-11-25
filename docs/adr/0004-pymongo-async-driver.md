@@ -15,3 +15,6 @@ Use `pymongo` (≥ 4.13) with `AsyncMongoClient`.
 ## Consequences
 - Supported long-term and fully async.
 - `mongomock` does not support the async API, so repository tests run against a real MongoDB (Docker locally, a service container in CI). Unit tests for services use in-memory fake repositories.
+
+## Update (2026-11-18)
+Docker and CI service containers are not set up yet (DevOps track). Until they are, repository tests are opt-in: `pytest --db` runs them against the developer's own Atlas cluster in a throwaway `muse_test_<random>` database, and plain `pytest` (which CI runs) skips them. Moving them to a MongoDB service container in CI is part of the DevOps track.

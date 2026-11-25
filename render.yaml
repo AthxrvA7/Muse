@@ -1,0 +1,44 @@
+# Render Blueprint: the deployed Muse backend (ADR-0007).
+# Render builds from the `main` branch and redeploys automatically after each merge.
+# Secrets are not in this file: Render asks for every `sync: false` value when the
+# Blueprint is created, and keeps them encrypted in its dashboard.
+services:
+  - type: web
+    name: muse-api
+    runtime: python
+    plan: free
+    region: singapore # closest Render region to India and to the Atlas cluster in Mumbai
+    rootDir: backend
+    branch: main
+    buildCommand: pip install -r requirements.txt
+    # --proxy-headers: Render terminates HTTPS in front of the app, so the real client IP
+    # (rate limiting) and the https scheme (Origin check, secure cookies) come from its
+    # X-Forwarded-* headers. Only Render's proxy can reach the app, so trusting it is safe.
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips "*"
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.10" # same version the emotion model was trained with
+      - key: APP_ENV
+        value: production
+      - key: LOG_LEVEL
+        value: INFO
+      - key: DOCS_ENABLED
+        value: "true" # Swagger is the demo UI until the frontend exists
+      - key: SPOTIFY_MARKET
+        value: IN
+      - key: POST_LOGIN_REDIRECT
+        value: /docs
+      - key: SPOTIFY_CLIENT_ID
+        sync: false
+      - key: SPOTIFY_CLIENT_SECRET
+        sync: false
+      - key: SPOTIFY_REDIRECT_URI
+        sync: false # https://<service>.onrender.com/api/v1/auth/callback
+      - key: MONGODB_URI
+        sync: false
+      - key: MONGODB_DB
+        value: muse
+      - key: TOKEN_ENCRYPTION_KEY
+        sync: false
+      # CORS_ORIGINS: add the frontend's URL here once it is deployed

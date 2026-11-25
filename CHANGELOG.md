@@ -64,10 +64,16 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 - `GET /api/v1/me/data` downloads everything Muse holds about you as JSON (account, taste profile, playlists it created; never tokens), and lists what is never stored
 - `DELETE /api/v1/me` deletes your account, taste profile, playlist records and every login session, and logs you out
 
-
 ### Website support
 - `GET /api/v1/mood/options`: mood chips with their valence and energy, and the modes, for clients
 - The built website is served at `/app/` by the backend (`FRONTEND_DIST`), with its own Content-Security-Policy
+
+### Docker and CI
+- Multi-stage `Dockerfile`: Node builds the website, a slim Python image serves it with the API as a non-root user, with a `/health` healthcheck
+- `docker-compose.yml`: Muse plus MongoDB 7, one command (`docker compose up --build`); the database is not exposed outside Docker
+- CI: website job (ESLint, type check, unit tests, build); Docker job builds the image, starts the compose stack and smoke-tests it
+- CI: 90% backend coverage gate; database tests run against a temporary MongoDB service container
+- CI: `pip-audit` and `npm audit` dependency checks; Dependabot for pip, npm, Actions and Docker
 
 ### Security
 - Hard allow-list for calls made with a user's Spotify token: only reading the profile, creating a new playlist, and adding tracks to a playlist Muse just created. Deleting, editing, reordering or reading existing playlists is refused before any request is sent

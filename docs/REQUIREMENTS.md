@@ -44,12 +44,12 @@
 | NFR3 | Security | Tokens encrypted at rest | Test: the stored token field is not equal to the plaintext token and decrypts correctly |
 | NFR4 | Security | Protected endpoints need a valid session | Security tests: no cookie, expired session and deleted session each return `401` |
 | NFR5 | Security | Abuse resistance | Rate-limit test returns `429` after the limit; security headers present on every response |
-| NFR6 | Security | Supply chain | pip-audit passes in CI (no known high/critical vulnerabilities, or a documented exception); Dependabot enabled; CodeQL shows no open high alerts |
+| NFR6 | Security | Supply chain | pip-audit passes in CI (no known high/critical vulnerabilities, or a documented exception); Dependabot enabled; CodeQL shows no open high alerts — pip-audit, npm audit and Dependabot in place; CodeQL not yet |
 | NFR7 | Privacy | Data minimisation and retention | Mood text never written to the database or logs (test); TTL indexes exist for sessions, mood_sessions, oauth_states and audit_events (test) |
 | NFR8 | Reliability | Graceful degradation | Tests for Spotify timeout → `503`, 429 → `429`, missing model → degraded mode, unknown exception → generic `500` with no stack trace |
 | NFR9 | Reliability | Recoverability | Backup and restore rehearsed once against a test database; result recorded in the runbook |
 | NFR10 | Maintainability | Layered and typed | Ruff and mypy pass in CI; routes never import the database or Spotify client directly (reviewed in PRs) |
-| NFR11 | Portability | Runs anywhere Docker runs | `docker compose up` gives a healthy `/ready` on a clean machine |
+| NFR11 | Portability | Runs anywhere Docker runs | `docker compose up` gives a healthy `/ready` on a clean machine — **Verified** (CI Docker job starts a fresh compose stack on every push and checks `/ready` is `ready`) |
 | NFR12 | Usability / accessibility | Clear errors now; WCAG 2.2 AA in Phase 2 | Phase 1: every error has a human-readable `message`. Phase 2: axe/Lighthouse checks in CI, keyboard-only walkthrough |
 | NFR13 | Compliance | Within Spotify developer policy | No Spotify content used for ML training; no listening-history metrics; only the scopes listed in ARCHITECTURE §4.2 |
 | NFR14 | Observability | Traceable requests | Every log line has a request ID; `/health` and `/ready` available |

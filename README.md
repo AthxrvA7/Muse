@@ -129,7 +129,7 @@ The full design is in [Architecture](docs/ARCHITECTURE.md).
 ### Prerequisites
 - Git
 - Python 3.12 or newer (`python --version`)
-- Docker Desktop (needed from the Docker setup onwards)
+- Docker Desktop (optional: runs the whole app, website and database with one command)
 
 ### Run the backend locally (Windows PowerShell)
 
@@ -158,7 +158,7 @@ pytest          # everything except the database tests (same as CI)
 pytest --db     # also runs the repository tests against MONGODB_URI from .env
 ```
 
-`pytest --db` works in a throwaway database (`muse_test_<random>`) and removes it afterwards; the real `muse` database is never touched. CI runs plain `pytest`, so it never needs the database password.
+`pytest --db` works in a throwaway database (`muse_test_<random>`) and removes it afterwards; the real `muse` database is never touched. CI runs the database tests against its own temporary MongoDB container, so it never needs the Atlas password.
 
 ### Run the same checks as CI
 
@@ -169,7 +169,33 @@ ruff format --check .
 pytest
 ```
 
-CI runs these automatically on every push and pull request (see the **Actions** tab).
+CI runs these automatically on every push and pull request (see the **Actions** tab), plus:
+
+| CI job | What it checks |
+|---|---|
+| Lint | Ruff lint and format check on the backend |
+| Tests | pytest with a 90% coverage gate, then the database tests against a temporary MongoDB container |
+| Website | ESLint, TypeScript type check, unit tests and production build of `frontend/` |
+| Docker | Builds the image, starts it with MongoDB (`docker compose up --wait`) and smoke-tests `/health`, `/ready`, `/app/` and the non-root user |
+| Dependency audit | `pip-audit` on backend packages and `npm audit` on the website's runtime packages |
+
+Dependabot opens weekly pull requests for pip, npm, GitHub Actions and Docker image updates.
+
+### Run everything with Docker
+
+One command builds the website, starts the backend and a local MongoDB:
+
+```powershell
+docker compose up --build
+```
+
+Then open http://127.0.0.1:8000/app/ (website) or http://127.0.0.1:8000/docs (API). Spotify keys are read from your `.env` if you have one; without them the app still starts (search and login are then off). The database runs in its own container and is not reachable from outside it. `Ctrl+C` stops Muse; `docker compose down -v` also deletes the local database.
+
+| File | Purpose |
+|---|---|
+| `Dockerfile` | Two stages: Node builds the website, then a slim Python image runs FastAPI as a non-root user with a `/health` healthcheck |
+| `docker-compose.yml` | The app plus MongoDB 7 with a healthcheck; the app starts only once the database is healthy |
+| `.dockerignore` | Keeps `.env`, `.git`, tests and `node_modules` out of the image |
 
 ## Screenshots
 

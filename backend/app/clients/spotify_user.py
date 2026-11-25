@@ -1,0 +1,197 @@
+"""Spotify calls made on behalf of a logged-in user (Authorization Code flow).
+
+The app-only client (``spotify.py``) can search the catalogue. Creating a playlist in
+someone's account needs that person's permission, so it uses *their* access token,
+obtained when they log in with Spotify. Tokens are never logged or sent to the browser.
+"""
+
+import asyncio
+import logging
+import time
+from dataclasses import dataclass
+from typing import Any
+from urllib.parse import urlencode
+
+import httpx2
+
+from app.clients.spotify import (
+    API_URL,
+    MAX_RETRY_AFTER,
+    TOKEN_URL,
+    SpotifyAuthError,
+    SpotifyError,
+    SpotifyRateLimitError,
+    SpotifyUnavailableError,
+)
+
+logger = logging.getLogger(__name__)
+
+AUTHORIZE_URL = "https://accounts.spotify.com/authorize"
+# The minimum Muse needs: create playlists and read the user's Spotify ID and name
+SCOPES = ("playlist-modify-private", "playlist-modify-public", "user-read-private")
+MAX_ITEMS_PER_REQUEST = 100  # Spotify's limit for adding items to a playlist
+
+
+class SpotifyLoginError(SpotifyError):
+    """The login code or refresh token was rejected (expired, reused or revoked)."""
+
+
+class SpotifyForbiddenError(SpotifyError):
+    """Spotify refused the action, e.g. the account isn't on the app's Development Mode list."""
+
+
+@dataclass(frozen=True)
+class UserTokens:
+    access_token: str
+    refresh_token: str
+    expires_at: float  # Unix time (seconds) when the access token stops working
+    scope: str
+
+    def expires_soon(self, margin: float = 60) -> bool:
+        return time.time() >= self.expires_at - margin
+
+
+@dataclass(frozen=True)
+class SpotifyProfile:
+    id: str
+    display_name: str | None
+
+
+@dataclass(frozen=True)
+class CreatedPlaylist:
+    id: str
+    url: str
+
+
+def authorize_url(client_id: str, redirect_uri: str, state: str) -> str:
+    """The Spotify consent page the browser is sent to."""
+    query = urlencode(
+        {
+            "response_type": "code",
+            "client_id": client_id,
+            "scope": " ".join(SCOPES),
+            "redirect_uri": redirect_uri,
+            "state": state,
+        }
+    )
+    return f"{AUTHORIZE_URL}?{query}"
+
+
+class SpotifyUserAuth:
+    """Exchanges a login code for tokens, and refreshes expired access tokens."""
+
+    def __init__(self, http: httpx2.AsyncClient, client_id: str, client_secret: str) -> None:
+        self._http = http
+        self._auth = httpx2.BasicAuth(client_id, client_secret)
+
+    async def exchange_code(self, code: str, redirect_uri: str) -> UserTokens:
+        body = await self._token_request(
+            {"grant_type": "authorization_code", "code": code, "redirect_uri": redirect_uri}
+        )
+        return _tokens(body, previous_refresh_token=None)
+
+    async def refresh(self, refresh_token: str) -> UserTokens:
+        body = await self._token_request(
+            {"grant_type": "refresh_token", "refresh_token": refresh_token}
+        )
+        # Spotify may or may not send a new refresh token; keep the old one if not
+        return _tokens(body, previous_refresh_token=refresh_token)
+
+    async def _token_request(self, data: dict[str, str]) -> dict[str, Any]:
+        try:
+            response = await self._http.post(TOKEN_URL, data=data, auth=self._auth)
+        except httpx2.TransportError as error:
+            raise SpotifyUnavailableError("Could not reach Spotify accounts service") from error
+        if response.status_code == 200:
+            result: dict[str, Any] = response.json()
+            return result
+        if response.status_code == 400:
+            # invalid_grant: code expired/reused, or refresh token revoked
+            raise SpotifyLoginError("Spotify rejected the login; please log in again")
+        if response.status_code == 401:
+            raise SpotifyAuthError("Spotify rejected Muse's client credentials")
+        raise SpotifyUnavailableError(f"Spotify token endpoint returned {response.status_code}")
+
+
+def _tokens(body: dict[str, Any], previous_refresh_token: str | None) -> UserTokens:
+    refresh_token = body.get("refresh_token") or previous_refresh_token
+    if not refresh_token:
+        raise SpotifyLoginError("Spotify did not return a refresh token")
+    return UserTokens(
+        access_token=body["access_token"],
+        refresh_token=refresh_token,
+        expires_at=time.time() + int(body.get("expires_in", 3600)),
+        scope=body.get("scope", ""),
+    )
+
+
+class SpotifyUserClient:
+    """API calls with one user's access token."""
+
+    def __init__(self, http: httpx2.AsyncClient, access_token: str) -> None:
+        self._http = http
+        self._headers = {"Authorization": f"Bearer {access_token}"}
+
+    async def me(self) -> SpotifyProfile:
+        body = await self._request("GET", "/me")
+        return SpotifyProfile(id=body["id"], display_name=body.get("display_name"))
+
+    async def create_playlist(self, name: str, description: str) -> CreatedPlaylist:
+        """Creates a private playlist in the user's account (Feb-2026 endpoint)."""
+        body = await self._request(
+            "POST", "/me/playlists", {"name": name, "description": description, "public": False}
+        )
+        url = (
+            body.get("external_urls", {}).get("spotify")
+            or f"https://open.spotify.com/playlist/{body['id']}"
+        )
+        return CreatedPlaylist(id=body["id"], url=url)
+
+    async def add_tracks(self, playlist_id: str, track_ids: list[str]) -> None:
+        uris = [f"spotify:track:{track_id}" for track_id in track_ids]
+        for start in range(0, len(uris), MAX_ITEMS_PER_REQUEST):
+            await self._request(
+                "POST",
+                f"/playlists/{playlist_id}/items",
+                {"uris": uris[start : start + MAX_ITEMS_PER_REQUEST]},
+            )
+
+    async def _request(
+        self, method: str, path: str, json: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
+        waited = retried = False
+        while True:
+            try:
+                response = await self._http.request(
+                    method, f"{API_URL}{path}", json=json, headers=self._headers
+                )
+            except httpx2.TransportError as error:
+                if retried or method != "GET":  # never repeat a write that may have happened
+                    raise SpotifyUnavailableError("Spotify did not respond") from error
+                retried = True
+                continue
+
+            status = response.status_code
+            if status in (200, 201):
+                result: dict[str, Any] = response.json() if response.content else {}
+                return result
+            if status == 401:
+                raise SpotifyLoginError("The Spotify login has expired; please log in again")
+            if status == 403:
+                raise SpotifyForbiddenError("Spotify refused this action for this account")
+            if status == 429:
+                retry_after = int(response.headers.get("Retry-After", "1"))
+                if waited or retry_after > MAX_RETRY_AFTER:
+                    raise SpotifyRateLimitError(retry_after)
+                waited = True
+                await asyncio.sleep(retry_after)
+                continue
+            if status >= 500 and not retried and method == "GET":
+                retried = True
+                continue
+            logger.warning(
+                "Spotify user request failed", extra={"path": path, "status_code": status}
+            )
+            if status >= 500:
+                raise SpotifyUnavailableError(f"Spotify returned {status}")
+            raise SpotifyError(f"Spotify returned {status}")

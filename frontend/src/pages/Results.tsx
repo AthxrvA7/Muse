@@ -1,5 +1,5 @@
 import { AnimatePresence } from "framer-motion";
-import { Clock, Gauge, HeartHandshake, ListMusic, LogIn, RefreshCw, Shuffle, Undo2 } from "lucide-react";
+import { Clock, Compass, Gauge, HeartHandshake, ListMusic, LogIn, RefreshCw, Undo2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Navigate, useNavigate } from "react-router";
 
@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { api } from "@/lib/api/services";
 import { percent, playlistName, playlistTitle, totalDuration } from "@/lib/format";
-import { intentionById, MODE_LABEL } from "@/lib/intentions";
+import { familiarityLabel, intentionById, MODE_LABEL } from "@/lib/intentions";
 import { MOOD_EMOJI } from "@/lib/moods";
 import { useApp } from "@/state/AppState";
 
@@ -36,10 +36,20 @@ export default function Results() {
   const { mood } = preview;
   const intention = intentionById(request.intention);
 
-  function regenerate() {
-    setDraft({ chips: request.chips, text: request.text, intention: request.intention, size: request.size });
+  // Same mood, but leave out what's on screen (and what the last "another" left out)
+  function another(familiarity: number | null = request.familiarity ?? null) {
+    const shown = preview.tracks.map((t) => t.track.id);
+    setDraft({
+      chips: request.chips,
+      text: request.text,
+      intention: request.intention,
+      size: request.size,
+      familiarity,
+      exclude: [...(request.exclude ?? []), ...shown].slice(-100),
+    });
     navigate("/curate");
   }
+  const knownCount = tracks.filter((t) => t.known).length;
 
   return (
     <div className="space-y-8">
@@ -79,16 +89,8 @@ export default function Results() {
             <a href={api.auth.loginUrl}><LogIn /> Connect Spotify to save</a>
           </Button>
         )}
-        <Button variant="outline" onClick={regenerate}><RefreshCw /> Regenerate</Button>
-        <Button
-          variant="outline"
-          onClick={() => {
-            setDraft({ ...request, intention: "escape" });
-            navigate("/curate");
-          }}
-        >
-          <Shuffle /> More like this, but new
-        </Button>
+        <Button variant="outline" onClick={() => another()}><RefreshCw /> Give me another</Button>
+        <Button variant="outline" onClick={() => another(0.2)}><Compass /> Same mood, newer songs</Button>
         <Button variant="ghost" onClick={() => navigate("/")}><Undo2 /> Change mood</Button>
       </div>
 
@@ -135,11 +137,31 @@ export default function Results() {
               <dt className="text-ink-soft">Confidence</dt><dd className="text-right font-medium">{percent(mood.confidence)}</dd>
               <dt className="text-ink-soft">Taste used</dt><dd className="text-right font-medium">{SOURCE[preview.taste_source]}</dd>
               <dt className="text-ink-soft">Searched</dt><dd className="text-right font-medium">{preview.candidates_considered} songs</dd>
+              <dt className="text-ink-soft">You know</dt><dd className="text-right font-medium">{knownCount} of {tracks.length}</dd>
+              <dt className="text-ink-soft">Your songs</dt><dd className="text-right font-medium">{preview.personal ? "Spotify top tracks" : "Not used"}</dd>
+              <dt className="text-ink-soft">Song moods</dt><dd className="text-right font-medium">{preview.mood_data === "lastfm" ? "Listener tags" : "Estimated"}</dd>
             </dl>
+            {preview.familiarity !== undefined && (
+              <p className="rounded-xl bg-sage-soft px-3 py-2 text-xs text-moss">{familiarityLabel(preview.familiarity)}</p>
+            )}
+            {!!preview.similar_artists?.length && (
+              <div className="space-y-1.5">
+                <p className="text-xs text-ink-soft">Artists close to your favourites</p>
+                <div className="flex flex-wrap gap-1">
+                  {preview.similar_artists.slice(0, 6).map((a) => <Badge key={a} variant="outline">{a}</Badge>)}
+                </div>
+              </div>
+            )}
           </Card>
           <p className="px-2 text-xs leading-relaxed text-ink-soft">
-            Each track is scored on how well its feel matches your mood and how close it is to the taste you described. Open a track to see why it was picked.
+            Each track is scored on how well its feel matches your mood and how close it is to your taste. Open a track to see why it was picked.
           </p>
+          {preview.mood_data === "lastfm" && (
+            <p className="px-2 text-xs text-ink-soft">
+              Song moods and similar artists powered by{" "}
+              <a href="https://www.last.fm" target="_blank" rel="noreferrer" className="font-medium text-plum hover:underline">Last.fm</a>.
+            </p>
+          )}
         </aside>
       </div>
     </div>

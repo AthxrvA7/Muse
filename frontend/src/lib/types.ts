@@ -85,6 +85,8 @@ export interface CuratedTrack {
   mood_fit: number;
   taste_fit: number;
   reason: string;
+  known?: boolean; // the listener already plays it, or it's by a favourite artist
+  tags?: string[]; // Last.fm listener tags about its feel
 }
 
 export interface CuratePreview {
@@ -94,6 +96,16 @@ export interface CuratePreview {
   candidates_considered: number;
   taste_source: "request" | "saved_profile" | "none";
   note: string | null;
+  familiarity?: number; // share of known songs aimed for
+  personal?: boolean; // the listener's Spotify top tracks were used
+  mood_data?: "lastfm" | "estimated";
+  similar_artists?: string[];
+}
+
+/** Extra knobs for one curation. */
+export interface CurateOptions {
+  familiarity?: number | null; // null/undefined: the mode's default
+  exclude?: string[]; // track IDs to leave out (Give me another)
 }
 
 export interface MusicPreferences {
@@ -140,7 +152,7 @@ export interface Playlist {
 export interface MuseSession {
   id: string;
   created_at: string;
-  request: { chips: string[]; text: string; intention: string; size: number };
+  request: { chips: string[]; text: string; intention: string; size: number; familiarity?: number | null; exclude?: string[] };
   preview: CuratePreview;
 }
 

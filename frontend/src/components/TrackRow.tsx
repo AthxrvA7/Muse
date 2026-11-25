@@ -47,6 +47,16 @@ export function TrackRow({ item, index, onRemove }: { item: CuratedTrack; index:
           <div className="flex items-center gap-2">
             <span className="truncate font-semibold text-ink">{track.name}</span>
             {track.explicit && <span className="rounded bg-ink-soft/20 px-1 text-[10px] font-bold text-ink-soft">E</span>}
+            {item.known !== undefined && (
+              <span
+                className={cn(
+                  "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold",
+                  item.known ? "bg-sage-soft text-moss" : "bg-lavender-soft text-plum",
+                )}
+              >
+                {item.known ? "You know this" : "New for you"}
+              </span>
+            )}
           </div>
           <div className="truncate text-sm text-ink-soft">
             {track.artists.map((a) => a.name).join(", ")} · {track.album}
@@ -93,6 +103,14 @@ export function TrackRow({ item, index, onRemove }: { item: CuratedTrack; index:
                 <span className="font-semibold text-plum">Why Muse picked it: </span>
                 {item.reason}
               </p>
+              {!!item.tags?.length && (
+                <div className="flex flex-wrap items-center gap-1 text-xs">
+                  <span className="text-ink-soft">Listeners call it</span>
+                  {item.tags.map((tag) => (
+                    <span key={tag} className="rounded-full bg-surface px-2 py-0.5 font-medium text-plum">{tag}</span>
+                  ))}
+                </div>
+              )}
               <FitBar label="Mood fit" value={item.mood_fit} tone="plum" />
               <FitBar label="Taste fit" value={item.taste_fit} tone="moss" />
               <FitBar label="Overall" value={item.score} tone="plum" />

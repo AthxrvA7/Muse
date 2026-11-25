@@ -4,6 +4,7 @@
 import { mockServices } from "../mock/services";
 import type {
   Artist,
+  CurateOptions,
   CuratePreview,
   MoodOptions,
   MoodRequest,
@@ -38,8 +39,16 @@ const realServices = {
     options: () => request<MoodOptions>("/api/v1/mood/options"),
   },
   curation: {
-    curate: (mood: MoodRequest, size: number) =>
-      request<CuratePreview>("/api/v1/curate", { method: "POST", body: { mood, size } }),
+    curate: (mood: MoodRequest, size: number, options: CurateOptions = {}) =>
+      request<CuratePreview>("/api/v1/curate", {
+        method: "POST",
+        body: {
+          mood,
+          size,
+          ...(options.familiarity != null ? { familiarity: options.familiarity } : {}),
+          ...(options.exclude?.length ? { exclude_track_ids: options.exclude.slice(-100) } : {}),
+        },
+      }),
   },
   catalog: {
     artists: (q: string) =>

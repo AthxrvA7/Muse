@@ -48,6 +48,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 - Explanations name every genre that shaped a track's estimated feel, don't repeat a genre already named, and keep proper names ("Bollywood", "R&B")
 
 ### Security
+- Security headers on every response (nosniff, frame denial, no referrer, a nothing-allowed CSP on API responses, `no-store` on `/api/*`, HSTS in production)
+- CORS limited to the origins in `CORS_ORIGINS` (empty by default; `*` rejected at startup)
+- Per-IP rate limiting in one-minute windows: 120/min default, 10/min on `/curate` and `/auth/*`, `/health` and `/ready` exempt; `429` with `Retry-After`
+- Origin check: POST/PUT/PATCH/DELETE from other websites are refused with `403` (CSRF defence)
 - Settings validation errors no longer echo the invalid value, which could have printed a password or secret at startup
 - Logs mask the password inside connection strings (`mongodb+srv://user:[REDACTED]@…`)
 

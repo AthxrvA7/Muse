@@ -301,7 +301,7 @@ muse/
 | Lint/format | Ruff | One fast tool for lint + format |
 | Type checking | mypy (standard mode) | Catches type errors before runtime |
 | Security tooling | pip-audit, CodeQL, Dependabot, GitHub secret scanning | All free; none needs an enterprise DevSecOps platform (which the guidelines rule out) |
-| Rate limiting | slowapi | Proven library; in-memory store is fine for one instance |
+| Rate limiting | Muse's own fixed-window limiter (`app/core/security.py`, ~40 lines) | Changed from slowapi: one less dependency, and small enough to read and explain in full. In-memory store is fine for one instance |
 | Containers | Docker + Docker Compose | Same environment for all 3 laptops and CI |
 | CI | GitHub Actions | Required by guidelines |
 | Deployment | Render (Docker web service) + MongoDB Atlas | Free, supports Docker, gives a public HTTPS URL (Spotify requires HTTPS redirect URIs) |
@@ -385,10 +385,11 @@ Full threat model and control mapping: [`SECURITY_PRIVACY.md`](SECURITY_PRIVACY.
 - OAuth `state` checked on every callback; minimal Spotify scopes.
 - Spotify tokens encrypted at rest (Fernet) on top of Atlas disk encryption; never sent to the browser; never logged.
 - Opaque server-side sessions; cookie `httpOnly`, `Secure`, `SameSite=Lax`; session ID rotated on login.
-- State-changing requests require JSON and a matching `Origin` header (CSRF defence).
-- Rate limiting per IP and per user (`slowapi`), with stricter limits on `/auth/*` and `/curate`.
-- Security headers on every response (HSTS, `X-Content-Type-Options`, `Referrer-Policy`, a restrictive `Content-Security-Policy` for the API).
-- CORS allows only the known frontend origin.
+- State-changing requests (POST, PUT, PATCH, DELETE) whose `Origin` is neither Muse itself nor a listed frontend are refused with `403` (CSRF defence). Requests without an `Origin` (curl, Postman) carry no browser cookies and are allowed.
+- Rate limiting per IP in fixed one-minute windows: 120/min by default, 10/min on `/curate` and `/auth/*`; `/health` and `/ready` are exempt. Over the limit → `429` with `Retry-After`. (Per-user limits come with login.)
+- Security headers on every response: `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Cross-Origin-Opener-Policy`; a `Content-Security-Policy` that allows nothing on API responses (not on `/docs`, which loads Swagger from a CDN); `Cache-Control: no-store` on `/api/*`; HSTS in production only.
+- CORS allows only the origins in `CORS_ORIGINS` (never `*`); empty by default.
+- In deployment, uvicorn must run with `--proxy-headers` so the real client IP and `https` scheme reach the rate limiter and Origin check.
 - Every input validated by Pydantic with length and size limits; MongoDB queries are built only from typed values, never from raw request JSON (NoSQL-injection defence).
 - Dependencies pinned, scanned by pip-audit, Dependabot and CodeQL.
 

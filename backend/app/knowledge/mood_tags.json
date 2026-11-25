@@ -1,0 +1,342 @@
+{
+ "version": 1,
+ "about": "Last.fm listener tags that describe how a song feels, placed on the same valence-energy map as the mood chips (0-1). Hand-made by the Muse team; genre tags are mapped through genre_kb.json instead.",
+ "tags": {
+  "happy": {
+   "valence": 0.85,
+   "energy": 0.65
+  },
+  "feel good": {
+   "valence": 0.85,
+   "energy": 0.62
+  },
+  "uplifting": {
+   "valence": 0.82,
+   "energy": 0.62
+  },
+  "upbeat": {
+   "valence": 0.8,
+   "energy": 0.75
+  },
+  "fun": {
+   "valence": 0.82,
+   "energy": 0.72
+  },
+  "party": {
+   "valence": 0.8,
+   "energy": 0.9
+  },
+  "dance": {
+   "valence": 0.78,
+   "energy": 0.85
+  },
+  "danceable": {
+   "valence": 0.78,
+   "energy": 0.82
+  },
+  "summer": {
+   "valence": 0.82,
+   "energy": 0.68
+  },
+  "sunny": {
+   "valence": 0.84,
+   "energy": 0.6
+  },
+  "joyful": {
+   "valence": 0.88,
+   "energy": 0.68
+  },
+  "cheerful": {
+   "valence": 0.86,
+   "energy": 0.62
+  },
+  "energetic": {
+   "valence": 0.7,
+   "energy": 0.85
+  },
+  "hype": {
+   "valence": 0.72,
+   "energy": 0.94
+  },
+  "pump up": {
+   "valence": 0.7,
+   "energy": 0.92
+  },
+  "workout": {
+   "valence": 0.65,
+   "energy": 0.9
+  },
+  "gym": {
+   "valence": 0.62,
+   "energy": 0.92
+  },
+  "motivational": {
+   "valence": 0.72,
+   "energy": 0.78
+  },
+  "motivation": {
+   "valence": 0.72,
+   "energy": 0.78
+  },
+  "confident": {
+   "valence": 0.75,
+   "energy": 0.72
+  },
+  "road trip": {
+   "valence": 0.75,
+   "energy": 0.66
+  },
+  "catchy": {
+   "valence": 0.75,
+   "energy": 0.66
+  },
+  "anthem": {
+   "valence": 0.72,
+   "energy": 0.8
+  },
+  "celebration": {
+   "valence": 0.85,
+   "energy": 0.82
+  },
+  "chill": {
+   "valence": 0.62,
+   "energy": 0.28
+  },
+  "chillout": {
+   "valence": 0.62,
+   "energy": 0.25
+  },
+  "relaxing": {
+   "valence": 0.65,
+   "energy": 0.2
+  },
+  "relax": {
+   "valence": 0.65,
+   "energy": 0.2
+  },
+  "calm": {
+   "valence": 0.64,
+   "energy": 0.18
+  },
+  "peaceful": {
+   "valence": 0.68,
+   "energy": 0.15
+  },
+  "mellow": {
+   "valence": 0.58,
+   "energy": 0.25
+  },
+  "soothing": {
+   "valence": 0.65,
+   "energy": 0.17
+  },
+  "romantic": {
+   "valence": 0.76,
+   "energy": 0.42
+  },
+  "love": {
+   "valence": 0.74,
+   "energy": 0.45
+  },
+  "love songs": {
+   "valence": 0.74,
+   "energy": 0.42
+  },
+  "sweet": {
+   "valence": 0.78,
+   "energy": 0.4
+  },
+  "beautiful": {
+   "valence": 0.7,
+   "energy": 0.32
+  },
+  "dreamy": {
+   "valence": 0.62,
+   "energy": 0.3
+  },
+  "warm": {
+   "valence": 0.72,
+   "energy": 0.38
+  },
+  "soft": {
+   "valence": 0.6,
+   "energy": 0.22
+  },
+  "easy listening": {
+   "valence": 0.65,
+   "energy": 0.3
+  },
+  "cozy": {
+   "valence": 0.7,
+   "energy": 0.25
+  },
+  "sleep": {
+   "valence": 0.55,
+   "energy": 0.08
+  },
+  "lullaby": {
+   "valence": 0.6,
+   "energy": 0.1
+  },
+  "study": {
+   "valence": 0.55,
+   "energy": 0.3
+  },
+  "focus": {
+   "valence": 0.55,
+   "energy": 0.38
+  },
+  "coffee": {
+   "valence": 0.62,
+   "energy": 0.32
+  },
+  "rainy day": {
+   "valence": 0.42,
+   "energy": 0.22
+  },
+  "spiritual": {
+   "valence": 0.65,
+   "energy": 0.3
+  },
+  "devotional": {
+   "valence": 0.66,
+   "energy": 0.32
+  },
+  "hopeful": {
+   "valence": 0.68,
+   "energy": 0.45
+  },
+  "wedding": {
+   "valence": 0.82,
+   "energy": 0.6
+  },
+  "sad": {
+   "valence": 0.18,
+   "energy": 0.25
+  },
+  "sad songs": {
+   "valence": 0.18,
+   "energy": 0.25
+  },
+  "melancholy": {
+   "valence": 0.25,
+   "energy": 0.28
+  },
+  "melancholic": {
+   "valence": 0.25,
+   "energy": 0.28
+  },
+  "heartbreak": {
+   "valence": 0.12,
+   "energy": 0.33
+  },
+  "breakup": {
+   "valence": 0.15,
+   "energy": 0.4
+  },
+  "lonely": {
+   "valence": 0.18,
+   "energy": 0.25
+  },
+  "depressing": {
+   "valence": 0.1,
+   "energy": 0.2
+  },
+  "emotional": {
+   "valence": 0.32,
+   "energy": 0.35
+  },
+  "nostalgic": {
+   "valence": 0.48,
+   "energy": 0.32
+  },
+  "nostalgia": {
+   "valence": 0.48,
+   "energy": 0.32
+  },
+  "bittersweet": {
+   "valence": 0.42,
+   "energy": 0.33
+  },
+  "late night": {
+   "valence": 0.42,
+   "energy": 0.3
+  },
+  "night": {
+   "valence": 0.42,
+   "energy": 0.33
+  },
+  "atmospheric": {
+   "valence": 0.45,
+   "energy": 0.3
+  },
+  "haunting": {
+   "valence": 0.3,
+   "energy": 0.35
+  },
+  "sentimental": {
+   "valence": 0.42,
+   "energy": 0.3
+  },
+  "longing": {
+   "valence": 0.3,
+   "energy": 0.3
+  },
+  "dark": {
+   "valence": 0.22,
+   "energy": 0.55
+  },
+  "moody": {
+   "valence": 0.32,
+   "energy": 0.4
+  },
+  "introspective": {
+   "valence": 0.4,
+   "energy": 0.28
+  },
+  "rain": {
+   "valence": 0.4,
+   "energy": 0.22
+  },
+  "tearjerker": {
+   "valence": 0.15,
+   "energy": 0.3
+  },
+  "pain": {
+   "valence": 0.15,
+   "energy": 0.4
+  },
+  "angry": {
+   "valence": 0.12,
+   "energy": 0.88
+  },
+  "aggressive": {
+   "valence": 0.18,
+   "energy": 0.92
+  },
+  "rage": {
+   "valence": 0.1,
+   "energy": 0.95
+  },
+  "intense": {
+   "valence": 0.3,
+   "energy": 0.85
+  },
+  "heavy": {
+   "valence": 0.25,
+   "energy": 0.88
+  },
+  "angst": {
+   "valence": 0.2,
+   "energy": 0.72
+  },
+  "anxious": {
+   "valence": 0.25,
+   "energy": 0.72
+  },
+  "epic": {
+   "valence": 0.55,
+   "energy": 0.85
+  }
+ }
+}

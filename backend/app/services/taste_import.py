@@ -9,7 +9,6 @@ Spotify artist genres often come back empty in Development Mode, so the suggesti
 always has artists, and genres/languages only when Spotify gives genres Muse knows.
 """
 
-import re
 from collections import Counter
 from typing import Protocol
 
@@ -18,7 +17,7 @@ import httpx2
 from app.clients.spotify_user import TOP_ARTISTS_SCOPE, SpotifyUserClient, TopArtist
 from app.db.models import User
 from app.schemas.preferences import SpotifyTasteSuggestion
-from app.services.recommender.knowledge import GenreKnowledge
+from app.services.recommender.knowledge import GenreKnowledge, match_genre
 
 MAX_ARTISTS = 10  # same limit as the taste profile
 MAX_GENRES = 5
@@ -32,19 +31,6 @@ class MissingScopeError(Exception):
 class TokenSource(Protocol):
     async def access_token(self, user_id: str) -> str: ...
     async def granted_scopes(self, user_id: str) -> set[str]: ...
-
-
-def match_genre(spotify_genre: str, kb: GenreKnowledge) -> str | None:
-    """Map a Spotify genre ("modern bollywood") to a genre Muse knows ("bollywood")."""
-    name = spotify_genre.strip().lower()
-    if name in kb.genres:
-        return name
-    for genre_id, genre in kb.genres.items():
-        if genre.spotify_genre.lower() == name:
-            return genre_id
-    # Longest known genre contained as whole words: "indie pop" beats "pop"
-    contained = [g for g in kb.genres if re.search(rf"(?<![\w-]){re.escape(g)}(?![\w-])", name)]
-    return max(contained, key=len) if contained else None
 
 
 def suggest_taste(artists: list[TopArtist], kb: GenreKnowledge) -> SpotifyTasteSuggestion:

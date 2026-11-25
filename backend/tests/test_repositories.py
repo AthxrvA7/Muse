@@ -7,7 +7,9 @@ real database. They are skipped unless pytest is run with ``--db``:
 
 They then use MONGODB_URI from .env, work in a throwaway database named
 ``muse_test_<random>``, and drop its collections afterwards. The real ``muse``
-database is never touched. CI runs without ``--db``, so it never needs the secret.
+database is never touched. CI runs them with ``--db`` against a throwaway MongoDB
+service container (MONGODB_URI set as an environment variable), so it never needs
+the Atlas secret.
 """
 
 from collections.abc import AsyncIterator

@@ -1,4 +1,4 @@
-# Continuous Integration for the Muse backend.
+# Continuous Integration for Muse (backend, website and Docker image).
 # Runs on every push to any branch and on every pull request into main.
 # Each job shows up as a separate Pass/Fail check on the commit and the PR.
 name: CI
@@ -47,6 +47,16 @@ jobs:
     name: Tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # A real, empty MongoDB for the repository tests; deleted when the job ends
+    services:
+      mongo:
+        image: mongo:7.0
+        ports: ["27017:27017"]
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.runCommand({ping:1}).ok'"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
@@ -56,5 +66,11 @@ jobs:
           cache-dependency-path: backend/requirements*.txt
       - name: Install dependencies
         run: pip install -r requirements-dev.txt
-      - name: Run tests
-        run: pytest
+      - name: Run tests with coverage
+        # Fails if less than 90% of the backend code is exercised by the tests
+        run: pytest --cov=app --cov-report=term-missing:skip-covered --cov-fail-under=90
+      - name: Run database tests against MongoDB
+        # Uses the throwaway MongoDB service above: no Atlas password is needed in CI
+        env:
+          MONGODB_URI: mongodb://localhost:27017
+        run: pytest tests/test_repositories.py --db

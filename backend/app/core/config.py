@@ -54,6 +54,12 @@ class Settings(BaseSettings):
     # e.g. "http://localhost:5173". Empty = no cross-origin browser access at all.
     cors_origins: str = ""
 
+    # Requests per minute from one IP address. Curate is stricter because each call makes
+    # about 20 Spotify requests; auth is stricter to slow down abuse of the login flow.
+    rate_limit_per_minute: int = Field(default=120, ge=1)
+    rate_limit_curate_per_minute: int = Field(default=10, ge=1)
+    rate_limit_auth_per_minute: int = Field(default=10, ge=1)
+
     @field_validator("spotify_client_id", "spotify_client_secret", "mongodb_uri", mode="before")
     @classmethod
     def _empty_is_unset(cls, value: object) -> object:

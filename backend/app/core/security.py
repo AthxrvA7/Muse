@@ -3,10 +3,16 @@
 Each one is small on purpose, so it can be read and explained in full.
 """
 
+import logging
+import math
+import time
 from collections.abc import Awaitable, Callable
 
-from fastapi import Request, Response
+from fastapi import Request, Response, status
+from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
+
+logger = logging.getLogger(__name__)
 
 # Swagger UI loads its script and styles from a CDN, so the strict policy below would
 # break /docs. The docs pages get every other header, just not the CSP.
@@ -40,3 +46,80 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             # HTTPS only from now on (production runs behind HTTPS; never sent locally)
             headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
         return response
+
+
+class FixedWindowRateLimiter:
+    """Counts requests per key in fixed one-minute windows, in memory.
+
+    Fixed windows are the simplest correct scheme: each (key, minute) gets a counter,
+    and a new minute starts from zero. Memory is fine for Muse's single instance
+    (ADR-0001); several instances would need a shared store such as MongoDB or Redis.
+    """
+
+    WINDOW_SECONDS = 60
+    _MAX_KEYS = 10_000  # old windows are cleared before the table can grow past this
+
+    def __init__(self, clock: Callable[[], float] = time.monotonic) -> None:
+        self._clock = clock
+        self._counts: dict[str, tuple[int, int]] = {}  # key -> (window number, count)
+
+    def hit(self, key: str, limit: int) -> int | None:
+        """Count one request. Returns None if allowed, else seconds until the next window."""
+        now = self._clock()
+        window = int(now // self.WINDOW_SECONDS)
+        if len(self._counts) >= self._MAX_KEYS:
+            self._counts = {k: v for k, v in self._counts.items() if v[0] == window}
+
+        current_window, count = self._counts.get(key, (window, 0))
+        if current_window != window:
+            count = 0
+        if count >= limit:
+            return max(1, math.ceil((window + 1) * self.WINDOW_SECONDS - now))
+        self._counts[key] = (window, count + 1)
+        return None
+
+
+class RateLimitMiddleware(BaseHTTPMiddleware):
+    """Rejects a client with 429 once it goes over its per-minute budget (threat T10)."""
+
+    _EXEMPT = ("/health", "/ready")  # platform health checks must never be throttled
+
+    def __init__(
+        self,
+        app: object,
+        *,
+        limiter: FixedWindowRateLimiter,
+        default_limit: int,
+        prefix_limits: dict[str, int],
+    ) -> None:
+        super().__init__(app)  # type: ignore[arg-type]
+        self.limiter = limiter
+        self.default_limit = default_limit
+        self.prefix_limits = prefix_limits
+
+    def _bucket(self, path: str) -> tuple[str, int]:
+        for prefix, limit in self.prefix_limits.items():
+            if path.startswith(prefix):
+                return prefix, limit
+        return "default", self.default_limit
+
+    async def dispatch(
+        self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    ) -> Response:
+        path = request.url.path
+        if path in self._EXEMPT or request.method == "OPTIONS":
+            return await call_next(request)
+
+        # Behind a proxy (Render), uvicorn's --proxy-headers puts the real client IP here
+        client_ip = request.client.host if request.client else "unknown"
+        bucket, limit = self._bucket(path)
+        retry_after = self.limiter.hit(f"{bucket}:{client_ip}", limit)
+        if retry_after is None:
+            return await call_next(request)
+
+        logger.warning("rate limit exceeded", extra={"bucket": bucket, "path": path})
+        return JSONResponse(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            content={"detail": {"message": "Too many requests; try again shortly"}},
+            headers={"Retry-After": str(retry_after)},
+        )

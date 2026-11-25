@@ -18,7 +18,11 @@ from app.api.v1.router import api_router
 from app.core.config import Settings, get_settings
 from app.core.logging import configure_logging
 from app.core.middleware import RequestIDMiddleware
-from app.core.security import SecurityHeadersMiddleware
+from app.core.security import (
+    FixedWindowRateLimiter,
+    RateLimitMiddleware,
+    SecurityHeadersMiddleware,
+)
 from app.db.indexes import ensure_indexes
 from app.db.mongo import create_client
 from app.schemas.meta import ServiceInfo
@@ -68,6 +72,16 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     # Middleware runs outside-in in the reverse order of these lines: the last one added
     # sees the request first. Request IDs are outermost so every response, including
     # rejections, gets an ID and an access-log line.
+    prefix = settings.api_v1_prefix
+    app.add_middleware(
+        RateLimitMiddleware,
+        limiter=FixedWindowRateLimiter(),
+        default_limit=settings.rate_limit_per_minute,
+        prefix_limits={
+            f"{prefix}/curate": settings.rate_limit_curate_per_minute,
+            f"{prefix}/auth": settings.rate_limit_auth_per_minute,
+        },
+    )
     if settings.allowed_origins:
         app.add_middleware(
             CORSMiddleware,

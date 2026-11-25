@@ -71,5 +71,7 @@ def explain(item: ScoredTrack, mood: MoodProfile, taste: Taste, kb: GenreKnowled
 
     if not parts:
         return "Included to round out the playlist with songs close to what you asked for."
+    if item.bpm and item.tempo == mood.tempo:
+        parts.append(f"at {item.bpm:.0f} BPM it keeps the {mood.tempo} pace you need")
     sentence = "Picked because " + ", and ".join(parts) + "."
     return sentence

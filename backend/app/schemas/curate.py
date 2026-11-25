@@ -5,7 +5,7 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.schemas.catalog import Track
-from app.schemas.mood import MoodProfile, MoodRequest
+from app.schemas.mood import MoodProfile, MoodRequest, Tempo
 
 MAX_NAME_LENGTH = 100
 
@@ -77,6 +77,16 @@ class CurateRequest(BaseModel):
         description="Share of songs you already know: 0 = all new, 1 = all familiar. "
         "Leave out for the mode's default (comfort 0.7, focus/energy 0.6, discovery 0.3)",
     )
+    language: str = Field(
+        default="auto",
+        description="auto: one language, chosen from your songs and taste · mix: any "
+        "language · or a code such as hi or en (see GET /curate/options)",
+    )
+    genre: str | None = Field(
+        default=None,
+        description="Keep the playlist around this genre (see GET /curate/options); "
+        "leave out to let Muse choose one",
+    )
     exclude_track_ids: list[str] = Field(
         default=[],
         max_length=100,
@@ -101,6 +111,10 @@ class CuratedTrack(BaseModel):
         default=False, description="You already play it, or it's by a favourite artist"
     )
     tags: list[str] = Field(default=[], description="Last.fm listener tags about its feel")
+    bpm: float | None = Field(default=None, description="Tempo in beats per minute (Deezer)")
+    tempo: Tempo | None = Field(default=None, description="slow < 95 BPM ≤ medium ≤ 125 < fast")
+    genre: str | None = Field(default=None, description="The song's genre, when known")
+    language: str | None = Field(default=None, description="The song's language, when known")
 
 
 class CuratePreview(BaseModel):
@@ -125,6 +139,10 @@ class CuratePreview(BaseModel):
     similar_artists: list[str] = Field(
         default=[], description="Artists similar to your favourites that Muse searched"
     )
+    language: str | None = Field(
+        default=None, description="The playlist's language (None: mixed or unknown)"
+    )
+    genre: str | None = Field(default=None, description="The genre the playlist is built around")
 
 
 class GenreOption(BaseModel):

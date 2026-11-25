@@ -62,6 +62,8 @@ class Settings(BaseSettings):
     # Last.fm API key (free: https://www.last.fm/api/account/create). Gives each song a
     # mood from listener tags, and similar artists. Optional: without it Muse estimates.
     lastfm_api_key: SecretStr | None = None
+    # Song tempo (BPM) from Deezer's free public API; needs no key. False switches it off.
+    deezer_enabled: bool = True
 
     # Folder with the built website (frontend/dist). When set, it is served at /app/ from
     # this same server, so the browser talks to one origin and the login cookie just works.

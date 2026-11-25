@@ -20,6 +20,7 @@ DEFAULT_GENRE_KB_PATH = KNOWLEDGE_DIR / "genre_kb.json"
 class Genre(MoodPoint):
     name: str
     langs: list[str]
+    family: str  # the scene it belongs to, e.g. "indian film & pop"
     spotify_genre: str = Field(min_length=1)
     keywords: str = Field(min_length=1)
 
@@ -29,6 +30,7 @@ class GenreKnowledge(BaseModel):
     about: str
     languages: dict[str, str]
     genres: dict[str, Genre]
+    related_families: dict[str, list[str]] = {}  # families that blend well together
 
     @model_validator(mode="after")
     def _languages_are_known(self) -> "GenreKnowledge":
@@ -36,7 +38,36 @@ class GenreKnowledge(BaseModel):
             unknown = set(genre.langs) - set(self.languages)
             if unknown:
                 raise ValueError(f"Genre '{genre_id}' uses unknown language(s): {sorted(unknown)}")
+        families = {genre.family for genre in self.genres.values()}
+        for family, related in self.related_families.items():
+            unknown = ({family} | set(related)) - families
+            if unknown:
+                raise ValueError(f"related_families uses unknown family(ies): {sorted(unknown)}")
         return self
+
+    def coherence(self, genre_id: str | None, anchor_id: str | None) -> float:
+        """How well a genre sits in a playlist anchored on another genre (0-1).
+
+        Same genre 1.0 · same family 0.85 · related family 0.55 · unrelated 0 ·
+        unknown 0.5 (no evidence either way).
+        """
+        if (
+            not genre_id
+            or not anchor_id
+            or genre_id not in self.genres
+            or anchor_id not in self.genres
+        ):
+            return 0.5
+        if genre_id == anchor_id:
+            return 1.0
+        family, anchor = self.genres[genre_id].family, self.genres[anchor_id].family
+        if family == anchor:
+            return 0.85
+        if family in self.related_families.get(anchor, []) or anchor in self.related_families.get(
+            family, []
+        ):
+            return 0.55
+        return 0.0
 
     def genres_for_languages(self, languages: list[str]) -> list[str]:
         """Genre ids sung in any of these languages (language-neutral genres excluded)."""

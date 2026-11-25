@@ -47,6 +47,9 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 - `POST /api/v1/playlists` creates a private playlist with the curated tracks in the user's Spotify account (Spotify's February 2026 endpoints `POST /me/playlists` and `POST /playlists/{id}/items`) and records it; `GET /api/v1/playlists` lists them
 - `POST /api/v1/curate` without `taste` uses the logged-in user's saved profile; the response's `taste_source` says which was used
 
+### Fixed
+- A database outage during a request (e.g. Atlas blocking a new IP address) now returns a clear `503` instead of a generic 500 error page
+
 ### Fixed (found in the first run against real Spotify)
 - The 2-per-artist limit now counts every credited artist; Arijit Singh appeared 3 times because he was credited second
 - Tracks with equal scores are now ordered by Spotify's own result order instead of by track ID

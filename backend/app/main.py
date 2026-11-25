@@ -8,8 +8,9 @@ import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pymongo.errors import PyMongoError
 
 from app import __version__
@@ -97,6 +98,20 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.add_middleware(RequestIDMiddleware)
     app.include_router(health_router)
     app.include_router(api_router, prefix=settings.api_v1_prefix)
+
+    @app.exception_handler(PyMongoError)
+    async def database_unavailable(request: Request, error: PyMongoError) -> JSONResponse:
+        # e.g. Atlas unreachable (network, IP access list): a clear 503, not a crash page
+        logger.warning(
+            "database unavailable",
+            extra={"error_type": type(error).__name__, "path": request.url.path},
+        )
+        return JSONResponse(
+            status_code=503,
+            content={
+                "detail": {"message": "The database is unavailable right now; try again shortly"}
+            },
+        )
 
     @app.get("/", tags=["meta"], summary="Service information")
     def root() -> ServiceInfo:

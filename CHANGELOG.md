@@ -68,6 +68,15 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 - `GET /api/v1/mood/options`: mood chips with their valence and energy, and the modes, for clients
 - The built website is served at `/app/` by the backend (`FRONTEND_DIST`), with its own Content-Security-Policy
 
+### Smarter curation (ADR-0011)
+- Songs you already play: your Spotify top tracks (last ~4 weeks and ~6 months) are mixed in, marked "You know this"
+- Song moods from Last.fm listener tags ("chill", "sad", "party"), so Muse knows which of your songs fit tonight; explanations quote the tags
+- New songs from artists similar to your favourites (Last.fm), instead of mostly genre searches
+- `familiarity` (0–1) and a Familiar ↔ New slider on the website; defaults by mode
+- Never the same playlist twice: a small random nudge, recent picks are less likely (`recent_picks`, 30 days), and "Give me another" leaves out the songs on screen
+- `LASTFM_API_KEY` setting (optional); `GET /me/top/tracks` added to the read-only allow-list
+- Render deploys automatically after CI passes (`autoDeployTrigger: checksPass`)
+
 ### Import from Spotify
 - `GET /api/v1/preferences/from-spotify` suggests a taste profile from your Spotify top artists (about the last 6 months): artists, plus the genres and languages Muse knows among their Spotify genres. Nothing is saved: the website puts it in the Music DNA form for you to edit and save
 - New read-only scope `user-top-read`, and `GET /me/top/artists` added to the user-token allow-list. Accounts that logged in before are asked to log in again (`relogin_needed`) instead of calling Spotify

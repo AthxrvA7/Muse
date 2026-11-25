@@ -138,3 +138,13 @@ Never paste secrets, tokens or real user data into an AI tool.
 - **Changes made by us:** We kept the synopsis principle that the profile is *stated* by the user: the import only pre-fills the form, nothing is saved until the user presses Save, and the top-artist list is not stored or analysed. Old logins without the new permission get a clear "log in again" answer instead of a Spotify error.
 - **Verification:** 303 backend tests pass; the new tests check the genre mapping, that the endpoint makes exactly one read-only call and saves nothing, the log-in-again path, and the error paths. Checked on the live site after deployment.
 - **Reflection:** The synopsis lists Spotify listening data as out of scope. We read the top-artist list only on request and only to suggest a profile, which keeps the user in control while making the first playlist feel familiar.
+
+### 2026-11-26 — Smarter curation (`feature/smart-curation`)
+- **Member:** Atharva
+- **Tool:** Claude (Anthropic)
+- **Purpose:** design discussion, code generation, testing, documentation
+- **Prompt (summary):** On the live site the playlist was the same every time and mood barely changed which of my artists' songs came up. I asked for songs that fit my mood *and* that I like, including ones I already listen to, and for it to feel like a real product.
+- **Output used:** Last.fm client and tag-to-mood map, top tracks as a familiar pool, similar-artist searches, familiar/new mix, recent-picks memory, random variety, "Give me another", website slider and badges, ADR-0011, tests.
+- **Changes made by us:** Chose Last.fm over lyrics or an LLM (free, explainable, no copyrighted text). Kept every external call optional with a fallback, and a 6-second budget so the playlist is never held up. Kept the top tracks out of the database; only Muse's own recent picks are stored, with a 30-day expiry and included in export and deletion.
+- **Verification:** 326 backend tests and 12 website tests pass; new tests cover tag moods, the time budget, the familiar/new share, similar artists, "Give me another", recent picks and failure fallbacks. Checked on the live site after deployment with my own Spotify account.
+- **Reflection:** The first version worked as designed but felt repetitive in real use; testing with a real account found what unit tests couldn't. A song-level mood signal and the user's own songs mattered more than any scoring tweak.

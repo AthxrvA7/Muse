@@ -48,6 +48,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 - `POST /api/v1/curate` without `taste` uses the logged-in user's saved profile; the response's `taste_source` says which was used
 
 ### Fixed
+- The Swagger example for `POST /api/v1/playlists` used real track IDs, which added two unrelated songs when run as-is; it now asks for IDs from `/curate`
 - A database outage during a request (e.g. Atlas blocking a new IP address) now returns a clear `503` instead of a generic 500 error page
 
 ### Fixed (found in the first run against real Spotify)
@@ -58,6 +59,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 ### Deployment
 - Render Blueprint (`render.yaml`): one web service built from `main`, health-checked on `/health`, behind Render's HTTPS proxy (`--proxy-headers`); secrets entered in Render, never committed
 - Deployment runbook (`docs/DEPLOYMENT.md`): first deployment, rollback, demo checks, troubleshooting
+
+### Website support
+- `GET /api/v1/mood/options`: mood chips with their valence and energy, and the modes, for clients
+- The built website is served at `/app/` by the backend (`FRONTEND_DIST`), with its own Content-Security-Policy
 
 ### Security
 - Hard allow-list for calls made with a user's Spotify token: only reading the profile, creating a new playlist, and adding tracks to a playlist Muse just created. Deleting, editing, reordering or reading existing playlists is refused before any request is sent

@@ -212,6 +212,8 @@ We only store **Muse-owned data**: what the user told us and what Muse generated
 
 ## 6. API surface (v1)
 
+The website (React, `frontend/`) is built to static files and served by the same backend at `/app/`, so the browser talks to one origin: the login cookie works without CORS, and the Origin check and `SameSite=Lax` cookie protect it. `/app/` gets its own Content-Security-Policy (only its own scripts, album art from `i.scdn.co`, API calls to itself).
+
 All under `/api/v1` except health checks. Interactive docs are auto-generated at `/docs` (Swagger UI) — this is also our demo UI before the frontend exists.
 
 | Method | Path | Purpose | Phase |
@@ -228,6 +230,7 @@ All under `/api/v1` except health checks. Interactive docs are auto-generated at
 | GET / PUT | `/preferences` | Read / save taste profile | 1 |
 | GET | `/preferences/dna` | Music DNA summary | 1 |
 | GET | `/catalog/search` | Artist/track autocomplete | 1 |
+| GET | `/mood/options` | Mood chips (with their place on the mood map) and modes, for the website *(implemented)* | 1 |
 | POST | `/mood/analyze` | Mood → MoodProfile (preview) | 1 |
 | POST | `/curate` | Generate a ranked, explained playlist preview *(implemented, stateless)* | 1 |
 | GET | `/curate/options` | Genres and languages allowed in `taste` *(implemented)* | 1 |

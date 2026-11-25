@@ -78,7 +78,7 @@ export default function History() {
         <div className="flex gap-1.5">
           {RANGES.map((r) => (
             <button key={r.id} type="button" onClick={() => setRange(r.id)} aria-pressed={range === r.id}
-              className={cn("rounded-full px-3.5 py-2 text-sm transition", range === r.id ? "bg-plum text-white" : "bg-surface text-ink-soft ring-1 ring-line hover:bg-lavender-faint")}>
+              className={cn("rounded-full px-3.5 py-2 text-sm transition", range === r.id ? "bg-plum text-on-accent" : "bg-surface text-ink-soft ring-1 ring-line hover:bg-lavender-faint")}>
               {r.label}
             </button>
           ))}

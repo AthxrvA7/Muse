@@ -1,4 +1,4 @@
-import { AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { Clock, Compass, Gauge, HeartHandshake, ListMusic, LogIn, RefreshCw, Undo2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Navigate, useNavigate } from "react-router";
@@ -162,6 +162,31 @@ export default function Results() {
               </div>
             )}
           </Card>
+          {preview.coverage && preview.coverage.candidates > 0 && (
+            <Card className="space-y-2 p-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-ink-soft">Under the hood</p>
+              {(
+                [
+                  ["Feel from listener tags", preview.coverage.with_mood],
+                  ["Language known", preview.coverage.with_language],
+                  ["Genre known", preview.coverage.with_genre],
+                  ["Tempo known", preview.coverage.with_tempo],
+                ] as const
+              ).map(([label, n]) => (
+                <div key={label} className="space-y-1">
+                  <div className="flex justify-between text-xs"><span className="text-ink-soft">{label}</span><span className="tabular-nums">{n}/{preview.coverage!.candidates}</span></div>
+                  <div className="h-1 overflow-hidden rounded-full bg-lavender-faint">
+                    <motion.div
+                      className="h-full rounded-full bg-gradient-to-r from-plum to-coral"
+                      initial={{ width: 0 }}
+                      animate={{ width: `${(n / preview.coverage!.candidates) * 100}%` }}
+                      transition={{ duration: 0.8, ease: "easeOut" }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </Card>
+          )}
           <p className="px-2 text-xs leading-relaxed text-ink-soft">
             Each track is scored on how well its feel matches your mood and how close it is to your taste. Open a track to see why it was picked.
           </p>

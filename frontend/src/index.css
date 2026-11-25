@@ -2,26 +2,36 @@
 @import "@fontsource-variable/inter";
 @import "@fontsource-variable/fraunces";
 
-/* Muse design tokens: "soft digital sanctuary". Purple is the brand, green means
-   positive / success / Spotify, charcoal carries the text. */
-@theme {
-  --color-canvas: #faf9fc;
-  --color-surface: #ffffff;
-  --color-lavender: #c9b6f0;
-  --color-lavender-soft: #eae2f8;
-  --color-lavender-faint: #f4f0fb;
-  --color-plum: #6e58a8;
-  --color-plum-muted: #9883c5;
-  --color-ink: #201d27;
-  --color-ink-soft: #77717f;
-  --color-line: #e9e4ef;
-  --color-sage: #a8c9b0;
-  --color-sage-soft: #e6f0e8;
-  --color-moss: #547a60;
-  --color-danger: #b4475a;
-  --color-danger-soft: #fbe9ec;
-  --color-amber-soft: #fdf3dc;
-  --color-amber: #8a6100;
+/* Muse design tokens: "late-night record store". Warm vinyl black or paper cream,
+   a tangerine needle-drop accent, mint for "good / Spotify", and soft coral for warmth.
+   Token names are kept from the first palette (plum = accent, lavender = accent tint,
+   moss/sage = positive), so every component switches with the theme. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme inline {
+  --color-canvas: var(--c-canvas);
+  --color-surface: var(--c-surface);
+  --color-raised: var(--c-raised);
+  --color-lavender: var(--c-accent-2);
+  --color-lavender-soft: var(--c-accent-soft);
+  --color-lavender-faint: var(--c-accent-faint);
+  --color-plum: var(--c-accent);
+  --color-plum-muted: var(--c-accent-muted);
+  --color-plum-strong: var(--c-accent-strong);
+  --color-ink: var(--c-ink);
+  --color-ink-soft: var(--c-ink-soft);
+  --color-line: var(--c-line);
+  --color-sage: var(--c-mint-2);
+  --color-sage-soft: var(--c-mint-soft);
+  --color-moss: var(--c-mint);
+  --color-moss-strong: var(--c-mint-strong);
+  --color-coral: var(--c-coral);
+  --color-sky: var(--c-sky);
+  --color-danger: var(--c-danger);
+  --color-danger-soft: var(--c-danger-soft);
+  --color-amber-soft: var(--c-amber-soft);
+  --color-amber: var(--c-amber);
+  --color-on-accent: var(--c-on-accent);
 
   --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Fraunces Variable", ui-serif, Georgia, serif;
@@ -30,8 +40,71 @@
   --radius-2xl: 1.25rem;
   --radius-3xl: 1.75rem;
 
-  --shadow-soft: 0 1px 2px rgb(32 29 39 / 0.04), 0 8px 24px -12px rgb(110 88 168 / 0.18);
-  --shadow-lift: 0 2px 4px rgb(32 29 39 / 0.05), 0 18px 40px -18px rgb(110 88 168 / 0.35);
+  --shadow-soft: var(--c-shadow-soft);
+  --shadow-lift: var(--c-shadow-lift);
+  --shadow-glow: 0 0 0 1px var(--c-accent-faint), 0 10px 40px -10px var(--c-accent-glow);
+}
+
+:root {
+  /* Light: paper, ink and a burnt-orange needle */
+  --c-canvas: #f5efe6;
+  --c-surface: #fffaf2;
+  --c-raised: #fff4e6;
+  --c-ink: #221b16;
+  --c-ink-soft: #7a6c5f;
+  --c-line: #e7dccb;
+  --c-accent: #e4572e;
+  --c-accent-strong: #c8461f;
+  --c-accent-muted: #ee8a63;
+  --c-accent-2: #f6a77f;
+  --c-accent-soft: #fbdccb;
+  --c-accent-faint: #fdeee3;
+  --c-accent-glow: rgb(228 87 46 / 0.35);
+  --c-on-accent: #fffaf2;
+  --c-mint: #13875a;
+  --c-mint-strong: #0e6f49;
+  --c-mint-2: #7fd3ad;
+  --c-mint-soft: #d9f1e4;
+  --c-coral: #ff6b81;
+  --c-sky: #3d8fd6;
+  --c-danger: #c0392b;
+  --c-danger-soft: #fbe3df;
+  --c-amber: #8a5a00;
+  --c-amber-soft: #fdefc8;
+  --c-shadow-soft: 0 1px 2px rgb(34 27 22 / 0.05), 0 8px 24px -12px rgb(228 87 46 / 0.22);
+  --c-shadow-lift: 0 2px 4px rgb(34 27 22 / 0.06), 0 20px 44px -18px rgb(228 87 46 / 0.4);
+  color-scheme: light;
+}
+
+.dark {
+  /* Dark: warm vinyl black, cream ink, a glowing tangerine needle */
+  --c-canvas: #12100e;
+  --c-surface: #1b1815;
+  --c-raised: #24201c;
+  --c-ink: #f4ece2;
+  --c-ink-soft: #a89a8c;
+  --c-line: #2f2924;
+  --c-accent: #ff7a45;
+  --c-accent-strong: #ff9466;
+  --c-accent-muted: #c8653f;
+  --c-accent-2: #ff9b70;
+  --c-accent-soft: #3b2219;
+  --c-accent-faint: #2a1a14;
+  --c-accent-glow: rgb(255 122 69 / 0.45);
+  --c-on-accent: #160f0b;
+  --c-mint: #3ddc97;
+  --c-mint-strong: #66e6ae;
+  --c-mint-2: #2c8f66;
+  --c-mint-soft: #15301f;
+  --c-coral: #ff6b81;
+  --c-sky: #6cb6ff;
+  --c-danger: #ff6b6b;
+  --c-danger-soft: #3a1a1c;
+  --c-amber: #ffc857;
+  --c-amber-soft: #3a2f16;
+  --c-shadow-soft: 0 1px 2px rgb(0 0 0 / 0.4), 0 10px 28px -14px rgb(0 0 0 / 0.7);
+  --c-shadow-lift: 0 2px 6px rgb(0 0 0 / 0.45), 0 24px 50px -20px rgb(255 122 69 / 0.35);
+  color-scheme: dark;
 }
 
 @layer base {
@@ -45,6 +118,7 @@
     margin: 0;
     min-height: 100vh;
     background: var(--color-canvas);
+    transition: background-color 0.35s ease, color 0.35s ease;
   }
   ::selection {
     background: var(--color-lavender-soft);
@@ -67,4 +141,51 @@
   font-family: var(--font-display);
   font-optical-sizing: auto;
   letter-spacing: -0.02em;
+}
+
+/* Grain: a faint record-sleeve texture over everything (no image file needed) */
+@utility grain {
+  position: relative;
+  &::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 60;
+    opacity: 0.05;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+}
+
+/* A song's pulse: the BPM chip beats at the song's own tempo (--beat set inline) */
+@keyframes beat {
+  0%, 100% { transform: scale(1); }
+  12% { transform: scale(1.18); }
+  30% { transform: scale(1); }
+}
+@utility beat {
+  animation: beat var(--beat, 0.75s) ease-out infinite;
+}
+
+/* Equaliser bars for "now hovering" rows and the logo */
+@keyframes eq {
+  0%, 100% { transform: scaleY(0.3); }
+  50% { transform: scaleY(1); }
+}
+@utility eq-bar {
+  transform-origin: bottom;
+  animation: eq 0.9s ease-in-out infinite;
+}
+
+@keyframes spin-slow {
+  to { transform: rotate(360deg); }
+}
+@utility spin-slow {
+  animation: spin-slow 6s linear infinite;
+}
+
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-14deg) scale(1.15); }
+  60% { transform: rotate(10deg); }
 }

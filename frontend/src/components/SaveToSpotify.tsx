@@ -2,6 +2,7 @@ import { Check, ExternalLink, Loader2, Music2 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { Burst } from "@/components/Burst";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -45,7 +46,8 @@ export function SaveToSpotify({ defaultName, trackIds }: { defaultName: string; 
         }
       >
         {saved ? (
-          <div className="flex flex-col gap-3">
+          <div className="relative flex flex-col gap-3">
+            <Burst />
             <div className="flex items-center gap-3 rounded-2xl bg-sage-soft p-4 text-sm text-moss">
               <Check className="size-5" /> <span className="font-semibold">{saved.name}</span>
             </div>

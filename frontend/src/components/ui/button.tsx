@@ -9,12 +9,12 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        primary: "bg-plum text-white shadow-soft hover:bg-[#5f4b95] hover:shadow-lift active:scale-[0.98]",
-        spotify: "bg-moss text-white shadow-soft hover:bg-[#476a52] active:scale-[0.98]",
+        primary: "bg-plum text-on-accent shadow-soft hover:-translate-y-0.5 hover:bg-plum-strong hover:shadow-glow active:translate-y-0 active:scale-95",
+        spotify: "bg-moss text-on-accent shadow-soft hover:-translate-y-0.5 hover:bg-moss-strong hover:shadow-lift active:translate-y-0 active:scale-95",
         soft: "bg-lavender-soft text-plum hover:bg-lavender/60",
-        outline: "border border-line bg-surface text-ink hover:border-plum-muted hover:bg-lavender-faint",
+        outline: "border border-line bg-surface text-ink hover:-translate-y-0.5 hover:border-plum-muted hover:bg-lavender-faint active:translate-y-0 active:scale-95",
         ghost: "text-ink-soft hover:bg-lavender-faint hover:text-ink",
-        danger: "bg-danger text-white hover:bg-[#9c3b4c]",
+        danger: "bg-danger text-white hover:brightness-110",
       },
       size: {
         sm: "h-8 px-3 text-xs",

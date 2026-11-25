@@ -106,6 +106,13 @@ export interface CuratePreview {
   similar_artists?: string[];
   language?: string | null; // the playlist's language (null: mixed or unknown)
   genre?: string | null; // genre id the playlist is built around
+  coverage?: {
+    candidates: number;
+    with_mood: number;
+    with_language: number;
+    with_genre: number;
+    with_tempo: number;
+  };
 }
 
 /** Extra knobs for one curation. */

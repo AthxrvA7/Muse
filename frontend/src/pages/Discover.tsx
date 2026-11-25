@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router";
 
 import { IntentionPicker } from "@/components/IntentionPicker";
+import { MoodOrb } from "@/components/MoodOrb";
 import { MoodPicker } from "@/components/MoodPicker";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -44,15 +45,31 @@ export default function Discover() {
 
   return (
     <div className="space-y-10">
-      <section className="relative overflow-hidden rounded-[2rem] border border-line bg-gradient-to-br from-lavender-soft via-surface to-sage-soft/60 px-6 py-10 sm:px-10 sm:py-14">
-        <div className="pointer-events-none absolute -right-16 -top-20 size-72 rounded-full bg-lavender/40 blur-3xl" />
-        <p className="text-sm font-medium text-plum">{greeting(new Date().getHours())}</p>
-        <h1 className="mt-2 max-w-2xl font-display text-4xl leading-[1.05] text-ink sm:text-6xl">
-          Music for the way you&apos;re feeling.
-        </h1>
-        <p className="mt-4 max-w-xl text-ink-soft sm:text-lg">
-          Tell Muse what&apos;s on your mind. We&apos;ll find the music that belongs in this moment.
-        </p>
+      <section
+        className="relative overflow-hidden rounded-[2rem] border border-line bg-surface px-6 py-8 sm:px-10 sm:py-10"
+        onMouseMove={(e) => {
+          const box = e.currentTarget.getBoundingClientRect();
+          e.currentTarget.style.setProperty("--mx", `${e.clientX - box.left}px`);
+          e.currentTarget.style.setProperty("--my", `${e.clientY - box.top}px`);
+        }}
+      >
+        <div
+          className="pointer-events-none absolute inset-0 opacity-70 transition-opacity"
+          style={{ background: "radial-gradient(420px circle at var(--mx, 70%) var(--my, 30%), var(--c-accent-faint), transparent 70%)" }}
+        />
+        <div className="relative flex flex-col items-center gap-6 md:flex-row md:justify-between">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-[0.16em] text-plum">{greeting(new Date().getHours())}</p>
+            <h1 className="mt-3 max-w-2xl font-display text-4xl leading-[1.02] text-ink sm:text-6xl">
+              Music for the way you&apos;re{" "}
+              <span className="bg-gradient-to-r from-plum via-coral to-amber bg-clip-text italic text-transparent">feeling</span>.
+            </h1>
+            <p className="mt-4 max-w-xl text-ink-soft sm:text-lg">
+              Tell Muse what&apos;s on your mind. It mixes songs you love with ones you&apos;ll love, in your language, at your pace.
+            </p>
+          </div>
+          <MoodOrb chips={(options?.chips ?? []).filter((c) => draft.chips.includes(c.id))} />
+        </div>
       </section>
 
       <section aria-labelledby="mood-heading" className="space-y-4">

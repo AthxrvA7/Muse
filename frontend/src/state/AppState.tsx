@@ -12,6 +12,8 @@ export interface CurationDraft {
   size: number;
   familiarity: number | null; // null: the mode's default
   exclude: string[]; // tracks to leave out next time (Give me another)
+  language: string; // "auto" | "mix" | a language code
+  genre: string | null; // genre id to build around; null: Muse chooses
 }
 
 interface AppState {
@@ -31,7 +33,7 @@ const AppContext = createContext<AppState | null>(null);
 
 const SESSION_KEY = "muse.session";
 const RECENT_KEY = "muse.recent";
-const EMPTY_DRAFT: CurationDraft = { chips: [], text: "", intention: "match", size: 15, familiarity: null, exclude: [] };
+const EMPTY_DRAFT: CurationDraft = { chips: [], text: "", intention: "match", size: 15, familiarity: null, exclude: [], language: "auto", genre: null };
 
 // Browser storage is a convenience only: it can be unavailable, so every access is guarded.
 function load<T>(storage: () => Storage, key: string, fallback: T): T {

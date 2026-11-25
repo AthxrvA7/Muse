@@ -47,6 +47,11 @@ export function TrackRow({ item, index, onRemove }: { item: CuratedTrack; index:
           <div className="flex items-center gap-2">
             <span className="truncate font-semibold text-ink">{track.name}</span>
             {track.explicit && <span className="rounded bg-ink-soft/20 px-1 text-[10px] font-bold text-ink-soft">E</span>}
+            {!!item.bpm && (
+              <span className="shrink-0 rounded-full bg-surface px-2 py-0.5 text-[10px] font-semibold tabular-nums text-ink-soft ring-1 ring-line">
+                {Math.round(item.bpm)} BPM{item.tempo ? ` · ${item.tempo}` : ""}
+              </span>
+            )}
             {item.known !== undefined && (
               <span
                 className={cn(
@@ -60,6 +65,7 @@ export function TrackRow({ item, index, onRemove }: { item: CuratedTrack; index:
           </div>
           <div className="truncate text-sm text-ink-soft">
             {track.artists.map((a) => a.name).join(", ")} · {track.album}
+            {item.genre && <span className="capitalize"> · {item.genre}</span>}
           </div>
           <div className="mt-0.5 line-clamp-1 text-xs text-plum/90 sm:hidden">{item.reason}</div>
         </button>

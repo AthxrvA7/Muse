@@ -15,6 +15,11 @@ import { familiarityLabel, intentionById, MODE_LABEL } from "@/lib/intentions";
 import { MOOD_EMOJI } from "@/lib/moods";
 import { useApp } from "@/state/AppState";
 
+const LANGUAGE_NAMES: Record<string, string> = {
+  en: "English", hi: "Hindi", pa: "Punjabi", mr: "Marathi", ta: "Tamil", te: "Telugu",
+  ml: "Malayalam", bn: "Bengali", ur: "Urdu", ko: "Korean", ja: "Japanese", es: "Spanish",
+};
+
 const SOURCE = {
   saved_profile: "Your Music DNA",
   request: "The taste you sent",
@@ -46,6 +51,8 @@ export default function Results() {
       size: request.size,
       familiarity,
       exclude: [...(request.exclude ?? []), ...shown].slice(-100),
+      language: request.language ?? "auto",
+      genre: request.genre ?? null,
     });
     navigate("/curate");
   }
@@ -139,6 +146,8 @@ export default function Results() {
               <dt className="text-ink-soft">Searched</dt><dd className="text-right font-medium">{preview.candidates_considered} songs</dd>
               <dt className="text-ink-soft">You know</dt><dd className="text-right font-medium">{knownCount} of {tracks.length}</dd>
               <dt className="text-ink-soft">Your songs</dt><dd className="text-right font-medium">{preview.personal ? "Spotify top tracks" : "Not used"}</dd>
+              <dt className="text-ink-soft">Language</dt><dd className="text-right font-medium">{preview.language ? (LANGUAGE_NAMES[preview.language] ?? preview.language) : "Mixed"}</dd>
+              <dt className="text-ink-soft">Genre</dt><dd className="text-right font-medium capitalize">{preview.genre ?? "Mixed"}</dd>
               <dt className="text-ink-soft">Song moods</dt><dd className="text-right font-medium">{preview.mood_data === "lastfm" ? "Listener tags" : "Estimated"}</dd>
             </dl>
             {preview.familiarity !== undefined && (
@@ -160,6 +169,12 @@ export default function Results() {
             <p className="px-2 text-xs text-ink-soft">
               Song moods and similar artists powered by{" "}
               <a href="https://www.last.fm" target="_blank" rel="noreferrer" className="font-medium text-plum hover:underline">Last.fm</a>.
+            </p>
+          )}
+          {tracks.some((t) => t.bpm) && (
+            <p className="px-2 text-xs text-ink-soft">
+              Tempo (BPM) from{" "}
+              <a href="https://www.deezer.com" target="_blank" rel="noreferrer" className="font-medium text-plum hover:underline">Deezer</a>.
             </p>
           )}
         </aside>

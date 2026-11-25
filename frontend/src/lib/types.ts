@@ -87,6 +87,10 @@ export interface CuratedTrack {
   reason: string;
   known?: boolean; // the listener already plays it, or it's by a favourite artist
   tags?: string[]; // Last.fm listener tags about its feel
+  bpm?: number | null; // tempo in beats per minute (Deezer)
+  tempo?: Tempo | null;
+  genre?: string | null; // the song's genre name, when known
+  language?: string | null; // ISO code, when known
 }
 
 export interface CuratePreview {
@@ -100,12 +104,16 @@ export interface CuratePreview {
   personal?: boolean; // the listener's Spotify top tracks were used
   mood_data?: "lastfm" | "estimated";
   similar_artists?: string[];
+  language?: string | null; // the playlist's language (null: mixed or unknown)
+  genre?: string | null; // genre id the playlist is built around
 }
 
 /** Extra knobs for one curation. */
 export interface CurateOptions {
   familiarity?: number | null; // null/undefined: the mode's default
   exclude?: string[]; // track IDs to leave out (Give me another)
+  language?: string; // "auto" | "mix" | a language code
+  genre?: string | null; // genre id to build around; null: Muse chooses
 }
 
 export interface MusicPreferences {
@@ -152,7 +160,16 @@ export interface Playlist {
 export interface MuseSession {
   id: string;
   created_at: string;
-  request: { chips: string[]; text: string; intention: string; size: number; familiarity?: number | null; exclude?: string[] };
+  request: {
+    chips: string[];
+    text: string;
+    intention: string;
+    size: number;
+    familiarity?: number | null;
+    exclude?: string[];
+    language?: string;
+    genre?: string | null;
+  };
   preview: CuratePreview;
 }
 

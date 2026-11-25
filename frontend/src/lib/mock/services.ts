@@ -73,6 +73,10 @@ function curate(mood: MoodRequest, size: number, options: CurateOptions = {}): C
       reason,
       known: favourite,
       tags: [],
+      bpm: point ? Math.round(70 + point.energy * 80) : null,
+      tempo: point ? (point.energy < 0.35 ? "slow" : point.energy > 0.7 ? "fast" : "medium") : null,
+      genre: point?.name ?? null,
+      language: null,
     };
   });
   scored.sort((a, b) => b.score - a.score);
@@ -87,6 +91,8 @@ function curate(mood: MoodRequest, size: number, options: CurateOptions = {}): C
     personal: true,
     mood_data: "estimated",
     similar_artists: ["Anuv Jain", "The Local Train"],
+    language: options.language && options.language !== "auto" && options.language !== "mix" ? options.language : "en",
+    genre: options.genre ?? "indie folk",
   };
 }
 

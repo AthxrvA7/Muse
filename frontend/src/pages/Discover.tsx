@@ -14,18 +14,20 @@ import { api } from "@/lib/api/services";
 import { greeting, shortDate } from "@/lib/format";
 import { familiarityLabel, intentionById, MODE_FAMILIARITY } from "@/lib/intentions";
 import { MOOD_EMOJI } from "@/lib/moods";
-import type { MoodOptions, Playlist } from "@/lib/types";
+import type { MoodOptions, Playlist, TasteOptions } from "@/lib/types";
 import { useApp } from "@/state/AppState";
 
 export default function Discover() {
   const navigate = useNavigate();
   const { user, draft, setDraft, recentSessions, setSession } = useApp();
   const [options, setOptions] = useState<MoodOptions | null>(null);
+  const [taste, setTaste] = useState<TasteOptions | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
 
   useEffect(() => {
     api.mood.options().then(setOptions).catch((e: Error) => setError(e.message));
+    api.preferences.options().then(setTaste).catch(() => setTaste(null));
   }, []);
   useEffect(() => {
     if (user) api.playlists.list().then(setPlaylists).catch(() => setPlaylists([]));
@@ -139,6 +141,31 @@ export default function Discover() {
               </div>
             </div>
           )}
+          <div className="flex flex-wrap gap-3 pt-1">
+            <label className="space-y-1 text-sm">
+              <span className="block font-semibold">Language</span>
+              <select
+                value={draft.language}
+                onChange={(e) => setDraft({ ...draft, language: e.target.value })}
+                className="h-9 rounded-xl border border-line bg-surface px-3 text-sm focus:border-plum focus:outline-none"
+              >
+                <option value="auto">Auto: one language</option>
+                <option value="mix">Mix languages</option>
+                {taste && Object.entries(taste.languages).map(([code, name]) => <option key={code} value={code}>{name}</option>)}
+              </select>
+            </label>
+            <label className="space-y-1 text-sm">
+              <span className="block font-semibold">Genre</span>
+              <select
+                value={draft.genre ?? ""}
+                onChange={(e) => setDraft({ ...draft, genre: e.target.value || null })}
+                className="h-9 max-w-56 rounded-xl border border-line bg-surface px-3 text-sm capitalize focus:border-plum focus:outline-none"
+              >
+                <option value="">Auto: Muse picks one</option>
+                {taste?.genres.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
+              </select>
+            </label>
+          </div>
           <div className="flex flex-wrap gap-1.5 text-xs">
             {draft.chips.map((c) => (
               <Badge key={c}>{MOOD_EMOJI[c]} {c}</Badge>

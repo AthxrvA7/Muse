@@ -246,7 +246,7 @@ All under `/api/v1` except health checks. Interactive docs are auto-generated at
 ```
 muse/
 ├── .github/
-│   ├── workflows/ci.yml           # lint → type-check → test → audit → docker build
+│   ├── workflows/ci.yml           # lint → test (+MongoDB) → website → docker smoke test → audit
 │   ├── workflows/codeql.yml       # static security analysis
 │   ├── dependabot.yml             # dependency update PRs
 │   ├── pull_request_template.md   # includes Definition-of-Done checklist
@@ -264,7 +264,6 @@ muse/
 │   ├── scripts/                   # train_mood_model.py, backup.sh, restore.sh
 │   ├── migrations/                # numbered data migration scripts
 │   ├── tests/                     # unit/, integration/, security/
-│   ├── Dockerfile
 │   ├── pyproject.toml             # ruff + pytest config
 │   ├── requirements.txt
 │   └── requirements-dev.txt
@@ -278,7 +277,8 @@ muse/
 │   ├── runbooks/                  # deploy, rollback, backup/restore, incidents
 │   ├── AI_USE_LOG.md              # required by our synopsis
 │   └── screenshots/
-├── docker-compose.yml             # backend + MongoDB for local dev
+├── Dockerfile                     # multi-stage: build website (Node) → run API + website (Python, non-root)
+├── docker-compose.yml             # Muse + MongoDB for local dev
 ├── .env.example                   # every variable, no real values
 ├── .gitignore  ·  .gitattributes  ·  .editorconfig
 ├── CHANGELOG.md                   # Keep a Changelog format, one entry per release

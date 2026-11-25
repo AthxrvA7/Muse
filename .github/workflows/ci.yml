@@ -1,4 +1,4 @@
-# Continuous Integration for the Muse backend.
+# Continuous Integration for Muse (backend, website and Docker image).
 # Runs on every push to any branch and on every pull request into main.
 # Each job shows up as a separate Pass/Fail check on the commit and the PR.
 name: CI
@@ -47,6 +47,16 @@ jobs:
     name: Tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # A real, empty MongoDB for the repository tests; deleted when the job ends
+    services:
+      mongo:
+        image: mongo:7.0
+        ports: ["27017:27017"]
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.runCommand({ping:1}).ok'"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
@@ -56,5 +66,89 @@ jobs:
           cache-dependency-path: backend/requirements*.txt
       - name: Install dependencies
         run: pip install -r requirements-dev.txt
-      - name: Run tests
-        run: pytest
+      - name: Run tests with coverage
+        # Fails if less than 90% of the backend code is exercised by the tests
+        run: pytest --cov=app --cov-report=term-missing:skip-covered --cov-fail-under=90
+      - name: Run database tests against MongoDB
+        # Uses the throwaway MongoDB service above: no Atlas password is needed in CI
+        env:
+          MONGODB_URI: mongodb://localhost:27017
+        run: pytest tests/test_repositories.py --db
+
+  frontend:
+    name: Website
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install dependencies
+        run: npm ci --no-fund
+      - name: ESLint
+        run: npm run lint
+      - name: Type check
+        run: npm run typecheck
+      - name: Unit tests
+        run: npm test
+      - name: Production build
+        run: npm run build
+
+  docker:
+    name: Docker
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Only build an image from code whose lint and tests passed
+    needs: [lint, test, frontend]
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Build the image and start Muse with MongoDB
+        # --wait returns once both containers report healthy (or fails after 2 minutes)
+        run: docker compose up --detach --build --wait --wait-timeout 120
+      - name: Smoke test the running container
+        run: |
+          curl --fail --silent --show-error http://127.0.0.1:8000/health
+          curl --fail --silent --show-error http://127.0.0.1:8000/ready | tee ready.json
+          grep -q '"status":"ready"' ready.json
+          curl --fail --silent --show-error http://127.0.0.1:8000/app/ | grep -q '<div id="root">'
+          test "$(docker compose exec -T api id -u)" = "10001" # not running as root
+          docker image ls muse:local
+      - name: Show container logs
+        if: failure()
+        run: docker compose logs
+      - name: Stop and remove containers
+        if: always()
+        run: docker compose down --volumes
+
+  audit:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22"
+      - name: Audit backend packages (known vulnerabilities)
+        run: |
+          pip install pip-audit==2.10.1
+          pip-audit -r backend/requirements.txt --progress-spinner off
+      - name: Audit website packages shipped to users
+        # Dev-only tools (linters, build) are not shipped, so only runtime packages fail the build
+        working-directory: frontend
+        run: npm audit --omit=dev --audit-level=high

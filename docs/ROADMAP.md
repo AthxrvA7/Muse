@@ -147,11 +147,11 @@ The app is built in vertical slices so a working "mood → explained songs" demo
 
 | Branch | Adds | Status |
 |---|---|---|
-| `feature/ci-type-coverage` | mypy type check, coverage report and 80% gate | ⏸ after GitHub Actions basics |
-| `feature/ci-mongodb-service` | MongoDB service container so database tests run in CI | ⏸ with `feature/database` |
-| `feature/ci-dependency-audit` | pip-audit vulnerability scan | ⏸ |
-| `feature/ci-security-scanning` | Dependabot + CodeQL | ⏸ |
-| `feature/docker` | Dockerfile, docker-compose with MongoDB, Docker build in CI | ⏸ after Docker is covered |
+| `feature/ci-type-coverage` | mypy type check, coverage report and 80% gate | Coverage gate (90%) ✅ in `feature/docker-ci`; mypy ⏸ |
+| `feature/ci-mongodb-service` | MongoDB service container so database tests run in CI | ✅ in `feature/docker-ci` |
+| `feature/ci-dependency-audit` | pip-audit vulnerability scan | ✅ in `feature/docker-ci` (plus npm audit) |
+| `feature/ci-security-scanning` | Dependabot + CodeQL | Dependabot ✅ in `feature/docker-ci`; CodeQL ⏸ |
+| `feature/docker-ci` | Dockerfile, docker-compose with MongoDB, Docker build + smoke test in CI, website CI job | ✅ |
 | `feature/deployment` | Render deployment (`render.yaml`, auto-deploy from `main`) + deployment runbook | ✅ |
 | `feature/ops-runbooks` | Backup/restore + incident runbooks, restore rehearsal | ⏸ with deployment |
 

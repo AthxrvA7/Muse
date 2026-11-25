@@ -21,7 +21,7 @@
 | ID | Requirement | Acceptance criteria | Phase | Status |
 |---|---|---|---|---|
 | FR1 | Spotify authentication | Login redirects to Spotify; callback rejects a missing or mismatched `state` with `400`; success creates a session cookie; logout invalidates it server-side | 1 | Verified (`test_auth.py`, `test_spotify_user.py`) |
-| FR2 | Preference input | Save/read artists, genres, languages, styles, reference tracks and exclusions; invalid or oversized input rejected with `422` | 1 | Verified (`test_preferences.py`) |
+| FR2 | Preference input | Save/read artists, genres, languages, styles, reference tracks and exclusions; invalid or oversized input rejected with `422`. Optional "Import from Spotify" pre-fills the form from the user's top artists; the user still reviews and saves | 1 | Verified (`test_preferences.py`, `test_taste_import.py`) |
 | FR3 | Music DNA | Returns a genre spread, top artists, language mix and default mood centre, computed only from stated preferences | 1 | Verified (`test_preferences.py`) |
 | FR4 | Mood input | Accepts chips (≤ 5) and/or text (≤ 500 chars); at least one is required | 1 | Verified (`test_mood_api.py`) |
 | FR5 | Mood processing | Returns valence, energy (0–1), tempo, labels, mode and confidence; chips-only input is deterministic | 1 | Verified (`test_mood_analyzer.py`, `test_mood_classifier.py`) |

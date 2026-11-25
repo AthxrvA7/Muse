@@ -68,6 +68,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 - `GET /api/v1/mood/options`: mood chips with their valence and energy, and the modes, for clients
 - The built website is served at `/app/` by the backend (`FRONTEND_DIST`), with its own Content-Security-Policy
 
+### Import from Spotify
+- `GET /api/v1/preferences/from-spotify` suggests a taste profile from your Spotify top artists (about the last 6 months): artists, plus the genres and languages Muse knows among their Spotify genres. Nothing is saved: the website puts it in the Music DNA form for you to edit and save
+- New read-only scope `user-top-read`, and `GET /me/top/artists` added to the user-token allow-list. Accounts that logged in before are asked to log in again (`relogin_needed`) instead of calling Spotify
+
 ### Docker and CI
 - Multi-stage `Dockerfile`: Node builds the website, a slim Python image serves it with the API as a non-root user, with a `/health` healthcheck
 - `docker-compose.yml`: Muse plus MongoDB 7, one command (`docker compose up --build`); the database is not exposed outside Docker
@@ -76,7 +80,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 - CI: `pip-audit` and `npm audit` dependency checks; Dependabot for pip, npm, Actions and Docker
 
 ### Security
-- Hard allow-list for calls made with a user's Spotify token: only reading the profile, creating a new playlist, and adding tracks to a playlist Muse just created. Deleting, editing, reordering or reading existing playlists is refused before any request is sent
+- Hard allow-list for calls made with a user's Spotify token: only reading the profile (and, later, the top-artist list), creating a new playlist, and adding tracks to a playlist Muse just created. Deleting, editing, reordering or reading existing playlists is refused before any request is sent
 - Spotify login (Authorization Code flow): single-use `state` checked on the callback and expired after 10 minutes; minimal scopes (`playlist-modify-private`, `playlist-modify-public`, `user-read-private`)
 - Server-side sessions: the browser holds only a random ID in an `HttpOnly`, `SameSite=Lax` cookie (`Secure` in production); Muse stores its SHA-256 hash; a new ID on every login; logout is immediate
 - Spotify tokens encrypted at rest with Fernet (`TOKEN_ENCRYPTION_KEY`), refreshed automatically before they expire, never logged or sent to the browser

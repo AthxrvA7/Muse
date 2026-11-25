@@ -98,6 +98,8 @@ Everything that crosses into the backend (request bodies, query strings, headers
 
 Not collected: email, country, listening history, top tracks, followed artists, location, age.
 
+Top artists: only when the user presses **Import from Spotify**, Muse reads their top-artist list once to pre-fill the Music DNA form. The list is not stored, logged or analysed; only what the user then chooses to save becomes their taste profile.
+
 ### 6.2 Notice and consent
 - Before Spotify login, the user sees a short notice: what is collected (the table above, in plain words), why, how long it is kept, and how to export or delete it.
 - Acceptance is recorded as `consent_version` on the user. If the notice changes, the version increments and the user is asked again.

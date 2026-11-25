@@ -10,6 +10,7 @@ from app.clients.spotify_user import SpotifyUserAuth, SpotifyUserClient
 from app.core.crypto import TokenCipher
 from app.db.models import User
 from app.db.repositories.oauth_states import OAuthStateRepository
+from app.db.repositories.preferences import PreferencesRepository
 from app.db.repositories.sessions import SessionRepository
 from app.db.repositories.users import UserRepository
 from app.services.auth import SESSION_COOKIE, AuthService
@@ -62,5 +63,31 @@ async def current_user(
     return user
 
 
+async def optional_user(
+    request: Request, http: Annotated[httpx2.AsyncClient, Depends(get_http)]
+) -> User | None:
+    """The logged-in user if there is one; None otherwise (never an error).
+
+    For endpoints that work for everyone but do more when you're logged in (curate).
+    """
+    session_id = request.cookies.get(SESSION_COOKIE)
+    settings = request.app.state.settings
+    if not session_id or not settings.login_configured or request.app.state.db is None:
+        return None
+    return await get_auth_service(request, http).user_for_session(session_id)
+
+
+def get_preferences_repository(request: Request) -> PreferencesRepository:
+    database = request.app.state.db
+    if database is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail={"message": "Saving preferences needs the database (MONGODB_URI)"},
+        )
+    return PreferencesRepository(database)
+
+
 CurrentUser = Annotated[User, Depends(current_user)]
+OptionalUser = Annotated[User | None, Depends(optional_user)]
+PreferencesRepo = Annotated[PreferencesRepository, Depends(get_preferences_repository)]
 Auth = Annotated[AuthService, Depends(get_auth_service)]

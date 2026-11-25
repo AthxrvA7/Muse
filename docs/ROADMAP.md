@@ -105,10 +105,9 @@ The app is built in vertical slices so a working "mood → explained songs" demo
 - [x] `docs: document Spotify login`
 
 ### `feature/user-preferences` 🅰
-- [ ] `feat(preferences): add preference profile endpoints`
-- [ ] `feat(preferences): add Music DNA summary endpoint`
-- [ ] `feat(curate): use the stored profile when curating`
-- [ ] `test(preferences): add validation, access-control and DNA tests`
+- [x] `feat(preferences): add taste profile and Music DNA endpoints`
+- [x] `feat(curate): use the saved taste profile when logged in` (tests in the same commits)
+- [x] `docs: document preferences and Music DNA`
 
 🏷 **Tag `v0.3.0` — Login & Classics**
 

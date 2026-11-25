@@ -268,3 +268,19 @@ def test_without_login_or_taste_curation_uses_mood_only(app: FastAPI) -> None:
 
     assert body["taste_source"] == "none"
     assert len(body["tracks"]) == 10
+
+
+def test_wellbeing_notice_reaches_the_curate_response(app: FastAPI) -> None:
+    from app.services.mood import get_mood_analyzer
+
+    service = CurateService(FakeCatalogue(), get_mood_analyzer(), KB)
+    app.dependency_overrides[get_curate_service] = lambda: service
+
+    body = (
+        TestClient(app)
+        .post(URL, json={"mood": {"chips": ["tired"], "text": "i want to die"}, "size": 10})
+        .json()
+    )
+
+    assert "14416" in body["mood"]["support"]["resources"][0]["phone"]
+    assert len(body["tracks"]) == 10  # music is still returned

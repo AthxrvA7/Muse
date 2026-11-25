@@ -59,6 +59,10 @@ class Settings(BaseSettings):
     # Fernet key that encrypts stored Spotify tokens; generate one (see README). Never commit.
     token_encryption_key: SecretStr | None = None
 
+    # Folder with the built website (frontend/dist). When set, it is served at /app/ from
+    # this same server, so the browser talks to one origin and the login cookie just works.
+    frontend_dist: str | None = None
+
     # Browser origins allowed to call the API (the React frontend), comma-separated,
     # e.g. "http://localhost:5173". Empty = no cross-origin browser access at all.
     cors_origins: str = ""
@@ -74,6 +78,7 @@ class Settings(BaseSettings):
         "spotify_client_secret",
         "mongodb_uri",
         "token_encryption_key",
+        "frontend_dist",
         mode="before",
     )
     @classmethod

@@ -7,10 +7,12 @@ with their own settings, and production runs ``uvicorn app.main:app``.
 import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from pymongo.errors import PyMongoError
 
 from app import __version__
@@ -112,6 +114,14 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 "detail": {"message": "The database is unavailable right now; try again shortly"}
             },
         )
+
+    if settings.frontend_dist:
+        site = Path(settings.frontend_dist).resolve()
+        if (site / "index.html").is_file():
+            # The React website, served by this same server (same origin: no CORS needed)
+            app.mount("/app", StaticFiles(directory=site, html=True), name="web")
+        else:
+            logger.warning("FRONTEND_DIST is set but has no index.html; website not served")
 
     @app.get("/", tags=["meta"], summary="Service information")
     def root() -> ServiceInfo:

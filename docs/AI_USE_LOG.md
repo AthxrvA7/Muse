@@ -148,3 +148,13 @@ Never paste secrets, tokens or real user data into an AI tool.
 - **Changes made by us:** Chose Last.fm over lyrics or an LLM (free, explainable, no copyrighted text). Kept every external call optional with a fallback, and a 6-second budget so the playlist is never held up. Kept the top tracks out of the database; only Muse's own recent picks are stored, with a 30-day expiry and included in export and deletion.
 - **Verification:** 326 backend tests and 12 website tests pass; new tests cover tag moods, the time budget, the familiar/new share, similar artists, "Give me another", recent picks and failure fallbacks. Checked on the live site after deployment with my own Spotify account.
 - **Reflection:** The first version worked as designed but felt repetitive in real use; testing with a real account found what unit tests couldn't. A song-level mood signal and the user's own songs mattered more than any scoring tweak.
+
+### 2026-11-26 — Coherent playlists and tempo (`feature/coherent-playlists`)
+- **Member:** Atharva
+- **Tool:** Claude (Anthropic)
+- **Purpose:** code generation, testing, documentation
+- **Prompt (summary):** Playlists mixed languages and jumped between unrelated genres; I wanted one language, one consistent genre that can borrow from close ones, and each song's tempo.
+- **Output used:** genre families in `genre_kb.json`, language/genre detection from tags and script, `recommender/focus.py`, Deezer BPM client, website pickers and BPM chips, tests.
+- **Changes made by us:** We chose the families and related families ourselves, kept "Mix languages" as an option, and made an explicitly chosen genre count more than an automatic one.
+- **Verification:** 339 backend tests and 12 website tests pass.
+- **Reflection:** Language and genre come from the same listener tags as mood, so one lookup per song now does three jobs.

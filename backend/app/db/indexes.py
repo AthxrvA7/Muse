@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 
 SESSION_IDLE_SECONDS = 7 * 24 * 60 * 60  # a session ends after 7 days without use
 OAUTH_STATE_SECONDS = 10 * 60  # a login must finish within 10 minutes
+RECENT_PICKS_SECONDS = 30 * 24 * 60 * 60  # forget recent picks 30 days after the last playlist
 
 
 @dataclass(frozen=True)
@@ -41,6 +42,10 @@ INDEXES: tuple[IndexSpec, ...] = (
     ),
     IndexSpec("preferences", "user_id", "user_id_unique", unique=True),
     IndexSpec("playlists", "user_id", "user_id"),  # a user's playlist history
+    IndexSpec("recent_picks", "user_id", "user_id_unique", unique=True),
+    IndexSpec(
+        "recent_picks", "updated_at", "forget_ttl", expire_after_seconds=RECENT_PICKS_SECONDS
+    ),
 )
 
 

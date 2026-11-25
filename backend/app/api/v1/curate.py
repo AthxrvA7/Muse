@@ -4,7 +4,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from app.api.deps import SavedTaste
+from app.api.deps import PersonalContext, SavedTaste
 from app.api.errors import spotify_http_error
 from app.clients.spotify import SpotifyError
 from app.schemas.curate import CuratePreview, CurateRequest, TasteOptions
@@ -20,17 +20,20 @@ async def curate(
     request: CurateRequest,
     service: Annotated[CurateService, Depends(get_curate_service)],
     saved_taste: SavedTaste,
+    personal: PersonalContext,
 ) -> CuratePreview:
     """Returns ranked tracks, each with a reason. Mood text is never stored.
 
-    Logged in and no `taste` sent? Your saved taste profile is used.
+    Logged in and no `taste` sent? Your saved taste profile is used. Logged in with
+    permission to read your top tracks? Songs you already play are mixed in (see
+    `familiarity`), and songs Muse picked for you recently are less likely to repeat.
     """
     source = "request" if request.taste is not None else "none"
     if request.taste is None and saved_taste is not None:
         request = request.model_copy(update={"taste": saved_taste})
         source = "saved_profile"
     try:
-        preview = await service.preview(request)
+        preview = await service.preview(request, personal)
     except UnknownChipError as error:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,

@@ -25,6 +25,7 @@ from app.services.mood.vocabulary import MoodPoint
 from app.services.recommender.candidates import Candidate
 from app.services.recommender.knowledge import GenreKnowledge
 from app.services.recommender.planner import Reason, distance
+from app.services.recommender.tags import TagMood
 
 MAX_DISTANCE = math.sqrt(2)  # opposite corners of the unit square
 NEUTRAL_FIT = 0.5
@@ -39,7 +40,9 @@ MODE_WEIGHTS: dict[Mode, tuple[float, float]] = {
     "discovery": (0.65, 0.35),  # let the mood lead, favourites matter less
 }
 TASTE_POINTS: dict[Reason, float] = {
+    "familiar": 1.0,
     "favourite_artist": 1.0,
+    "similar_artist": 0.8,
     "favourite_genre": 0.75,
     "language": 0.5,
     "discovery": 0.25,
@@ -57,6 +60,10 @@ class ScoredTrack:
     favourite_artist: str | None  # the user's favourite artist on this track, if any
     taste_reason: Reason | None
     mood_genres: list[str] = field(default_factory=list)  # genres averaged into the estimate
+    tag_words: list[str] = field(default_factory=list)  # Last.fm feeling tags, e.g. "chill"
+    known: bool = False  # the user already plays it, or it's by a favourite artist
+    familiar_range: str | None = None  # "short_term" / "medium_term" if in their top tracks
+    similar_to: str | None = None  # favourite artist this one resembles
 
 
 def similarity(a: MoodPoint, b: MoodPoint) -> float:
@@ -101,6 +108,7 @@ def score_candidates(
     taste: Taste,
     kb: GenreKnowledge,
     analyzer: MoodAnalyzer,
+    tag_moods: dict[str, TagMood] | None = None,
 ) -> list[ScoredTrack]:
     target = MoodPoint(valence=mood.valence, energy=mood.energy)
     mood_weight, taste_weight = MODE_WEIGHTS[mood.mode]
@@ -108,7 +116,11 @@ def score_candidates(
 
     scored = []
     for candidate in candidates:
-        point, certainty, basis = estimate_mood(candidate, kb, analyzer)
+        tagged = (tag_moods or {}).get(candidate.track.id)
+        if tagged is not None:  # what listeners say beats Muse's own estimate
+            point, certainty, basis = tagged.point, tagged.certainty, ["lastfm"]
+        else:
+            point, certainty, basis = estimate_mood(candidate, kb, analyzer)
         fit = similarity(point, target) if point else NEUTRAL_FIT
         mood_fit = certainty * fit + (1 - certainty) * NEUTRAL_FIT
 
@@ -125,6 +137,8 @@ def score_candidates(
             reasons.append("favourite_artist")
         taste_fit = max((TASTE_POINTS[r] for r in reasons), default=0.0)
         best = next((r for r in reasons if TASTE_POINTS[r] == taste_fit), None)
+        top = next((p for p in candidate.sources if p.kind == "top"), None)
+        similar = next((p for p in candidate.sources if p.reason == "similar_artist"), None)
 
         scored.append(
             ScoredTrack(
@@ -136,6 +150,10 @@ def score_candidates(
                 favourite_artist=favourite,
                 taste_reason=best,
                 mood_genres=[g for g in basis if g in kb.genres],
+                tag_words=list(tagged.words) if tagged else [],
+                known=top is not None or favourite is not None,
+                familiar_range=top.value if top else None,
+                similar_to=similar.related_to if similar else None,
             )
         )
     return scored

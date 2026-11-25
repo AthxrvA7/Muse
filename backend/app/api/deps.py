@@ -6,16 +6,19 @@ from typing import Annotated
 import httpx2
 from fastapi import Depends, HTTPException, Request, status
 
-from app.clients.spotify_user import SpotifyUserAuth, SpotifyUserClient
+from app.clients.spotify_user import TOP_ARTISTS_SCOPE, SpotifyUserAuth, SpotifyUserClient
 from app.core.crypto import TokenCipher
 from app.db.models import User
 from app.db.repositories.oauth_states import OAuthStateRepository
 from app.db.repositories.playlists import PlaylistRepository
 from app.db.repositories.preferences import PreferencesRepository
+from app.db.repositories.recent_picks import RecentPicksRepository
 from app.db.repositories.sessions import SessionRepository
 from app.db.repositories.users import UserRepository
+from app.schemas.catalog import Track
 from app.schemas.curate import Taste
-from app.services.auth import SESSION_COOKIE, AuthService
+from app.services.auth import SESSION_COOKIE, AuthService, NotLoggedInError
+from app.services.curate import Personal
 from app.services.playlists import PlaylistService
 from app.services.preferences import to_taste
 from app.services.privacy import PrivacyService
@@ -131,11 +134,43 @@ def get_privacy_service(request: Request) -> PrivacyService:
         SessionRepository(database),
         PreferencesRepository(database),
         PlaylistRepository(database),
+        RecentPicksRepository(database),
     )
+
+
+class UserTopTracks:
+    """The logged-in user's Spotify top tracks, read with their own (refreshed) token."""
+
+    def __init__(self, auth: AuthService, http: httpx2.AsyncClient, user_id: str) -> None:
+        self._auth = auth
+        self._http = http
+        self._user_id = user_id
+
+    async def top_tracks(self, time_range: str) -> list[Track]:
+        token = await self._auth.access_token(self._user_id)
+        return await SpotifyUserClient(self._http, token).top_tracks(time_range)
+
+
+async def personal_context(
+    request: Request,
+    user: Annotated[User | None, Depends(optional_user)],
+    http: Annotated[httpx2.AsyncClient, Depends(get_http)],
+) -> Personal | None:
+    """For curate: the logged-in user's top tracks (if allowed) and recent picks."""
+    if user is None:
+        return None
+    auth = get_auth_service(request, http)  # login is configured, or there'd be no user
+    try:
+        scopes = await auth.granted_scopes(user.id)
+    except NotLoggedInError:
+        scopes = set()
+    music = UserTopTracks(auth, http, user.id) if TOP_ARTISTS_SCOPE in scopes else None
+    return Personal(user.id, music, RecentPicksRepository(request.app.state.db))
 
 
 CurrentUser = Annotated[User, Depends(current_user)]
 SavedTaste = Annotated[Taste | None, Depends(saved_taste)]
 OptionalUser = Annotated[User | None, Depends(optional_user)]
+PersonalContext = Annotated[Personal | None, Depends(personal_context)]
 PreferencesRepo = Annotated[PreferencesRepository, Depends(get_preferences_repository)]
 Auth = Annotated[AuthService, Depends(get_auth_service)]

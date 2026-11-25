@@ -42,7 +42,7 @@ def _main_search(item: ScoredTrack) -> str:
     return f"{plan.kind}:{plan.value}" if plan else f"track:{item.candidate.track.id}"
 
 
-def pick_diverse(scored: list[ScoredTrack], size: int) -> list[ScoredTrack]:
+def pick_diverse(scored: list[ScoredTrack], size: int, relax: bool = True) -> list[ScoredTrack]:
     # Highest score first; equal scores -> Spotify's own order (top hits first)
     ranked = sorted(scored, key=lambda s: (-s.score, s.candidate.best_rank, s.candidate.track.id))
     picked: list[ScoredTrack] = []
@@ -50,7 +50,7 @@ def pick_diverse(scored: list[ScoredTrack], size: int) -> list[ScoredTrack]:
     limits = [
         (MAX_PER_ARTIST, math.ceil(size * MAX_SHARE_PER_SEARCH)),  # normal: varied playlist
         (RELAXED_MAX_PER_ARTIST, size),  # few candidates: fill the playlist anyway
-    ]
+    ][: 2 if relax else 1]
 
     for artist_cap, search_cap in limits:
         per_artist: dict[str, int] = {}
@@ -77,3 +77,51 @@ def pick_diverse(scored: list[ScoredTrack], size: int) -> list[ScoredTrack]:
                 per_artist[artist] = per_artist.get(artist, 0) + 1
             per_search[search] = per_search.get(search, 0) + 1
     return picked
+
+
+def pick_mixed(scored: list[ScoredTrack], size: int, familiar_share: float) -> list[ScoredTrack]:
+    """A playlist with about `familiar_share` songs the user knows and the rest new to them.
+
+    Each part is picked for variety on its own; if one part runs short, the other fills
+    in. The result is ordered by score, so known and new songs mix naturally.
+    """
+    known = [s for s in scored if s.known]
+    new = [s for s in scored if not s.known]
+    want_known = min(len(known), round(size * familiar_share))
+    picked = pick_diverse(known, want_known, relax=False) if want_known else []
+    picked += pick_diverse(new, size - len(picked), relax=False)
+
+    if len(picked) < size:  # short: first more of the same kind, then anything left
+        chosen = {id(item) for item in picked}
+        wanted_new = size - want_known
+        new_count = sum(1 for item in picked if not item.known)
+        if new_count < wanted_new:
+            more_new = [s for s in new if id(s) not in chosen]
+            picked += _fill(picked, more_new, len(picked) + wanted_new - new_count)
+        chosen = {id(item) for item in picked}
+        picked += _fill(picked, [s for s in scored if id(s) not in chosen], size)
+
+    ranked = sorted(picked, key=lambda s: (-s.score, s.candidate.best_rank, s.candidate.track.id))
+    return ranked[:size]
+
+
+def _fill(picked: list[ScoredTrack], rest: list[ScoredTrack], size: int) -> list[ScoredTrack]:
+    """Adds the best remaining songs under the relaxed limits, counting what's already in."""
+    per_artist: dict[str, int] = {}
+    for item in picked:
+        for artist in _artist_ids(item):
+            per_artist[artist] = per_artist.get(artist, 0) + 1
+    songs = {song_key(item.candidate.track) for item in picked}
+    added: list[ScoredTrack] = []
+    for item in sorted(rest, key=lambda s: (-s.score, s.candidate.best_rank, s.candidate.track.id)):
+        if len(picked) + len(added) >= size:
+            break
+        key = song_key(item.candidate.track)
+        artists = _artist_ids(item)
+        if key in songs or any(per_artist.get(a, 0) >= RELAXED_MAX_PER_ARTIST for a in artists):
+            continue
+        added.append(item)
+        songs.add(key)
+        for artist in artists:
+            per_artist[artist] = per_artist.get(artist, 0) + 1
+    return added

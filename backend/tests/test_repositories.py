@@ -27,6 +27,7 @@ from app.db.mongo import create_client
 from app.db.repositories.oauth_states import OAuthStateRepository
 from app.db.repositories.playlists import PlaylistRepository
 from app.db.repositories.preferences import PreferencesRepository
+from app.db.repositories.recent_picks import RecentPicksRepository
 from app.db.repositories.sessions import SessionRepository
 from app.db.repositories.users import UserRepository
 
@@ -248,3 +249,21 @@ async def test_playlist_history_is_per_user_and_newest_first(database: AsyncData
     assert saved.id is not None
     assert [p.name for p in history] == ["new", "old"]
     assert await playlists.delete_all_for_user("user-1") == 2
+
+
+# ---------------------------------------------------------------- recent picks
+
+
+async def test_recent_picks_keep_the_latest_90_per_user(database: AsyncDatabase) -> None:
+    picks = RecentPicksRepository(database)
+
+    await picks.remember("user-1", [f"a{i}" for i in range(60)])
+    await picks.remember("user-1", [f"b{i}" for i in range(60)])
+    await picks.remember("user-2", ["other"])
+
+    kept = await picks.get("user-1")
+    assert len(kept) == 90
+    assert kept[-1] == "b59" and "a0" not in kept  # oldest dropped first
+    assert await picks.get("nobody") == []
+    assert await picks.delete("user-1") is True
+    assert await picks.get("user-1") == []

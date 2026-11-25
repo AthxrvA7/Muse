@@ -78,3 +78,18 @@ class MoodProfile(BaseModel):
     support: SupportNotice | None = Field(
         default=None, description="Present only if the text suggests the person may be struggling"
     )
+
+
+class ChipOption(BaseModel):
+    id: str
+    valence: float
+    energy: float
+
+
+class MoodOptions(BaseModel):
+    """What a client can offer: mood chips (with their place on the mood map) and modes."""
+
+    chips: list[ChipOption]
+    modes: list[Mode]
+    max_chips: int
+    max_text_length: int

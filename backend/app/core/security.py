@@ -21,6 +21,14 @@ _DOCS_PATHS = ("/docs", "/openapi.json")
 # The API only returns JSON: nothing on these responses should ever load or run.
 _API_CSP = "default-src 'none'; frame-ancestors 'none'"
 
+# The website (/app/) may load only its own files, album art from Spotify's image CDN,
+# and call only this server. Inline styles are allowed for React's style attributes.
+_WEB_CSP = (
+    "default-src 'self'; img-src 'self' data: https://i.scdn.co; "
+    "style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; "
+    "frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
+)
+
 
 class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     """Adds browser security headers to every response (OWASP A02)."""
@@ -38,7 +46,10 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         headers["X-Frame-Options"] = "DENY"  # no embedding in other sites (clickjacking)
         headers["Referrer-Policy"] = "no-referrer"  # don't leak URLs to other sites
         headers["Cross-Origin-Opener-Policy"] = "same-origin"
-        if not request.url.path.startswith(_DOCS_PATHS):
+        path = request.url.path
+        if path == "/app" or path.startswith("/app/"):
+            headers["Content-Security-Policy"] = _WEB_CSP
+        elif not path.startswith(_DOCS_PATHS):
             headers["Content-Security-Policy"] = _API_CSP
         if request.url.path.startswith("/api/"):
             headers["Cache-Control"] = "no-store"  # personal data must not sit in caches

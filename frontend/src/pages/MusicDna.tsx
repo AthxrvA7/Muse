@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Disc3, Loader2, Mic2, Save, Search, X } from "lucide-react";
+import { Disc3, CloudDownload, Loader2, Mic2, Save, Search, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ApiError } from "@/lib/api/client";
 import { api } from "@/lib/api/services";
 import type { Artist, MusicDNA, MusicPreferences, TasteOptions, Track } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -32,6 +33,7 @@ export default function MusicDna() {
   const [trackNames, setTrackNames] = useState<Record<string, string>>({});
   const [genreQuery, setGenreQuery] = useState("");
   const [saving, setSaving] = useState(false);
+  const [importing, setImporting] = useState(false);
   const [dirty, setDirty] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -69,6 +71,38 @@ export default function MusicDna() {
       .sort((a, b) => Number(prefs.genres.includes(b.id)) - Number(prefs.genres.includes(a.id)));
   }, [options, prefs, genreQuery]);
 
+  // Fills the form from Spotify top artists. Nothing is saved until the user presses Save.
+  async function importFromSpotify() {
+    if (!prefs) return;
+    setImporting(true);
+    try {
+      const s = await api.preferences.fromSpotify();
+      if (!s.artists.length) {
+        toast.message("Spotify has no top artists for you yet", { description: "Listen a bit more, or add artists yourself." });
+        return;
+      }
+      update({
+        artists: s.artists.slice(0, LIMITS.artists),
+        ...(s.genres.length ? { genres: s.genres.slice(0, LIMITS.genres) } : {}),
+        ...(s.languages.length ? { languages: s.languages.slice(0, LIMITS.languages) } : {}),
+      });
+      toast.success(`Imported ${s.artists.length} artists from Spotify`, {
+        description: "Check them, change anything you like, then press Save my taste.",
+      });
+    } catch (e) {
+      if (e instanceof ApiError && e.code === "relogin_needed") {
+        toast.message("One more permission needed", {
+          description: "Log in with Spotify again to let Muse read your top artists.",
+          action: { label: "Log in again", onClick: () => window.location.assign(api.auth.loginUrl) },
+        });
+      } else {
+        toast.error("Couldn't import from Spotify", { description: (e as Error).message });
+      }
+    } finally {
+      setImporting(false);
+    }
+  }
+
   async function save() {
     if (!prefs) return;
     setSaving(true);
@@ -94,11 +128,16 @@ export default function MusicDna() {
       <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="font-display text-4xl sm:text-5xl">Your Music DNA</h1>
-          <p className="mt-2 text-ink-soft">Your taste, the way you describe it. Muse never reads your listening history.</p>
+          <p className="mt-2 text-ink-soft">Your taste, the way you describe it. Start from your Spotify top artists, then make it yours.</p>
         </div>
-        <Button size="lg" onClick={save} disabled={!prefs || saving || !dirty}>
-          {saving ? <Loader2 className="animate-spin" /> : <Save />} {dirty ? "Save my taste" : "Saved"}
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button size="lg" variant="outline" onClick={importFromSpotify} disabled={!prefs || importing}>
+            {importing ? <Loader2 className="animate-spin" /> : <CloudDownload />} Import from Spotify
+          </Button>
+          <Button size="lg" onClick={save} disabled={!prefs || saving || !dirty}>
+            {saving ? <Loader2 className="animate-spin" /> : <Save />} {dirty ? "Save my taste" : "Saved"}
+          </Button>
+        </div>
       </header>
       {error && <p className="rounded-2xl bg-danger-soft p-4 text-sm text-danger">{error}</p>}
 

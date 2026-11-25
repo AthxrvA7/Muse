@@ -106,6 +106,15 @@ export interface MusicPreferences {
   updated_at?: string | null;
 }
 
+/** A taste profile suggested from the user's Spotify top artists. Not saved until the user saves it. */
+export interface SpotifyTasteSuggestion {
+  artists: string[];
+  genres: string[];
+  languages: string[];
+  source: string;
+  saved: boolean;
+}
+
 export interface MusicDNA {
   summary: string;
   top_artists: string[];

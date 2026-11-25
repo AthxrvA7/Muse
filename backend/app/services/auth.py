@@ -137,6 +137,13 @@ class AuthService:
             await self._save_tokens(user_id, tokens)
         return tokens.access_token
 
+    async def granted_scopes(self, user_id: str) -> set[str]:
+        """The Spotify permissions this user granted at their last login."""
+        stored = await self.users.get_tokens(user_id)
+        if not stored:
+            raise NotLoggedInError("No Spotify login stored; please log in again")
+        return set(str(stored.get("scope", "")).split())
+
     async def _save_tokens(self, user_id: str, tokens: UserTokens) -> None:
         await self.users.save_tokens(
             user_id,

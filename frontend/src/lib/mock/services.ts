@@ -111,6 +111,17 @@ export const mockServices: Services = {
         exclusion_count: preferences.exclusions.length,
       });
     },
+    fromSpotify: () =>
+      wait(
+        {
+          artists: ["Arijit Singh", "Prateek Kuhad", "The Local Train", "Taylor Swift", "Anuv Jain"],
+          genres: ["bollywood", "hindi indie", "pop"],
+          languages: ["hi", "en"],
+          source: "Your top artists on Spotify (about the last 6 months)",
+          saved: false,
+        },
+        500,
+      ),
     options: () => wait({ genres: demoGenres, languages: demoLanguages }),
   },
   mood: {

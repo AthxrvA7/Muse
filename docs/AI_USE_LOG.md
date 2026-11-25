@@ -128,3 +128,13 @@ Never paste secrets, tokens or real user data into an AI tool.
 - **Changes made by us:** Used a separate encryption key for production. Kept Swagger enabled in production because it is our demo UI until the frontend exists. Allowed Atlas access from anywhere because Render's free tier has no fixed IP, relying on the database password; this is noted as a trade-off in the runbook.
 - **Verification:** Checked on the live URL https://muse-api-mu05.onrender.com: `/ready` showed the database as `ok`; I logged in with Spotify, saved my taste, read the Music DNA, curated a "tired and low" playlist from the saved profile, and saved it to my Spotify as a private playlist. Render gave the service a different URL than we guessed, so the redirect URI had to be updated in Render and in the Spotify dashboard.
 - **Reflection:** Behind Render's proxy the app sees Render's address and plain HTTP unless uvicorn trusts the forwarded headers. Without `--proxy-headers`, rate limiting would treat every user as one client and the Origin check would see the wrong scheme.
+
+### 2026-11-26 — Import from Spotify (`feature/spotify-taste-import`)
+- **Member:** Atharva
+- **Tool:** Claude (Anthropic)
+- **Purpose:** code generation, testing, documentation
+- **Prompt (summary):** While testing the live app, the profile saved during API testing wasn't my taste and the playlists felt unfamiliar. Add a way to start the taste profile from my Spotify top artists.
+- **Output used:** `user-top-read` scope, `GET /me/top/artists` in the allow-list, `services/taste_import.py`, `GET /api/v1/preferences/from-spotify`, `tests/test_taste_import.py`, docs.
+- **Changes made by us:** We kept the synopsis principle that the profile is *stated* by the user: the import only pre-fills the form, nothing is saved until the user presses Save, and the top-artist list is not stored or analysed. Old logins without the new permission get a clear "log in again" answer instead of a Spotify error.
+- **Verification:** 303 backend tests pass; the new tests check the genre mapping, that the endpoint makes exactly one read-only call and saves nothing, the log-in-again path, and the error paths. Checked on the live site after deployment.
+- **Reflection:** The synopsis lists Spotify listening data as out of scope. We read the top-artist list only on request and only to suggest a profile, which keeps the user in control while making the first playlist feel familiar.

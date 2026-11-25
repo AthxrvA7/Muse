@@ -101,11 +101,13 @@ sequenceDiagram
 - Sessions expire after 7 days of inactivity, and a new session ID is issued on every login, which prevents session fixation.
 
 - Access tokens expire after 1 hour; the Spotify client refreshes them automatically using the stored refresh token.
-- Scopes requested (minimum needed): `playlist-modify-private`, `playlist-modify-public`, `user-read-private`.
+- Scopes requested (minimum needed): `playlist-modify-private`, `playlist-modify-public`, `user-read-private`, and `user-top-read` (read-only, used only by "Import from Spotify").
+- User-token calls are limited to an allow-list: `GET /me`, `GET /me/top/artists`, `POST /me/playlists`, and `POST /playlists/{id}/items` for a playlist Muse just created.
 - The Spotify client handles **429 rate limits** (reads `Retry-After`, waits, retries once) and **401** (refresh, retry once). Everything else becomes a clean Muse error.
 
 ### 4.3 Preference service — *Classics: "Know your music"*
 - Stores the user's stated favourite artists, genres, languages, styles and reference tracks.
+- **Import from Spotify** (`GET /preferences/from-spotify`): reads the user's top artists once, on request, and returns a *suggested* profile. Nothing is saved until the user reviews it in the Music DNA form and saves; the profile stays something the user stated.
 - Provides an artist/track search endpoint so the frontend can offer autocomplete (backed by Spotify search).
 - Produces the **Music DNA** summary: genre spread, top stated artists, language mix, and the user's "default mood centre" (average valence/energy of their chosen genres). This powers the dashboard visualisations later.
 

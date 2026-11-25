@@ -62,3 +62,13 @@ def test_swagger_example_does_not_prefill_a_mode(client: TestClient) -> None:
 
     assert schema["examples"]
     assert all("mode" not in example for example in schema["examples"])
+
+
+def test_mood_options_list_every_chip_with_its_place_on_the_map(client: TestClient) -> None:
+    body = client.get("/api/v1/mood/options").json()
+
+    chips = {chip["id"]: chip for chip in body["chips"]}
+    assert len(chips) == 20
+    assert chips["tired"] == {"id": "tired", "valence": 0.4, "energy": 0.15}
+    assert body["modes"] == ["comfort", "focus", "energy", "discovery"]
+    assert body["max_chips"] == 5

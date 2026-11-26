@@ -178,3 +178,13 @@ Never paste secrets, tokens or real user data into an AI tool.
 - **Changes made by us:** Research showed Deezer preview links expire in about 15–30 minutes, so we store the Deezer track ID instead of the link and fetch a fresh link on play.
 - **Verification:** 357 backend tests; a real browser played a preview through the redirect with the site's CSP on.
 - **Reflection:** Checking how others hit expired preview links saved us from a bug that only shows up after the demo has been running for a while.
+
+### 2026-11-26 — Cover art (`feature/cover-art`)
+- **Member:** Atharva
+- **Tool:** Claude (Anthropic)
+- **Purpose:** research, code generation, design, testing
+- **Prompt (summary):** Give each saved playlist its own cover, without risking the playlist itself.
+- **Output used:** `services/cover.py` (Pillow), `GET /api/v1/covers`, upload in the playlist service, a new allow-listed call and scope, the cover tick-box and hero image, tests.
+- **Changes made by us:** Checked Spotify's current rules first (endpoint still available, `ugc-image-upload`, base64 JPEG ≤ 256 KB) and sized the image for them; made the cover optional and never able to fail a save.
+- **Verification:** 365 backend tests; a browser run showed the cover on the page and in the dialog, and saving uploaded it to the new playlist.
+- **Reflection:** Using the same colour rule as the mood orb makes the cover feel like part of the app rather than decoration.

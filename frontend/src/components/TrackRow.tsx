@@ -1,11 +1,12 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { ChevronDown, ExternalLink, ThumbsDown, ThumbsUp, X } from "lucide-react";
+import { ChevronDown, ExternalLink, Loader2, Pause, Play, ThumbsDown, ThumbsUp, X } from "lucide-react";
 import { useState } from "react";
 
 import { Tooltip } from "@/components/ui/tooltip";
 import { duration, percent } from "@/lib/format";
 import type { CuratedTrack } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { usePreview } from "@/state/PreviewPlayer";
 
 function FitBar({ label, value, tone }: { label: string; value: number; tone: "plum" | "moss" }) {
   return (
@@ -21,6 +22,8 @@ function FitBar({ label, value, tone }: { label: string; value: number; tone: "p
 
 export function TrackRow({ item, index, onRemove }: { item: CuratedTrack; index: number; onRemove: () => void }) {
   const [open, setOpen] = useState(false);
+  const { playingId, loading, progress, toggle } = usePreview();
+  const playing = !!item.preview_id && playingId === item.preview_id;
   const { track } = item;
   return (
     <motion.li
@@ -34,19 +37,66 @@ export function TrackRow({ item, index, onRemove }: { item: CuratedTrack; index:
     >
       <div className="flex items-center gap-3 p-2.5 sm:gap-4">
         <span className="relative hidden h-5 w-6 sm:block">
-          <span className="absolute inset-0 text-right text-sm tabular-nums text-ink-soft transition group-hover:opacity-0">{index + 1}</span>
-          <span className="absolute inset-0 flex items-end justify-end gap-[2px] opacity-0 transition group-hover:opacity-100" aria-hidden="true">
+          <span
+            className={cn(
+              "absolute inset-0 text-right text-sm tabular-nums text-ink-soft transition group-hover:opacity-0",
+              playing && "opacity-0",
+            )}
+          >
+            {index + 1}
+          </span>
+          <span
+            className={cn(
+              "absolute inset-0 flex items-end justify-end gap-[2px] opacity-0 transition group-hover:opacity-100",
+              playing && "opacity-100",
+            )}
+            aria-hidden="true"
+          >
             {[0, 0.2, 0.1, 0.3].map((delay) => (
-              <span key={delay} className="eq-bar h-4 w-[3px] rounded-full bg-plum" style={{ animationDelay: `${delay}s` }} />
+              <span
+                key={delay}
+                className="eq-bar h-4 w-[3px] rounded-full bg-plum"
+                style={{ animationDelay: `${delay}s`, animationDuration: playing && item.bpm ? `${(120 / item.bpm).toFixed(2)}s` : undefined }}
+              />
             ))}
           </span>
         </span>
-        <motion.div whileHover={{ rotate: -4, scale: 1.06 }} className="relative shrink-0">
+        <motion.div whileHover={{ rotate: playing ? 0 : -4, scale: 1.06 }} className="relative shrink-0">
           {track.image_url ? (
-            <img src={track.image_url} alt="" className="size-12 rounded-xl object-cover shadow-soft sm:size-14" loading="lazy" />
+            <img
+              src={track.image_url}
+              alt=""
+              className={cn("size-12 rounded-xl object-cover shadow-soft sm:size-14", playing && "ring-2 ring-plum")}
+              loading="lazy"
+            />
           ) : (
             <div className="size-12 rounded-xl bg-gradient-to-br from-plum to-coral sm:size-14" />
           )}
+          {item.preview_id ? (
+            <button
+              type="button"
+              onClick={() => toggle(item.preview_id!, track.name)}
+              aria-label={playing ? `Stop preview of ${track.name}` : `Play a 30-second preview of ${track.name}`}
+              title={playing ? "Stop preview" : "Play 30-second preview"}
+              className={cn(
+                "absolute inset-0 grid place-items-center rounded-xl bg-black/45 text-white transition",
+                playing ? "opacity-100" : "opacity-0 group-hover:opacity-100 focus-visible:opacity-100",
+              )}
+            >
+              {playing && loading ? (
+                <Loader2 className="size-5 animate-spin" />
+              ) : playing ? (
+                <Pause className="size-5 fill-current" />
+              ) : (
+                <Play className="size-5 translate-x-px fill-current" />
+              )}
+              {playing && (
+                <span className="absolute inset-x-1.5 bottom-1.5 h-1 overflow-hidden rounded-full bg-white/30">
+                  <span className="block h-full rounded-full bg-white transition-[width]" style={{ width: `${progress * 100}%` }} />
+                </span>
+              )}
+            </button>
+          ) : null}
         </motion.div>
         <button
           type="button"

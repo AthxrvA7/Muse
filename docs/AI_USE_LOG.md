@@ -228,3 +228,13 @@ Never paste secrets, tokens or real user data into an AI tool.
 - **Changes made by us:** Asked for an explicit audience-abuse review; from it: rooms need a login to open, chips only (no free text on screen), new-voter cap, lock and reset keys, a shared budget for visitors' curations to protect the Spotify quota, 64 KB body limit, and presenting from a phone hotspot. Swapped the mood-reading presets for sentences the model reads confidently.
 - **Verification:** 418 backend tests; a browser run with six phones joining and every slide used; a load test of 120 phones voting at once from one IP plus hostile inputs (huge, malformed and script-like bodies) gave no server errors.
 - **Reflection:** The riskiest part of a live demo is the shared network and the shared Spotify quota, not the code paths we normally test; thinking like a mischievous audience found problems the unit tests never would.
+
+### 2026-11-27 — Website polish (`feature/ui-polish`)
+- **Member:** Atharva (frontend work normally owned by Piyush, who was unavailable)
+- **Tool:** Claude (Anthropic)
+- **Purpose:** UI/UX review, bug fixing, design
+- **Prompt (summary):** Fix the UI/UX problems on phones, tablets and laptops, redesign where needed, add touches that fit Muse's vibe, without breaking anything.
+- **Output used:** an automated audit (every page, 3 screen sizes, both themes, measuring overflow and tap targets), fixes for the stuck page transition, the phone song row, hover-only controls and scroll position, the mini player, the mood-coloured glow.
+- **Changes made by us:** Chose the mini player and mood glow after looking at current music-app design (a designed "now playing" surface; tinting the screen with the music's colour); kept the burger menu we asked for earlier.
+- **Verification:** the audit re-run at 320-1366 px with no sideways scrolling or console errors; 30 random menu navigations with no invisible pages; a real preview played in the browser with the mini player; lint, type check, 20 website tests, build, dependency audit, 418 backend tests.
+- **Reflection:** Two real bugs (the invisible page and the hover-only controls on phones) were only visible by testing on real screen sizes and touch, not in our unit tests.

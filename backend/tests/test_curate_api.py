@@ -287,3 +287,18 @@ def test_wellbeing_notice_reaches_the_curate_response(app: FastAPI) -> None:
 
     assert "14416" in body["mood"]["support"]["resources"][0]["phone"]
     assert len(body["tracks"]) == 10  # music is still returned
+
+
+def test_visitors_share_one_budget_so_an_audience_cant_drain_spotify(settings: Settings) -> None:
+    app = create_app(settings.model_copy(update={"curate_visitors_per_minute": 2}))
+    client = client_with(app, FakeCatalogue())
+    statuses = [client.post(URL, json=CALM_REQUEST).status_code for _ in range(3)]
+    assert statuses == [200, 200, 429]
+    busy = client.post(URL, json=CALM_REQUEST)
+    assert "busy" in busy.json()["detail"]["message"] and "Retry-After" in busy.headers
+
+    from app.api.deps import personal_context
+    from app.services.curate import Personal
+
+    app.dependency_overrides[personal_context] = lambda: Personal("user-1")
+    assert client.post(URL, json=CALM_REQUEST).status_code == 200  # logged in: not counted

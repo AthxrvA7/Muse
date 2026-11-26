@@ -75,10 +75,15 @@ class Settings(BaseSettings):
 
     # Requests per minute from one IP address. Curate is stricter because each call makes
     # about 20 Spotify requests; auth is stricter to slow down abuse of the login flow.
-    rate_limit_per_minute: int = Field(default=120, ge=1)
+    rate_limit_per_minute: int = Field(default=300, ge=1)  # per IP; a class shares one
     rate_limit_curate_per_minute: int = Field(default=10, ge=1)
     rate_limit_auth_per_minute: int = Field(default=10, ge=1)
     rate_limit_rewind_per_minute: int = Field(default=12, ge=1)  # each one paints ~10 pages
+    # A whole class on one Wi-Fi shares one IP: room votes and polling get a large budget
+    rate_limit_rooms_per_minute: int = Field(default=3000, ge=1)
+    rate_limit_covers_per_minute: int = Field(default=60, ge=1)  # each one paints an image
+    # All visitors (not logged in) together; protects the app's shared Spotify quota
+    curate_visitors_per_minute: int = Field(default=20, ge=1)
 
     @field_validator(
         "spotify_client_id",

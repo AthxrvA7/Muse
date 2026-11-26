@@ -11,6 +11,7 @@ from collections.abc import Awaitable, Callable
 from fastapi import Request, Response, status
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 logger = logging.getLogger(__name__)
 
@@ -109,6 +110,12 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self.default_limit = default_limit
         self.prefix_limits = prefix_limits
 
+    @staticmethod
+    def _is_website_file(path: str) -> bool:
+        """The built website's static files (scripts, styles, fonts) are never limited: a
+        whole class opening the site on one Wi-Fi shares one IP and would hit any budget."""
+        return path == "/app" or path.startswith("/app/")
+
     def _bucket(self, path: str) -> tuple[str, int]:
         for prefix, limit in self.prefix_limits.items():
             if path.startswith(prefix):
@@ -119,7 +126,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
     ) -> Response:
         path = request.url.path
-        if path in self._EXEMPT or request.method == "OPTIONS":
+        if path in self._EXEMPT or request.method == "OPTIONS" or self._is_website_file(path):
             return await call_next(request)
 
         # Behind a proxy (Render), uvicorn's --proxy-headers puts the real client IP here
@@ -171,3 +178,69 @@ class OriginCheckMiddleware(BaseHTTPMiddleware):
             status_code=status.HTTP_403_FORBIDDEN,
             content={"detail": {"message": "Requests from this website are not allowed"}},
         )
+
+
+MAX_BODY_BYTES = 64 * 1024  # Muse's largest real request (a 100-track playlist) is ~3 KB
+
+
+class BodySizeLimitMiddleware:
+    """Refuses request bodies over 64 KB with 413, so a huge upload can't exhaust memory.
+
+    A declared Content-Length is checked up front. A body sent without one (chunked) is
+    read here, at most 64 KB of it, and then handed on unchanged. Pure ASGI (not
+    BaseHTTPMiddleware) so it controls the body stream itself.
+    """
+
+    def __init__(self, app: ASGIApp, max_bytes: int = MAX_BODY_BYTES) -> None:
+        self.app = app
+        self.max_bytes = max_bytes
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+        headers = dict(scope.get("headers") or [])
+        declared = headers.get(b"content-length")
+        if declared is not None:
+            if not declared.isdigit() or int(declared) > self.max_bytes:
+                await self._too_large(send)
+                return
+            await self.app(scope, receive, send)
+            return
+        if headers.get(b"transfer-encoding") is None:  # no body at all (GET, DELETE...)
+            await self.app(scope, receive, send)
+            return
+
+        buffered: list[Message] = []
+        size = 0
+        while True:
+            message = await receive()
+            buffered.append(message)
+            if message["type"] != "http.request":
+                break
+            size += len(message.get("body", b""))
+            if size > self.max_bytes:
+                await self._too_large(send)
+                return
+            if not message.get("more_body", False):
+                break
+
+        async def replay() -> Message:
+            return buffered.pop(0) if buffered else await receive()
+
+        await self.app(scope, replay, send)
+
+    @staticmethod
+    async def _too_large(send: Send) -> None:
+        response = JSONResponse(
+            status_code=status.HTTP_413_CONTENT_TOO_LARGE,
+            content={"detail": {"message": "Request body too large"}},
+        )
+        await send(
+            {
+                "type": "http.response.start",
+                "status": response.status_code,
+                "headers": response.raw_headers,
+            }
+        )
+        await send({"type": "http.response.body", "body": response.body})

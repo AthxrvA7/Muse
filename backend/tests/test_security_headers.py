@@ -95,3 +95,25 @@ def test_origins_are_parsed_and_normalised() -> None:
     )
 
     assert settings.allowed_origins == ["http://localhost:5173", "https://muse.example"]
+
+
+def test_huge_request_bodies_are_refused_before_they_are_read() -> None:
+    from app.core.security import MAX_BODY_BYTES
+
+    client = TestClient(create_app(Settings(_env_file=None)))
+    url = "/api/v1/rooms/ABCD/votes"
+    big = b'{"voter": "phone-0001", "chips": ["' + b"a" * (MAX_BODY_BYTES + 10) + b'"]}'
+    declared = client.post(url, content=big, headers={"content-type": "application/json"})
+    assert declared.status_code == 413
+    assert declared.headers["X-Content-Type-Options"] == "nosniff"
+
+    def chunks():  # no Content-Length: counted while it streams in
+        for _ in range(100):
+            yield b"x" * 1024
+
+    streamed = client.post(url, content=chunks(), headers={"content-type": "application/json"})
+    assert streamed.status_code == 413
+    assert (
+        client.post(url, content=b"{}", headers={"content-type": "application/json"}).status_code
+        == 422
+    )

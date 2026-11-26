@@ -2,7 +2,7 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from app.api.deps import PersonalContext, SavedTaste
 from app.api.errors import spotify_http_error
@@ -17,6 +17,7 @@ router = APIRouter(prefix="/curate", tags=["curate"])
 
 @router.post("", summary="Curate a playlist for a mood and taste (preview)")
 async def curate(
+    http_request: Request,
     request: CurateRequest,
     service: Annotated[CurateService, Depends(get_curate_service)],
     saved_taste: SavedTaste,
@@ -28,6 +29,17 @@ async def curate(
     permission to read your top tracks? Songs you already play are mixed in (see
     `familiarity`), and songs Muse picked for you recently are less likely to repeat.
     """
+    if personal is None:  # a visitor: counted against everyone's shared budget
+        settings = http_request.app.state.settings
+        wait = http_request.app.state.visitor_curations.hit(
+            "visitors", settings.curate_visitors_per_minute
+        )
+        if wait is not None:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail={"message": "Muse is busy with lots of visitors. Try again in a minute."},
+                headers={"Retry-After": str(wait)},
+            )
     source = "request" if request.taste is not None else "none"
     if request.taste is None and saved_taste is not None:
         request = request.model_copy(update={"taste": saved_taste})

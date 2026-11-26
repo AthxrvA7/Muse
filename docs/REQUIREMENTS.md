@@ -32,8 +32,8 @@
 | FR10 | Persistence | Preferences, sessions and playlist records are stored in MongoDB (mood sessions are not stored: curate stays stateless) | 1 | Verified (`test_repositories.py` with `pytest --db`) |
 | FR11 | Data access & deletion *(added)* | `GET /me/data` returns all of the user's Muse data as JSON; `DELETE /me` removes every document for that user and ends all sessions | 1 | Verified (`test_privacy.py`) |
 | FR12 | Wellbeing notice *(added)* | Text matching the crisis-phrase list returns a `support` notice with helpline information; music is still returned; the text is not stored | 1 | Verified (`test_wellbeing.py`); phrase list awaits counsellor/faculty review |
-| FR13 | Feedback loop | Like/dislike per track | 3 | Deferred |
-| FR14 | Session history & mood trajectory | List past sessions; chart moods over time | 3 | Deferred |
+| FR13 | Feedback loop | Like/dislike per track; ratings change the next playlists and the change is named in the reasons | 3 | Verified (`test_learning.py`) |
+| FR14 | Session history & mood trajectory | History page lists saved playlists and this browser's sessions; an opt-in trajectory charts moods over time without storing text | 3 | Verified (`test_trajectory.py`, `trajectory.test.ts`) |
 
 ## 3. Non-functional requirements
 

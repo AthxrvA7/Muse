@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 SESSION_IDLE_SECONDS = 7 * 24 * 60 * 60  # a session ends after 7 days without use
 OAUTH_STATE_SECONDS = 10 * 60  # a login must finish within 10 minutes
 RECENT_PICKS_SECONDS = 30 * 24 * 60 * 60  # forget recent picks 30 days after the last playlist
+MOOD_LOG_SECONDS = 90 * 24 * 60 * 60  # mood history is kept for 90 days
 
 
 @dataclass(frozen=True)
@@ -44,6 +45,8 @@ INDEXES: tuple[IndexSpec, ...] = (
     IndexSpec("playlists", "user_id", "user_id"),  # a user's playlist history
     IndexSpec("recent_picks", "user_id", "user_id_unique", unique=True),
     IndexSpec("feedback", "user_id", "user_id"),  # a user's ratings, newest first
+    IndexSpec("mood_log", "user_id", "user_id"),  # a user's mood trajectory
+    IndexSpec("mood_log", "at", "forget_ttl", expire_after_seconds=MOOD_LOG_SECONDS),
     IndexSpec(
         "recent_picks", "updated_at", "forget_ttl", expire_after_seconds=RECENT_PICKS_SECONDS
     ),

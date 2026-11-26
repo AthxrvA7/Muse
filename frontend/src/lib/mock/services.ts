@@ -7,6 +7,7 @@ import type {
   CurateOptions,
   CuratePreview,
   Mode,
+  MoodPoint,
   MoodProfile,
   MoodRequest,
   MusicPreferences,
@@ -22,12 +23,30 @@ import {
   demoTrackPool,
   demoUser,
 } from "./data";
+import { summarise as summariseMoods } from "../trajectory";
 
 const wait = <T,>(value: T, ms = 350) => new Promise<T>((resolve) => setTimeout(() => resolve(value), ms));
 
 let preferences: MusicPreferences = { ...demoPreferences };
 const playlists: Playlist[] = [...demoPlaylists];
 const demoRatings: Record<string, 1 | -1> = {};
+
+// A believable fortnight of moods for the trajectory: stressed weekdays, lighter evenings.
+const DEMO_MOODS: [number, number, number, string[]][] = [
+  [13, 9, 0.32, ["stressed", "tired"]], [12, 22, 0.45, ["calm"]], [11, 8, 0.28, ["anxious"]],
+  [10, 20, 0.55, ["relaxed"]], [9, 23, 0.25, ["low", "lonely"]], [8, 18, 0.62, ["happy"]],
+  [7, 10, 0.38, ["focused"]], [6, 21, 0.58, ["nostalgic"]], [5, 9, 0.42, ["tired"]],
+  [4, 19, 0.7, ["happy", "energetic"]], [3, 13, 0.66, ["confident"]], [2, 22, 0.52, ["dreamy"]],
+  [1, 8, 0.6, ["focused"]], [0, 18, 0.78, ["hyped"]],
+];
+let demoMoodsOn = true;
+let demoMoods: MoodPoint[] = DEMO_MOODS.map(([daysAgo, hour, valence, labels], i) => {
+  const at = new Date();
+  at.setDate(at.getDate() - daysAgo);
+  at.setHours(hour, (i * 17) % 60, 0, 0);
+  const energy = Math.min(0.95, Math.max(0.1, 0.3 + (i % 5) * 0.13));
+  return { at: at.toISOString(), valence, energy, labels, mode: "comfort" };
+});
 
 function readMood(mood: MoodRequest): MoodProfile {
   const picked = demoChips.filter((chip) => mood.chips.includes(chip.id));
@@ -169,6 +188,21 @@ export const mockServices: Services = {
       };
       playlists.unshift(playlist);
       return wait(playlist, 700);
+    },
+  },
+  moods: {
+    trajectory: (days) => {
+      const since = Date.now() - days * 86400000;
+      const points = demoMoods.filter((p) => new Date(p.at).getTime() >= since);
+      return wait({ ...summariseMoods(points, days), enabled: demoMoodsOn });
+    },
+    clear: () => {
+      demoMoods = [];
+      return wait(undefined, 200);
+    },
+    setEnabled: (enabled) => {
+      demoMoodsOn = enabled;
+      return wait(undefined, 200);
     },
   },
   feedback: {

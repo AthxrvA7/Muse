@@ -288,3 +288,49 @@ async def test_ratings_replace_each_other_and_can_be_taken_back(database: AsyncD
     await ratings.rate("user-1", FeedbackIn(track_id=song, value=0))
     assert await ratings.list_for_user("user-1") == []
     assert await ratings.delete_all("user-2") == 1
+
+
+# ---------------------------------------------------------------- mood log
+
+
+async def test_mood_log_merges_quick_repeats_and_lists_oldest_first(
+    database: AsyncDatabase,
+) -> None:
+    from app.db.repositories.mood_log import MoodLogRepository
+    from app.schemas.moods import MoodEntry
+
+    log = MoodLogRepository(database)
+    start = _now() - timedelta(hours=3)
+
+    def at(minutes: int, labels: list[str], valence: float = 0.5) -> MoodEntry:
+        return MoodEntry(
+            at=start + timedelta(minutes=minutes),
+            valence=valence,
+            energy=0.4,
+            labels=labels,
+            mode="comfort",
+        )
+
+    await log.record("user-1", at(0, ["tired"]))  # off by default: not kept
+    assert await log.list_for_user("user-1", days=1) == []
+    await log.set_enabled("user-1", True)
+    await log.set_enabled("user-2", True)
+
+    await log.record("user-1", at(0, ["calm"], 0.5))
+    await log.record("user-1", at(5, ["calm"], 0.6))  # "Give me another": same entry
+    await log.record("user-1", at(10, ["low"]))  # a different mood: new entry
+    await log.record("user-1", at(60, ["low"]))  # same mood, much later: new entry
+    await log.record("user-2", at(0, ["happy"]))
+
+    mine = await log.list_for_user("user-1", days=1)
+    assert [(e.labels, e.at) for e in mine] == [
+        (["calm"], start + timedelta(minutes=5)),
+        (["low"], start + timedelta(minutes=10)),
+        (["low"], start + timedelta(minutes=60)),
+    ]
+    assert mine[0].valence == 0.6
+    assert await log.delete_all("user-1") == 3
+    assert await log.list_for_user("user-1", days=1) == []
+    assert await log.is_enabled("user-1") is True  # clearing keeps the choice
+    assert await log.forget_user("user-2") == 1
+    assert await log.is_enabled("user-2") is False

@@ -198,3 +198,13 @@ Never paste secrets, tokens or real user data into an AI tool.
 - **Changes made by us:** Kept every nudge small and capped so ratings refine the mood and taste instead of overriding them; chose to remove 👎 songs from the current playlist straight away (with Undo); added "Forget what Muse learned".
 - **Verification:** 374 backend tests; in a browser a 👍 and a 👎 were saved, the 👎 song left the playlist, and the next playlist reported "Learned from 2 ratings".
 - **Reflection:** Simple, explainable rules can be described line by line in the viva, which matters more here than a model nobody can inspect.
+
+### 2026-11-26 — Mood trajectory (`feature/mood-trajectory`)
+- **Member:** Atharva
+- **Tool:** Claude (Anthropic)
+- **Purpose:** design, code generation, testing
+- **Prompt (summary):** Add the synopsis's mood trajectory: show how the user's moods change across Muse sessions.
+- **Output used:** `mood_log` repository, `GET /moods/trajectory`, on/off and clear endpoints, the summary rules (`services/trajectory.py`), the History page card with the mood map and the over-time chart, tests.
+- **Changes made by us:** Made it opt-in and kept for 90 days to match our own privacy design (SECURITY_PRIVACY.md); kept only the two numbers and fixed mood words, never the text; merged quick repeats so "Give me another" doesn't flood the chart; added "not a diagnosis" to the card.
+- **Verification:** 384 backend tests and 17 website tests; in a browser the map, the over-time chart, pause, clear and turn on all worked in light, dark and mobile layouts.
+- **Reflection:** The first version logged moods for everyone; checking it against our own privacy document caught that it should be opt-in.

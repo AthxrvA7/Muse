@@ -2,14 +2,16 @@
 
 Muse stores only what the user told it and what it made for them: the account (Spotify ID
 and name), the taste profile, login sessions, records of playlists it created, and the IDs
-of tracks it recently picked (so playlists don't repeat). Mood
-text is never stored, so there is nothing to export or delete for it.
+of tracks it recently picked (so playlists don't repeat), song ratings, and the mood
+history (each mood's two numbers and mood words). Mood text is never stored, so there is
+nothing to export or delete for it.
 """
 
 from datetime import UTC, datetime
 from typing import Any, Protocol
 
 from app.db.models import PlaylistRecord, Preferences, User
+from app.schemas.moods import MAX_DAYS
 
 
 class Users(Protocol):
@@ -35,6 +37,12 @@ class FeedbackStore(Protocol):
     async def delete_all(self, user_id: str) -> int: ...
 
 
+class MoodStore(Protocol):
+    async def is_enabled(self, user_id: str) -> bool: ...
+    async def list_for_user(self, user_id: str, days: int) -> list[Any]: ...
+    async def forget_user(self, user_id: str) -> int: ...
+
+
 class RecentPicksStore(Protocol):
     async def get(self, user_id: str) -> list[str]: ...
     async def delete(self, user_id: str) -> bool: ...
@@ -49,6 +57,7 @@ class PrivacyService:
         playlists: PlaylistStore,
         recent: RecentPicksStore | None = None,
         feedback: FeedbackStore | None = None,
+        moods: MoodStore | None = None,
     ) -> None:
         self._users = users
         self._sessions = sessions
@@ -56,6 +65,7 @@ class PrivacyService:
         self._playlists = playlists
         self._recent = recent
         self._feedback = feedback
+        self._moods = moods
 
     async def export(self, user: User) -> dict[str, Any]:
         """Everything Muse holds about this user, as plain JSON (tokens are never included)."""
@@ -70,6 +80,11 @@ class PrivacyService:
             "song_ratings": [
                 r.model_dump(mode="json", exclude={"user_id"})
                 for r in (await self._feedback.list_for_user(user.id) if self._feedback else [])
+            ],
+            "mood_trajectory_on": await self._moods.is_enabled(user.id) if self._moods else False,
+            "mood_history": [
+                m.model_dump(mode="json")
+                for m in (await self._moods.list_for_user(user.id, MAX_DAYS) if self._moods else [])
             ],
             "not_stored": [
                 "the text you type about your mood",
@@ -90,5 +105,7 @@ class PrivacyService:
             removed["recent_picks"] = int(await self._recent.delete(user.id))
         if self._feedback:
             removed["song_ratings"] = await self._feedback.delete_all(user.id)
+        if self._moods:
+            removed["mood_history"] = await self._moods.forget_user(user.id)
         removed["account"] = int(await self._users.delete(user.id))
         return removed

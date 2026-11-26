@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 
 import { EmptyState } from "@/components/EmptyState";
+import { MoodTrajectory } from "@/components/MoodTrajectory";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -69,6 +70,8 @@ export default function History() {
           Playlists you saved to Spotify, and recent curations from this browser. Mood text is never kept.
         </p>
       </header>
+
+      <MoodTrajectory />
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="relative flex-1">

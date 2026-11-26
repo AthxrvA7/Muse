@@ -89,7 +89,7 @@ Everything that crosses into the backend (request bodies, query strings, headers
 | Spotify user ID, display name | Spotify `/me` | Identify the account, greet the user | Yes | Until deletion |
 | Spotify tokens | OAuth | Search and create playlists for the user | Encrypted | Until logout-all or deletion |
 | Stated preferences | User | Personalise recommendations | Yes | Until deletion |
-| Mood chips + derived MoodProfile | User / Muse | Curate and show history | Yes | 90 days |
+| Mood position (valence, energy), mood words, mode | User / Muse | Opt-in mood trajectory | Only if the user turns it on | 90 days (TTL index) |
 | Mood free text | User | Derive mood | **No** (memory only) | — |
 | Curated tracks, scores, explanations | Muse | Show and export results | Yes | 90 days (inside the session) |
 | Exported playlist ID/URL | Spotify | Link back to the playlist | Yes | Until deletion |
@@ -99,6 +99,8 @@ Everything that crosses into the backend (request bodies, query strings, headers
 Not collected: email, country, listening history, top tracks, followed artists, location, age.
 
 Song ratings: each 👍/👎 the user gives (track ID, artist IDs and names, genre, language, and the mood it was given in). Used only to shape that user's playlists; shown on the Music DNA page; "Forget what Muse learned" deletes them; included in the data export and removed with the account.
+
+Mood trajectory (opt-in, off by default): when turned on, each playlist curated adds the mood's valence and energy, its mood words (from Muse's fixed list, never the typed text) and the playlist mode. Shown only to that user on the History page; can be paused or cleared there; deleted after 90 days; included in the data export and removed with the account.
 
 Recent picks: the IDs of the last 90 tracks Muse picked for the user, so playlists don't repeat. Deleted 30 days after the last playlist, included in the data export, removed with the account.
 

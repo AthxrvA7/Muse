@@ -161,4 +161,4 @@ The app is built in vertical slices so a working "mood → explained songs" demo
 
 ## Later phases (not this semester)
 - **Phase 2:** `feature/frontend-*` (Piyush lead): React app, consent screen, dashboard, Music DNA charts, mood input, playlist view; WCAG 2.2 AA.
-- **Phase 3:** `feature/learning` (feedback loop and adaptive recommendations) ✅, `feature/session-history`, `feature/mood-trajectory`.
+- **Phase 3:** `feature/learning` (feedback loop and adaptive recommendations) ✅, `feature/mood-trajectory` (opt-in, on the History page) ✅, `feature/session-history` (History page lists saved playlists and this browser's sessions).

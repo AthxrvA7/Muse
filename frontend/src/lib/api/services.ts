@@ -6,6 +6,7 @@ import type {
   Artist,
   CoverRequest,
   Learned,
+  MoodTrajectory,
   Rating,
   CurateOptions,
   CuratePreview,
@@ -73,6 +74,12 @@ const realServices = {
     rate: (rating: Rating) => request<void>("/api/v1/feedback", { method: "PUT", body: rating }),
     learned: () => request<Learned>("/api/v1/feedback"),
     forget: () => request<void>("/api/v1/feedback", { method: "DELETE" }),
+  },
+  moods: {
+    trajectory: (days: number) => request<MoodTrajectory>(`/api/v1/moods/trajectory?days=${days}`),
+    clear: () => request<void>("/api/v1/moods", { method: "DELETE" }),
+    setEnabled: (enabled: boolean) =>
+      request<void>("/api/v1/moods/settings", { method: "PUT", body: { enabled } }),
   },
   privacy: {
     exportUrl: "/api/v1/me/data",

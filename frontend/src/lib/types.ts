@@ -214,3 +214,23 @@ export interface Learned {
   avoided_artists: { name: string; count: number }[];
   ratings: Record<string, 1 | -1>;
 }
+
+/** One curated mood, as kept for the trajectory: numbers and mood words, never text. */
+export interface MoodPoint {
+  at: string;
+  valence: number;
+  energy: number;
+  labels: string[];
+  mode: Mode;
+}
+
+export interface MoodTrajectory {
+  /** Whether new moods are being kept (opt-in; visitors' browser history is always shown). */
+  enabled?: boolean;
+  days: number;
+  points: MoodPoint[];
+  average: { valence: number; energy: number } | null;
+  top_labels: { label: string; count: number }[];
+  brightness: "lighter" | "heavier" | "steady" | null;
+  energy: "more energetic" | "calmer" | "steady" | null;
+}

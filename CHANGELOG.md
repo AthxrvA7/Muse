@@ -75,6 +75,13 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 - "What Muse learned" on the Music DNA page lists more-of and less-of artists, with "Forget what Muse learned"
 - `PUT/GET/DELETE /api/v1/feedback`; ratings are in the data export and deleted with the account
 
+### Room mode and the presentation deck
+- Room mode: a presenter opens a room (logged in) and the audience joins on their phones at `/app/#/join/<code>`, with no login, by tapping up to 3 mood chips; the screen shows the live mood map, the most-picked moods and the room's personality
+- Only chips from Muse's fixed list are accepted (no free text reaches the screen); one vote per phone, changeable; at most 150 new voters a minute and 500 per room; the host can lock the room or clear its votes; rooms live in memory for 4 hours and are never stored
+- `POST /api/v1/rooms`, `POST /api/v1/rooms/{code}/votes`, `GET /api/v1/rooms/{code}`, `PUT /api/v1/rooms/{code}/lock`, `DELETE /api/v1/rooms/{code}/votes`
+- Interactive presentation deck at `/app/#/present`: live room slides with a QR code, live curation for the room's mood with previews, live mood reading of a typed sentence, the clickable recommender pipeline, a cover art lab, a 👍/👎 learning simulation, Muse Rewind, architecture, an animated CI/CD pipeline; speaker notes (N), lock (L), reset (X), rehearsal votes (R); run-sheet in `docs/PRESENTATION.md`
+- Audience-proofing: website files are no longer rate-limited (a class on one Wi-Fi shares one IP) and the default per-IP budget is 300/min; room endpoints have their own large budget; visitors' curations share one budget (20/min) so the app's Spotify quota can't be drained; cover art has its own budget (60/min); request bodies over 64 KB are refused (413) before they are read
+
 ### Muse Rewind
 - A Wrapped-style PDF of your moods and music to send to friends (the synopsis's "shareable Muse analysis"): up to 10 bold, full-colour, phone-shaped pages
 - Mood of the month, your Muse personality (from where your moods sat, or "The Shapeshifter" when they were all over the map), your mood journey on the map, your golden hour (time of day with the brightest moods, in your own time zone), your sound (top artists and genres), taste × mood match, what Muse learned from your 👍/👎, your playlists, and a summary page

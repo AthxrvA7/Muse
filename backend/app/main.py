@@ -22,6 +22,7 @@ from app.core.config import Settings, get_settings
 from app.core.logging import configure_logging
 from app.core.middleware import RequestIDMiddleware
 from app.core.security import (
+    BodySizeLimitMiddleware,
     FixedWindowRateLimiter,
     OriginCheckMiddleware,
     RateLimitMiddleware,
@@ -71,11 +72,17 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         lifespan=lifespan,
     )
     app.state.settings = settings
+    # One budget for all visitors' curations together, so an audience can't exhaust the
+    # app's Spotify quota (logged-in users aren't counted)
+    app.state.visitor_curations = FixedWindowRateLimiter()
     app.state.db = None  # set by the lifespan when MongoDB is configured
 
     # Middleware runs outside-in in the reverse order of these lines: the last one added
     # sees the request first. Request IDs are outermost so every response, including
     # rejections, gets an ID and an access-log line.
+    # Innermost of the middlewares: huge bodies are refused (413) before they are read,
+    # and the 413 still gets the security headers and request ID added outside it
+    app.add_middleware(BodySizeLimitMiddleware)
     app.add_middleware(OriginCheckMiddleware, allowed_origins=settings.allowed_origins)
     prefix = settings.api_v1_prefix
     app.add_middleware(
@@ -86,6 +93,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             f"{prefix}/curate": settings.rate_limit_curate_per_minute,
             f"{prefix}/auth": settings.rate_limit_auth_per_minute,
             f"{prefix}/me/rewind": settings.rate_limit_rewind_per_minute,
+            f"{prefix}/rooms": settings.rate_limit_rooms_per_minute,
+            f"{prefix}/covers": settings.rate_limit_covers_per_minute,
         },
     )
     if settings.allowed_origins:

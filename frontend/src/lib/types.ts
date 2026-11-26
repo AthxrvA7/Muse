@@ -234,3 +234,14 @@ export interface MoodTrajectory {
   brightness: "lighter" | "heavier" | "steady" | null;
   energy: "more energetic" | "calmer" | "steady" | null;
 }
+
+/** Room mode: a class shares its mood live. */
+export interface RoomSummary {
+  code: string;
+  voters: number;
+  chips: { label: string; count: number }[];
+  points: { valence: number; energy: number; labels: string[] }[];
+  average: { valence: number; energy: number } | null;
+  personality: { name: string; line: string } | null;
+  locked: boolean;
+}

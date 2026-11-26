@@ -92,3 +92,22 @@ def test_health_checks_are_never_limited() -> None:
     statuses = {client.get(path).status_code for path in ("/health", "/ready") * 5}
 
     assert 429 not in statuses
+
+
+def test_website_files_are_never_limited() -> None:
+    # A whole class opening the site on one Wi-Fi shares one IP address
+    client = _client(rate_limit_per_minute=1)
+
+    statuses = {client.get(path).status_code for path in ("/app/", "/app/assets/x.js") * 5}
+
+    assert 429 not in statuses
+    client.get("/")
+    assert client.get("/").status_code == 429  # the API itself still is
+
+
+def test_cover_art_has_its_own_budget() -> None:
+    client = _client(rate_limit_per_minute=100, rate_limit_covers_per_minute=1)
+    url = "/api/v1/covers?valence=0.5&energy=0.5&title=Hi"
+    assert client.get(url).status_code == 200
+    assert client.get(url).status_code == 429
+    assert client.get("/").status_code == 200

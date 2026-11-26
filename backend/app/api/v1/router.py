@@ -18,6 +18,7 @@ from app.api.v1 import (
     previews,
     privacy,
     rewind,
+    rooms,
 )
 
 api_router = APIRouter()
@@ -33,3 +34,4 @@ api_router.include_router(covers.router)
 api_router.include_router(feedback.router)
 api_router.include_router(moods.router)
 api_router.include_router(rewind.router)
+api_router.include_router(rooms.router)

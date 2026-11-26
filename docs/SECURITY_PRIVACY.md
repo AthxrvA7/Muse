@@ -102,6 +102,10 @@ Song ratings: each 👍/👎 the user gives (track ID, artist IDs and names, gen
 
 Mood trajectory (opt-in, off by default): when turned on, each playlist curated adds the mood's valence and energy, its mood words (from Muse's fixed list, never the typed text) and the playlist mode. Shown only to that user on the History page; can be paused or cleared there; deleted after 90 days; included in the data export and removed with the account.
 
+Room mode: a room holds, per phone, a random ID the phone made and up to three mood chips from Muse's fixed list; no names, no text, no login. Rooms live only in the server's memory and disappear after 4 hours. Only logged-in users (in Development Mode, the allowlisted accounts) can open rooms; only the host can lock a room or clear its votes. New voters are capped at 150 per minute and 500 per room.
+
+Audience-proofing (threat T10, denial of service): a whole class on one Wi-Fi shares one IP, so the website's static files are not rate-limited and the default per-IP budget is 300 requests per minute; room endpoints have their own large budget. Visitors' curations share one app-wide budget (20 per minute), because each curation spends the app's shared Spotify quota and a 429 from Spotify blocks everyone. Cover art (CPU-heavy) has its own budget of 60 per minute per IP. Request bodies over 64 KB are refused with 413 before they are read, so a huge upload can't exhaust memory. A load test (120 phones voting at once from one IP, plus hostile inputs) produced no server errors.
+
 Muse Rewind: the shareable PDF is made from the data above when the user asks for it, in memory, and handed straight to them; Muse stores no copy and has no public link to it. The user chooses which parts go in (moods, taste, what Muse learned, playlists), and only the first name is printed. Each request paints up to 10 pages, so it has its own rate limit (12 per minute per IP).
 
 Recent picks: the IDs of the last 90 tracks Muse picked for the user, so playlists don't repeat. Deleted 30 days after the last playlist, included in the data export, removed with the account.

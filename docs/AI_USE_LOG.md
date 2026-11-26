@@ -208,3 +208,13 @@ Never paste secrets, tokens or real user data into an AI tool.
 - **Changes made by us:** Made it opt-in and kept for 90 days to match our own privacy design (SECURITY_PRIVACY.md); kept only the two numbers and fixed mood words, never the text; merged quick repeats so "Give me another" doesn't flood the chart; added "not a diagnosis" to the card.
 - **Verification:** 384 backend tests and 17 website tests; in a browser the map, the over-time chart, pause, clear and turn on all worked in light, dark and mobile layouts.
 - **Reflection:** The first version logged moods for everyone; checking it against our own privacy document caught that it should be opt-in.
+
+### 2026-11-26 — Muse Rewind (`feature/rewind`)
+- **Member:** Atharva
+- **Tool:** Claude (Anthropic)
+- **Purpose:** design, code generation, testing
+- **Prompt (summary):** Turn "download my data" into something fun to share with friends: a colourful, Wrapped-style PDF with a real taste and mood analysis.
+- **Output used:** the analysis rules (`services/rewind.py`: personality, journey, golden hour, taste × mood match), the page painter (`services/rewind_render.py`), `GET /me/rewind`, the Rewind page with preview, download and share, tests.
+- **Changes made by us:** Kept "Download my data" as the raw JSON privacy export and made Rewind a separate feature; chose a name of our own instead of "Wrapped"; made every part optional, printed only the first name, and stored nothing; checked the fonts' licence (SIL OFL) before bundling them.
+- **Verification:** 394 backend tests and 20 website tests; a run of the real app with its Content-Security-Policy showed the preview and downloaded a 9-page PDF with no console errors, which caught that the policy needed `blob:` for the preview image.
+- **Reflection:** Every line in the report comes from simple rules we can explain, so the "analysis" is honest about what it is: a playful summary of moods the user chose.

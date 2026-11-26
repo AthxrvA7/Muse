@@ -60,7 +60,7 @@ def test_discovery_mode_adds_new_genres_in_the_users_languages() -> None:
     plans = plan_searches(mood(0.5, 0.4, mode="discovery"), taste, KB)
 
     discovery = [p for p in plans if p.reason == "discovery"]
-    assert len(discovery) == 2
+    assert len(discovery) == 1  # one, to stay gentle on Spotify's rate limit
     for p in discovery:
         langs = KB.genres[p.value].langs
         assert not langs or "hi" in langs  # never a language the user didn't ask for

@@ -25,3 +25,11 @@ def settings() -> Settings:
 @pytest.fixture
 def client(settings: Settings) -> TestClient:
     return TestClient(create_app(settings))
+
+
+@pytest.fixture(autouse=True)
+def _fresh_spotify_state() -> None:
+    """Each test starts with no cached Spotify searches and no rate-limit block."""
+    from app.clients.spotify import reset_shared_state
+
+    reset_shared_state()

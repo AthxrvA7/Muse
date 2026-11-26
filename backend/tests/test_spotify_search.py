@@ -156,3 +156,42 @@ def test_build_query_ignores_invalid_years_and_empty_parts() -> None:
 
 def test_build_query_limits_term_length() -> None:
     assert len(build_query("a" * 500)) == 100
+
+
+def _token_or(response: httpx2.Response, calls: list[str]) -> Any:
+    def handler(request: httpx2.Request) -> httpx2.Response:
+        calls.append(request.url.path)
+        if str(request.url).startswith(TOKEN_URL):
+            return httpx2.Response(200, json={"access_token": "t", "expires_in": 3600})
+        return response
+
+    return handler
+
+
+@pytest.mark.anyio
+async def test_a_long_rate_limit_blocks_further_calls_without_asking_spotify() -> None:
+    from app.clients.spotify import SpotifyRateLimitError, blocked_for
+
+    calls: list[str] = []
+    client = make_client(_token_or(httpx2.Response(429, headers={"Retry-After": "600"}), calls))
+
+    with pytest.raises(SpotifyRateLimitError):
+        await client.search_tracks("first")
+    searches = calls.count("/v1/search")
+    with pytest.raises(SpotifyRateLimitError) as second:
+        await client.search_tracks("second")
+
+    assert calls.count("/v1/search") == searches  # Spotify was not called again
+    assert 590 <= second.value.retry_after <= 600
+    assert blocked_for() > 0
+
+
+@pytest.mark.anyio
+async def test_repeated_searches_are_served_from_the_cache() -> None:
+    calls: list[str] = []
+    client = make_client(_token_or(httpx2.Response(200, json={"tracks": {"items": []}}), calls))
+
+    await client.search_tracks('artist:"Arijit Singh"')
+    await client.search_tracks('artist:"arijit  singh"')  # same search, other spelling
+
+    assert calls.count("/v1/search") == 1

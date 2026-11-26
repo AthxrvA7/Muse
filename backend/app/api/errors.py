@@ -23,7 +23,15 @@ def spotify_http_error(error: SpotifyError) -> HTTPException:
     if isinstance(error, SpotifyRateLimitError):
         return HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail={"message": "Spotify is busy; try again shortly"},
+            detail={
+                "message": "Spotify asked Muse to slow down. "
+                + (
+                    f"Try again in about {max(1, round(error.retry_after / 60))} minute(s)."
+                    if error.retry_after >= 60
+                    else f"Try again in {error.retry_after} seconds."
+                ),
+                "retry_after": error.retry_after,
+            },
             headers={"Retry-After": str(error.retry_after)},
         )
     return HTTPException(

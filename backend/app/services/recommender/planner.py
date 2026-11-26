@@ -19,9 +19,9 @@ from app.services.recommender.knowledge import GenreKnowledge
 MAX_ARTIST_SEARCHES = 5
 MAX_FAVOURITE_GENRES = 3
 MAX_LANGUAGE_GENRES = 2
-DISCOVERY_GENRES = 2
+DISCOVERY_GENRES = 1
 MOOD_ONLY_GENRES = 4  # when the user gave no taste at all
-MAX_SIMILAR_SEARCHES = 6
+MAX_SIMILAR_SEARCHES = 3
 
 Reason = Literal[
     "familiar",  # the user plays it a lot (their Spotify top tracks)
@@ -109,7 +109,7 @@ def plan_searches(
 
 
 def language_searches(
-    mood: MoodProfile, language: str, kb: GenreKnowledge, skip: set[str], count: int = 4
+    mood: MoodProfile, language: str, kb: GenreKnowledge, skip: set[str], count: int = 2
 ) -> list[SearchPlan]:
     """Extra genre searches in one language, closest to the mood first (when a playlist
     in that language would otherwise be short). `skip` holds genre ids already searched."""

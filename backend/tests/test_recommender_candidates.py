@@ -74,8 +74,19 @@ async def test_all_searches_failing_means_spotify_is_unavailable() -> None:
 
 
 @pytest.mark.anyio
-async def test_a_rate_limit_stops_everything() -> None:
+async def test_a_rate_limited_search_still_lets_the_others_count() -> None:
     spotify = FakeSearcher({ARTIST.query: SpotifyRateLimitError(10), GENRE.query: [track("g")] * 5})
+
+    candidates = await gather_candidates(spotify, [ARTIST, GENRE])
+
+    assert [c.track.id for c in candidates] == ["g"]
+
+
+@pytest.mark.anyio
+async def test_a_rate_limit_on_every_search_is_reported() -> None:
+    spotify = FakeSearcher(
+        {ARTIST.query: SpotifyRateLimitError(10), GENRE.query: SpotifyRateLimitError(10)}
+    )
 
     with pytest.raises(SpotifyRateLimitError):
         await gather_candidates(spotify, [ARTIST, GENRE])

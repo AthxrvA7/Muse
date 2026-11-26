@@ -16,7 +16,7 @@ from app.services.recommender.planner import SearchPlan
 
 TRACKS_PER_SEARCH = 20
 MIN_RESULTS_BEFORE_FALLBACK = 5
-MAX_PARALLEL_SEARCHES = 4
+MAX_PARALLEL_SEARCHES = 3  # gentle on Spotify's rate limit
 
 logger = logging.getLogger(__name__)
 
@@ -55,9 +55,12 @@ async def gather_candidates(spotify: TrackSearcher, plans: list[SearchPlan]) -> 
 
     candidates: dict[str, Candidate] = {}
     failures = 0
+    rate_limited: SpotifyRateLimitError | None = None
     for plan, result in zip(plans, results, strict=True):
-        if isinstance(result, SpotifyRateLimitError):
-            raise result
+        if isinstance(result, SpotifyRateLimitError):  # use what the other searches found
+            rate_limited = result
+            failures += 1
+            continue
         if isinstance(result, SpotifyError):
             failures += 1
             logger.warning("A candidate search failed", extra={"search_kind": plan.kind})
@@ -71,5 +74,7 @@ async def gather_candidates(spotify: TrackSearcher, plans: list[SearchPlan]) -> 
                 candidate.sources.append(plan)
 
     if plans and failures == len(plans):
+        if rate_limited:
+            raise rate_limited
         raise SpotifyUnavailableError("Every candidate search failed")
     return list(candidates.values())

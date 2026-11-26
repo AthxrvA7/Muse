@@ -68,6 +68,12 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 - `GET /api/v1/mood/options`: mood chips with their valence and energy, and the modes, for clients
 - The built website is served at `/app/` by the backend (`FRONTEND_DIST`), with its own Content-Security-Policy
 
+### Gentler on Spotify
+- Search results are cached for 6 hours, so repeating a mood or taste costs no Spotify calls
+- When Spotify asks Muse to wait longer than 5 seconds, Muse stops calling it until the wait is over (calling during a block only lengthens it) and says how long to wait
+- If some searches are rate-limited, the playlist is built from the ones that worked
+- Fewer searches per playlist (3 similar artists, 1 discovery genre, 2 extra language genres, 3 at a time)
+
 ### Strict language
 - A playlist now holds only songs Muse knows are in its language (plus instrumental genres); songs of unknown language are never used. If there are too few, Muse first searches more genres in that language, and otherwise returns a shorter playlist with a note instead of mixing
 - Render deploys on every commit to main (`autoDeployTrigger: commit`); pull requests already pass CI before they are merged

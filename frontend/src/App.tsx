@@ -15,6 +15,9 @@ import { AppStateProvider } from "@/state/AppState";
 const MusicDna = lazy(() => import("@/pages/MusicDna"));
 const History = lazy(() => import("@/pages/History"));
 const Rewind = lazy(() => import("@/pages/Rewind"));
+// Room mode: the phone page and the presentation deck, both full screen (no menu)
+const Join = lazy(() => import("@/pages/Join"));
+const Present = lazy(() => import("@/present/Present"));
 
 // Hash routing (/app/#/dna) keeps every page reachable on refresh without server rules
 export default function App() {
@@ -24,6 +27,8 @@ export default function App() {
       <TooltipProvider>
         <HashRouter>
           <Routes>
+            <Route path="join/:code?" element={<Suspense fallback={null}><Join /></Suspense>} />
+            <Route path="present" element={<Suspense fallback={null}><Present /></Suspense>} />
             <Route element={<Layout />}>
               <Route index element={<Discover />} />
               <Route path="dna" element={<Suspense fallback={null}><MusicDna /></Suspense>} />

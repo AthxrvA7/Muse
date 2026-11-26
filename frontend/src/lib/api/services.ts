@@ -7,10 +7,12 @@ import type {
   CoverRequest,
   Learned,
   MoodTrajectory,
+  RoomSummary,
   Rating,
   CurateOptions,
   CuratePreview,
   MoodOptions,
+  MoodProfile,
   MoodRequest,
   MusicDNA,
   MusicPreferences,
@@ -42,6 +44,16 @@ const realServices = {
   },
   mood: {
     options: () => request<MoodOptions>("/api/v1/mood/options"),
+    analyze: (mood: MoodRequest) => request<MoodProfile>("/api/v1/mood/analyze", { method: "POST", body: mood }),
+  },
+  rooms: {
+    create: () => request<{ code: string }>("/api/v1/rooms", { method: "POST" }),
+    get: (code: string) => request<RoomSummary>(`/api/v1/rooms/${encodeURIComponent(code)}`),
+    vote: (code: string, voter: string, chips: string[]) =>
+      request<void>(`/api/v1/rooms/${encodeURIComponent(code)}/votes`, { method: "POST", body: { voter, chips } }),
+    lock: (code: string, locked: boolean) =>
+      request<void>(`/api/v1/rooms/${encodeURIComponent(code)}/lock`, { method: "PUT", body: { locked } }),
+    reset: (code: string) => request<void>(`/api/v1/rooms/${encodeURIComponent(code)}/votes`, { method: "DELETE" }),
   },
   curation: {
     curate: (mood: MoodRequest, size: number, options: CurateOptions = {}) =>

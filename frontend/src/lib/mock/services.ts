@@ -161,6 +161,7 @@ export const mockServices: Services = {
   mood: {
     options: () =>
       wait({ chips: demoChips, modes: ["comfort", "focus", "energy", "discovery"] as Mode[], max_chips: 5, max_text_length: 500 }),
+    analyze: (mood) => wait(curate(mood, 1, {}).mood, 400),
   },
   curation: {
     curate: (mood, size, options) => wait(curate(mood, size, options), 900),
@@ -190,6 +191,13 @@ export const mockServices: Services = {
       playlists.unshift(playlist);
       return wait(playlist, 700);
     },
+  },
+  rooms: {
+    create: () => wait({ code: "DEMO" }),
+    get: (code) => wait({ code, voters: 0, chips: [], points: [], average: null, personality: null, locked: false }, 150),
+    vote: () => wait(undefined, 200),
+    lock: () => wait(undefined, 100),
+    reset: () => wait(undefined, 100),
   },
   rewind: {
     // Demo mode shows a sample Rewind; downloading needs a real login.

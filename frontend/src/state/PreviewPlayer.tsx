@@ -8,11 +8,21 @@ import { previewUrl } from "@/lib/preview";
  * The source is Muse's own /api/v1/previews/{id}, which redirects to a fresh 30-second
  * clip on Deezer's CDN (links expire within minutes, so they're never kept here).
  */
+/** What the mini player shows about the song that's playing. */
+export interface NowPlaying {
+  id: number;
+  title: string;
+  artist?: string;
+  image?: string | null;
+  bpm?: number | null;
+}
+
 interface PreviewState {
   playingId: number | null; // the Deezer ID being played (or loading)
+  nowPlaying: NowPlaying | null;
   loading: boolean;
   progress: number; // 0-1 through the clip
-  toggle: (deezerId: number, title: string) => void;
+  toggle: (deezerId: number, title: string, details?: Omit<NowPlaying, "id" | "title">) => void;
   stop: () => void;
 }
 
@@ -23,12 +33,14 @@ export function PreviewProvider({ children }: { children: ReactNode }) {
   const [playingId, setPlayingId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [nowPlaying, setNowPlaying] = useState<NowPlaying | null>(null);
   const current = useRef<{ id: number; title: string } | null>(null);
 
   const stop = useCallback(() => {
     audio.current?.pause();
     current.current = null;
     setPlayingId(null);
+    setNowPlaying(null);
     setLoading(false);
     setProgress(0);
   }, []);
@@ -42,6 +54,7 @@ export function PreviewProvider({ children }: { children: ReactNode }) {
     const onEnded = () => {
       current.current = null;
       setPlayingId(null);
+      setNowPlaying(null);
       setProgress(0);
     };
     const onError = () => {
@@ -65,7 +78,7 @@ export function PreviewProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const toggle = useCallback(
-    (deezerId: number, title: string) => {
+    (deezerId: number, title: string, details?: Omit<NowPlaying, "id" | "title">) => {
       const player = audio.current;
       if (!player) return;
       if (current.current?.id === deezerId) {
@@ -74,6 +87,7 @@ export function PreviewProvider({ children }: { children: ReactNode }) {
       }
       current.current = { id: deezerId, title };
       setPlayingId(deezerId);
+      setNowPlaying({ id: deezerId, title, ...details });
       setLoading(true);
       setProgress(0);
       player.src = previewUrl(deezerId); // asks Muse for a fresh link each time
@@ -88,7 +102,10 @@ export function PreviewProvider({ children }: { children: ReactNode }) {
     [stop],
   );
 
-  const value = useMemo(() => ({ playingId, loading, progress, toggle, stop }), [playingId, loading, progress, toggle, stop]);
+  const value = useMemo(
+    () => ({ playingId, nowPlaying, loading, progress, toggle, stop }),
+    [playingId, nowPlaying, loading, progress, toggle, stop],
+  );
   return <PreviewContext.Provider value={value}>{children}</PreviewContext.Provider>;
 }
 

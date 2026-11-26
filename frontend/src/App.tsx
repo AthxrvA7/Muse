@@ -1,3 +1,4 @@
+import { MotionConfig } from "framer-motion";
 import { lazy, Suspense } from "react";
 import { HashRouter, Route, Routes } from "react-router";
 import { Toaster } from "sonner";
@@ -22,6 +23,8 @@ const Present = lazy(() => import("@/present/Present"));
 // Hash routing (/app/#/dna) keeps every page reachable on refresh without server rules
 export default function App() {
   return (
+    // reducedMotion="user": people who ask their device for less motion get fades, not movement
+    <MotionConfig reducedMotion="user">
     <AppStateProvider>
       <PreviewProvider>
       <TooltipProvider>
@@ -41,9 +44,11 @@ export default function App() {
             </Route>
           </Routes>
         </HashRouter>
-        <Toaster position="bottom-right" richColors closeButton />
+        {/* lifted above the mini player at the bottom of the screen */}
+        <Toaster position="bottom-right" richColors closeButton offset={{ bottom: "6rem" }} mobileOffset={{ bottom: "6.5rem" }} />
       </TooltipProvider>
       </PreviewProvider>
     </AppStateProvider>
+    </MotionConfig>
   );
 }

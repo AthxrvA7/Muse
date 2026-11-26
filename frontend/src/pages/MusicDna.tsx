@@ -204,7 +204,7 @@ export default function MusicDna() {
                 <motion.div layout key={name} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="group relative flex flex-col items-center gap-2 rounded-2xl border border-line bg-lavender-faint/40 p-4 text-center">
                   {artistImages[name] ? <img src={artistImages[name] ?? ""} alt="" className="size-16 rounded-full object-cover shadow-soft" /> : <span className="grid size-16 place-items-center rounded-full bg-gradient-to-br from-lavender to-sage text-lg font-semibold text-white">{initials(name)}</span>}
                   <span className="text-sm font-medium">{name}</span>
-                  <button type="button" onClick={() => update({ artists: prefs.artists.filter((a) => a !== name) })} className="absolute right-2 top-2 rounded-full bg-surface p-1 text-ink-soft opacity-0 shadow-soft transition group-hover:opacity-100 focus:opacity-100" aria-label={`Remove ${name}`}>
+                  <button type="button" onClick={() => update({ artists: prefs.artists.filter((a) => a !== name) })} className="absolute right-1.5 top-1.5 grid size-8 place-items-center rounded-full bg-surface text-ink-soft opacity-0 shadow-soft transition hover:text-danger group-hover:opacity-100 focus:opacity-100 [@media(hover:none)]:opacity-100" aria-label={`Remove ${name}`}>
                     <X className="size-3.5" />
                   </button>
                 </motion.div>

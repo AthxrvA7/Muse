@@ -5,6 +5,7 @@ import { Link, NavLink, Outlet, useLocation } from "react-router";
 
 import { HealthDot } from "@/components/HealthDot";
 import { Logo } from "@/components/Logo";
+import { NowPlaying } from "@/components/NowPlaying";
 import { SpotifyStatus } from "@/components/SpotifyStatus";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Badge } from "@/components/ui/badge";
@@ -39,6 +40,11 @@ export function Layout() {
   const [open, setOpen] = useState(false);
   const items = NAV.filter((item) => !item.needsSession || session);
 
+  // A new page starts at the top (the router keeps the old scroll position otherwise)
+  useEffect(() => {
+    window.scrollTo({ top: 0 });
+  }, [location.pathname]);
+
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
@@ -48,7 +54,7 @@ export function Layout() {
 
   return (
     <div className="grain min-h-screen">
-      <header className="sticky top-0 z-40 border-b border-line/70 bg-canvas/75 backdrop-blur-xl">
+      <header className="sticky top-0 z-40 border-b border-line/70 bg-canvas/75 pt-[env(safe-area-inset-top)] backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-6xl items-center gap-3 px-4 sm:px-6">
           <motion.button
             type="button"
@@ -146,19 +152,21 @@ export function Layout() {
         )}
       </AnimatePresence>
 
-      <main className="mx-auto w-full max-w-6xl px-4 pb-16 pt-6 sm:px-6 lg:pt-10">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={location.pathname}
-            initial={{ opacity: 0, y: 10, filter: "blur(4px)" }}
-            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-            exit={{ opacity: 0, y: -8, filter: "blur(4px)" }}
-            transition={{ duration: 0.25, ease: "easeOut" }}
-          >
-            <Outlet />
-          </motion.div>
-        </AnimatePresence>
+      {/* pb-28 leaves room for the mini player */}
+      <main className="mx-auto w-full max-w-6xl px-4 pb-28 pt-6 sm:px-6 lg:pt-10">
+        {/* Pages only fade in (no exit animation): with exit animations, leaving a page whose
+            exit never finished left the next page stuck invisible. No blur and no lasting
+            transform either, so pages aren't separate layers and position: fixed works. */}
+        <motion.div
+          key={location.pathname}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0, transitionEnd: { transform: "none" } }}
+          transition={{ duration: 0.22, ease: "easeOut" }}
+        >
+          <Outlet />
+        </motion.div>
       </main>
+      <NowPlaying />
     </div>
   );
 }

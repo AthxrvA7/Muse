@@ -47,6 +47,22 @@ export function MoodPicker({ chips, selected, max, onToggle }: Props) {
             </motion.span>
             {chip.id}
             {on && (
+              // a little emoji pop when picked
+              <span className="pointer-events-none absolute left-3 top-1/2" aria-hidden="true">
+                {[-14, 0, 14].map((x, k) => (
+                  <motion.span
+                    key={x}
+                    className="absolute text-sm"
+                    initial={{ opacity: 0.9, x: 0, y: -8, scale: 0.6 }}
+                    animate={{ opacity: 0, x, y: -46 - k * 6, scale: 1.1, rotate: x }}
+                    transition={{ duration: 0.75, ease: "easeOut", delay: k * 0.04 }}
+                  >
+                    {MOOD_EMOJI[chip.id] ?? "🎵"}
+                  </motion.span>
+                ))}
+              </span>
+            )}
+            {on && (
               <motion.span
                 layoutId={`check-${chip.id}`}
                 initial={{ scale: 0 }}

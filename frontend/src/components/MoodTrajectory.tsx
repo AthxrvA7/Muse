@@ -154,7 +154,7 @@ export function MoodTrajectory() {
               ))}
             </div>
             {view === "map" && points.length > 1 && (
-              <button type="button" onClick={() => setReplay((r) => r + 1)} className="inline-flex items-center gap-1 text-xs text-ink-soft transition hover:text-plum">
+              <button type="button" onClick={() => setReplay((r) => r + 1)} className="-mr-2 inline-flex items-center gap-1 rounded-full px-2 py-2 text-xs text-ink-soft transition hover:bg-lavender-faint hover:text-plum">
                 <RotateCcw className="size-3.5" /> Replay
               </button>
             )}
@@ -300,8 +300,13 @@ function MoodMap({ points, average, active, onActive, replay }: {
             <circle
               cx={toX(p.valence)} cy={toY(p.energy)} r={isActive ? 9 : i === last ? 7.5 : 4.5 + age * 2}
               fill={colour(p, 0.35 + age * 0.65)} stroke={isActive || i === last ? "var(--c-surface)" : "none"} strokeWidth={2}
+              pointerEvents="none" className="transition-[r] duration-200"
+            />
+            {/* a larger, invisible target so fingers can hit small dots */}
+            <circle
+              cx={toX(p.valence)} cy={toY(p.energy)} r={14} fill="transparent"
               tabIndex={0} role="button" aria-label={`${when(p.at)}: ${p.labels.join(", ") || "your words"}`}
-              className="cursor-pointer outline-none transition-[r] duration-200"
+              className="cursor-pointer outline-none focus-visible:stroke-plum focus-visible:[stroke-width:2]"
               onMouseEnter={() => onActive(i)} onFocus={() => onActive(i)} onClick={() => onActive(isActive ? null : i)}
             />
           </motion.g>

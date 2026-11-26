@@ -75,6 +75,16 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 - "What Muse learned" on the Music DNA page lists more-of and less-of artists, with "Forget what Muse learned"
 - `PUT/GET/DELETE /api/v1/feedback`; ratings are in the data export and deleted with the account
 
+### Website polish (phones, tablets, laptops)
+- Fixed: leaving the Music DNA page could leave the next page (History, Rewind, Settings) invisible; pages now only fade in, so a transition can't get stuck
+- Fixed: on phones the playlist ran off the right edge and song titles were cut to a few letters; each song now has a title line, a line for BPM and "You know this", and the reason; Spotify and Remove moved into the song's details on phones
+- Fixed: previews, the artist remove button and other hover-only controls were invisible on touch screens; small tap targets enlarged (at least 32 px)
+- Fixed: opening a page kept the previous page's scroll position
+- New: a mini player while a preview plays (spinning record with the cover, beat-synced equaliser, BPM, progress, stop), above the iPhone home bar
+- New: the playlist page glows in the mood's colour (the same hue as the cover art); emoji pop on mood chips; "What should the music do" cards fill the grid evenly
+- Motion respects the device's "reduce motion" setting; toasts sit above the mini player; no page-wide blur layer (smoother scrolling)
+- Checked at 320, 360, 375, 820 and 1366 px wide in both themes: no sideways scrolling, no console errors
+
 ### Room mode and the presentation deck
 - Room mode: a presenter opens a room (logged in) and the audience joins on their phones at `/app/#/join/<code>`, with no login, by tapping up to 3 mood chips; the screen shows the live mood map, the most-picked moods and the room's personality
 - Only chips from Muse's fixed list are accepted (no free text reaches the screen); one vote per phone, changeable; at most 150 new voters a minute and 500 per room; the host can lock the room or clear its votes; rooms live in memory for 4 hours and are never stored

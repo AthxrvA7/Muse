@@ -168,3 +168,13 @@ Never paste secrets, tokens or real user data into an AI tool.
 - **Changes made by us:** Chose the "late-night record store" palette and the record logo; kept the user's own songs even when Muse can't tell their language or genre.
 - **Verification:** 345 backend tests and 12 website tests pass; the site was clicked through in both themes and on the loading, playlist and menu screens.
 - **Reflection:** The coverage numbers turned a vague "it feels wrong" into something we can check: if language is known for few songs, the cause is missing data, not scoring.
+
+### 2026-11-26 — 30-second previews (`feature/previews`)
+- **Member:** Atharva
+- **Tool:** Claude (Anthropic)
+- **Purpose:** research, code generation, testing
+- **Prompt (summary):** Add song previews without risking rate limits or timeouts.
+- **Output used:** Deezer match (ID + BPM) in one lookup, a preview endpoint that mints fresh links, a site-wide player, tests.
+- **Changes made by us:** Research showed Deezer preview links expire in about 15–30 minutes, so we store the Deezer track ID instead of the link and fetch a fresh link on play.
+- **Verification:** 357 backend tests; a real browser played a preview through the redirect with the site's CSP on.
+- **Reflection:** Checking how others hit expired preview links saved us from a bug that only shows up after the demo has been running for a while.

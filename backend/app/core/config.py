@@ -78,6 +78,7 @@ class Settings(BaseSettings):
     rate_limit_per_minute: int = Field(default=120, ge=1)
     rate_limit_curate_per_minute: int = Field(default=10, ge=1)
     rate_limit_auth_per_minute: int = Field(default=10, ge=1)
+    rate_limit_rewind_per_minute: int = Field(default=12, ge=1)  # each one paints ~10 pages
 
     @field_validator(
         "spotify_client_id",

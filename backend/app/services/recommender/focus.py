@@ -11,6 +11,7 @@
    (same genre, same family, related family, unrelated) that nudges its score, and
    unrelated genres are left out while there are enough other songs.
 3. Tempo: the BPM of the best candidates (Deezer) nudges songs whose pace fits the mood.
+   The same lookup gives each song's Deezer ID, used for its 30-second preview.
 """
 
 import asyncio
@@ -18,6 +19,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 from typing import Protocol
 
+from app.clients.deezer import DeezerMatch
 from app.schemas.catalog import Track
 from app.schemas.mood import Tempo
 from app.services.recommender.knowledge import GenreKnowledge
@@ -122,7 +124,7 @@ def focus_playlist(
 
 
 class TempoSource(Protocol):
-    async def bpm(self, isrc: str | None, artist: str, title: str) -> float | None: ...
+    async def match(self, isrc: str | None, artist: str, title: str) -> DeezerMatch: ...
 
 
 def tempo_of(bpm: float) -> Tempo:
@@ -141,10 +143,10 @@ async def add_tempo(
     """Looks up the BPM of the best 2 x size candidates and nudges those whose pace fits."""
     best = sorted(scored, key=lambda s: -s.score)[: size * 2]
 
-    async def one(item: ScoredTrack) -> tuple[ScoredTrack, float | None]:
+    async def one(item: ScoredTrack) -> tuple[ScoredTrack, DeezerMatch]:
         track: Track = item.candidate.track
         artist = track.artists[0].name if track.artists else ""
-        return item, await source.bpm(track.isrc, artist, track.name)
+        return item, await source.match(track.isrc, artist, track.name)
 
     tasks = [asyncio.ensure_future(one(item)) for item in best]
     if not tasks:
@@ -156,7 +158,9 @@ async def add_tempo(
     for task in done:
         if task.cancelled() or task.exception() is not None:
             continue
-        item, bpm = task.result()
+        item, found = task.result()
+        item.deezer_id = found.deezer_id  # lets the website play a 30-second preview
+        bpm = found.bpm
         if not bpm:
             continue
         item.bpm, item.tempo = bpm, tempo_of(bpm)

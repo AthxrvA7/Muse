@@ -21,8 +21,12 @@ class TTLCache:
         self._items.move_to_end(key)
         return item[1]
 
-    def put(self, key: str, value: Any) -> None:
-        self._items[key] = (time.monotonic() + self._seconds, value)
+    def put(self, key: str, value: Any, seconds: float | None = None) -> None:
+        """Stores a value; `seconds` overrides the cache's usual lifetime for this one."""
+        self._items[key] = (
+            time.monotonic() + (self._seconds if seconds is None else seconds),
+            value,
+        )
         self._items.move_to_end(key)
         while len(self._items) > self._size:
             self._items.popitem(last=False)

@@ -68,6 +68,11 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 - `GET /api/v1/mood/options`: mood chips with their valence and energy, and the modes, for clients
 - The built website is served at `/app/` by the backend (`FRONTEND_DIST`), with its own Content-Security-Policy
 
+### 30-second previews
+- Every song with a match on Deezer gets a play button on its artwork: one player for the whole site, with a progress bar and an equaliser that moves at the song's tempo
+- `GET /api/v1/previews/{deezer_id}` redirects to a fresh signed clip on Deezer's CDN. Deezer's links expire within about 15 minutes, so Muse never stores them: it asks for a new one on play and reuses it at most 10 minutes (and never past a minute before its expiry). The Deezer ID comes from the same lookup as the tempo, so playlists cost no extra calls
+- Only `https://*.dzcdn.net` links are handed out, and the website's CSP allows audio only from there
+
 ### Gentler on Spotify
 - Search results are cached for 6 hours, so repeating a mood or taste costs no Spotify calls
 - When Spotify asks Muse to wait longer than 5 seconds, Muse stops calling it until the wait is over (calling during a block only lengthens it) and says how long to wait

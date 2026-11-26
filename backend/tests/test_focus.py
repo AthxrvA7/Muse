@@ -5,7 +5,7 @@ import asyncio
 import httpx2
 import pytest
 
-from app.clients.deezer import DeezerClient
+from app.clients.deezer import DeezerClient, DeezerMatch
 from app.clients.lastfm import Tag, TTLCache
 from app.schemas.curate import CurateRequest
 from app.services.curate import CurateService
@@ -165,9 +165,10 @@ class FakeTempo:
     def __init__(self, bpms: dict[str, float | None], delay: float = 0.0) -> None:
         self.bpms, self.delay = bpms, delay
 
-    async def bpm(self, isrc: str | None, artist: str, title: str) -> float | None:
+    async def match(self, isrc: str | None, artist: str, title: str) -> DeezerMatch:
         await asyncio.sleep(self.delay)
-        return self.bpms.get(artist)
+        bpm = self.bpms.get(artist)
+        return DeezerMatch(deezer_id=1000 + len(artist) if bpm else None, bpm=bpm)
 
 
 def test_tempo_classes() -> None:
@@ -366,3 +367,112 @@ async def test_too_few_songs_in_the_language_triggers_more_searches_in_it() -> N
     assert any("bollywood" in q for q in catalogue.queries)  # it went looking for Hindi songs
     assert preview.language == "hi"
     assert preview.tracks and all(t.language == "hi" for t in preview.tracks)
+
+
+# ---------------------------------------------------------------- previews
+
+
+def _deezer(handler: object) -> DeezerClient:
+    return DeezerClient(httpx2.AsyncClient(transport=httpx2.MockTransport(handler)), TTLCache())
+
+
+async def test_a_fresh_preview_link_is_minted_and_reused_only_until_it_nearly_expires() -> None:
+    import time
+
+    calls: list[str] = []
+    expires = int(time.time()) + 900  # Deezer signs links for about 15 minutes
+
+    def deezer(request: httpx2.Request) -> httpx2.Response:
+        calls.append(request.url.path)
+        preview = f"https://cdnt-preview.dzcdn.net/api/1/1/a/b.mp3?hdnea=exp={expires}~acl=x~hmac=y"
+        return httpx2.Response(200, json={"id": 42, "preview": preview})
+
+    client = _deezer(deezer)
+
+    first = await client.preview_url(42)
+    second = await client.preview_url(42)
+
+    assert first and first.startswith("https://cdnt-preview.dzcdn.net/")
+    assert second == first
+    assert calls == ["/track/42"]  # reused while still valid
+
+
+def test_preview_links_live_until_a_minute_before_expiry_at_most_ten_minutes() -> None:
+    from app.clients.deezer import preview_lifetime
+
+    assert preview_lifetime("https://x.dzcdn.net/a.mp3?hdnea=exp=1000~hmac=1", now=0) == 600
+    assert preview_lifetime("https://x.dzcdn.net/a.mp3?hdnea=exp=300~hmac=1", now=0) == 240
+    assert preview_lifetime("https://x.dzcdn.net/a.mp3?hdnea=exp=30~hmac=1", now=0) == 0
+    assert preview_lifetime("https://x.dzcdn.net/a.mp3", now=0) == 0  # no expiry: don't keep
+
+
+async def test_only_deezer_cdn_links_are_ever_handed_out() -> None:
+    def deezer(request: httpx2.Request) -> httpx2.Response:
+        return httpx2.Response(200, json={"id": 7, "preview": "https://evil.example.com/a.mp3"})
+
+    assert await _deezer(deezer).preview_url(7) is None
+
+
+async def test_match_keeps_the_deezer_id_even_without_a_bpm() -> None:
+    def deezer(request: httpx2.Request) -> httpx2.Response:
+        return httpx2.Response(200, json={"id": 55, "bpm": 0})
+
+    found = await _deezer(deezer).match("ISRC1", "A", "B")
+
+    assert (found.deezer_id, found.bpm) == (55, None)
+
+
+def test_preview_endpoint_redirects_to_a_fresh_link_and_is_never_cached() -> None:
+    from fastapi.testclient import TestClient
+
+    from app.core.config import Settings
+    from app.main import create_app
+    from app.services.curate import open_deezer
+
+    class Fake:
+        async def preview_url(self, deezer_id: int) -> str | None:
+            return "https://cdnt-preview.dzcdn.net/x.mp3?hdnea=exp=1" if deezer_id == 42 else None
+
+    async def fake() -> object:
+        yield Fake()
+
+    app = create_app(Settings(_env_file=None, app_env="test"))
+    app.dependency_overrides[open_deezer] = fake
+    client = TestClient(app)
+
+    found = client.get("/api/v1/previews/42", follow_redirects=False)
+    missing = client.get("/api/v1/previews/43", follow_redirects=False)
+
+    assert found.status_code == 307
+    assert found.headers["location"].startswith("https://cdnt-preview.dzcdn.net/")
+    assert found.headers["cache-control"] == "no-store"
+    assert missing.status_code == 404
+    assert client.get("/api/v1/previews/0").status_code == 422
+
+
+def test_the_website_may_play_deezer_audio() -> None:
+    from app.core.security import _WEB_CSP
+
+    assert "media-src 'self' https://*.dzcdn.net" in _WEB_CSP
+
+
+async def test_curated_tracks_carry_their_preview_id() -> None:
+    service = CurateService(
+        Catalogue(),
+        MoodAnalyzer(load_vocabulary()),
+        KB,
+        LastFm(),
+        deezer=FakeTempo({"Arijit Singh": 84.0}),
+    )
+    request = CurateRequest.model_validate(
+        {
+            "mood": {"chips": ["calm"]},
+            "taste": {"artists": ["Arijit Singh"]},
+            "size": 10,
+            "language": "hi",
+        }
+    )
+
+    preview = await service.preview(request)
+
+    assert preview.tracks and all(t.preview_id == 1012 for t in preview.tracks)

@@ -68,6 +68,7 @@ class ScoredTrack:
     language: str | None = None  # the song's language, when known
     bpm: float | None = None  # tempo from Deezer
     tempo: str | None = None  # "slow" / "medium" / "fast" from the BPM
+    deezer_id: int | None = None  # the same song on Deezer, for its 30-second preview
 
 
 def similarity(a: MoodPoint, b: MoodPoint) -> float:

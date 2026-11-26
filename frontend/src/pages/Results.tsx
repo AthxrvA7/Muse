@@ -198,7 +198,7 @@ export default function Results() {
           )}
           {tracks.some((t) => t.bpm) && (
             <p className="px-2 text-xs text-ink-soft">
-              Tempo (BPM) from{" "}
+              Tempo (BPM) and 30-second previews from{" "}
               <a href="https://www.deezer.com" target="_blank" rel="noreferrer" className="font-medium text-plum hover:underline">Deezer</a>.
             </p>
           )}

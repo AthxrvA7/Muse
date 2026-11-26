@@ -378,6 +378,7 @@ class CurateService:
                 known=item.known,
                 tags=item.tag_words,
                 bpm=item.bpm,
+                preview_id=item.deezer_id,
                 tempo=item.tempo,  # type: ignore[arg-type]
                 genre=self._kb.genres[item.genre].name if item.genre in self._kb.genres else None,
                 language=item.language,

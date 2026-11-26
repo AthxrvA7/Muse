@@ -90,6 +90,7 @@ export interface CuratedTrack {
   bpm?: number | null; // tempo in beats per minute (Deezer)
   tempo?: Tempo | null;
   genre?: string | null; // the song's genre name, when known
+  preview_id?: number | null; // Deezer ID: play at /api/v1/previews/{id}
   language?: string | null; // ISO code, when known
 }
 

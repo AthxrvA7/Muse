@@ -9,6 +9,7 @@ import Discover from "@/pages/Discover";
 import History from "@/pages/History";
 import Results from "@/pages/Results";
 import Settings from "@/pages/Settings";
+import { PreviewProvider } from "@/state/PreviewPlayer";
 import { AppStateProvider } from "@/state/AppState";
 
 // The chart library is only needed on the Music DNA page, so it loads on demand
@@ -18,6 +19,7 @@ const MusicDna = lazy(() => import("@/pages/MusicDna"));
 export default function App() {
   return (
     <AppStateProvider>
+      <PreviewProvider>
       <TooltipProvider>
         <HashRouter>
           <Routes>
@@ -34,6 +36,7 @@ export default function App() {
         </HashRouter>
         <Toaster position="bottom-right" richColors closeButton />
       </TooltipProvider>
+      </PreviewProvider>
     </AppStateProvider>
   );
 }

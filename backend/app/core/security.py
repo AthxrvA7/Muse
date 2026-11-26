@@ -26,6 +26,7 @@ _API_CSP = "default-src 'none'; frame-ancestors 'none'"
 _WEB_CSP = (
     "default-src 'self'; img-src 'self' data: https://i.scdn.co; "
     "style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; "
+    "media-src 'self' https://*.dzcdn.net; "  # 30-second previews from Deezer's CDN
     "frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
 )
 

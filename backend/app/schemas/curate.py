@@ -114,6 +114,10 @@ class CuratedTrack(BaseModel):
     bpm: float | None = Field(default=None, description="Tempo in beats per minute (Deezer)")
     tempo: Tempo | None = Field(default=None, description="slow < 95 BPM ≤ medium ≤ 125 < fast")
     genre: str | None = Field(default=None, description="The song's genre, when known")
+    preview_id: int | None = Field(
+        default=None,
+        description="Play a 30-second preview at GET /api/v1/previews/{preview_id} (Deezer)",
+    )
     language: str | None = Field(default=None, description="The song's language, when known")
 
 

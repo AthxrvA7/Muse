@@ -75,6 +75,13 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 - "What Muse learned" on the Music DNA page lists more-of and less-of artists, with "Forget what Muse learned"
 - `PUT/GET/DELETE /api/v1/feedback`; ratings are in the data export and deleted with the account
 
+### Mood trajectory
+- Opt-in mood trajectory on the History page (Phase 3): once turned on, each playlist curated adds a point (valence, energy, mood words from Muse's fixed list, mode), never the typed text; kept 90 days (TTL index)
+- "Mood map": the moods on the positivity × energy map, joined oldest to newest, coloured like the covers, with the latest point pulsing and your usual mood marked; tap or hover a point to look back. "Over time": positivity and energy as lines
+- Summary chips: how many moods, the most frequent mood word, whether the recent half is lighter/heavier and more energetic/calmer than the earlier half, and which part of the day runs brightest/lowest
+- Asking again for the same mood within 15 minutes ("Give me another") updates the last point instead of adding one
+- `GET /api/v1/moods/trajectory?days=`, `PUT /api/v1/moods/settings` (on/off), `DELETE /api/v1/moods` (clear); in the data export and deleted with the account. Visitors see the same chart from the curations kept in their browser
+
 ### Cover art
 - Every saved playlist can get a 640x640 cover painted from the mood (Pillow, no AI or stock images): colour from positivity, waves from energy, the playlist's headline and mood words, the Muse mark and a little grain
 - The same cover is shown on the playlist page (`GET /api/v1/covers`) and offered as a tick-box when saving

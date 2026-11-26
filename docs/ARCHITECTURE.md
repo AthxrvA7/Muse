@@ -214,7 +214,9 @@ MongoDB fits because preference profiles and mood sessions are naturally documen
 | `playlists` | one exported playlist | `user_id`, `session_id`, `spotify_playlist_id`, `url`, `track_count`, `created_at` | until deletion |
 | `oauth_states` | one pending login | `state`, `created_at` | 10 minutes (TTL index) |
 | `audit_events` | one security-relevant action | `user_id`, `type` (login, logout, export, delete…), `at`, `request_id` (no content) | 180 days (TTL index) |
-| `feedback` | *(Phase 3)* one like/dislike | `user_id`, `session_id`, `track_id`, `value` | until deletion |
+| `feedback` | one 👍/👎 on a song | `_id` = `user_id:track_id`, `value`, `artist_ids[]`, `artist_names[]`, `genre`, `language`, `valence`, `energy`, `updated_at` | until "Forget" or deletion |
+| `mood_log` | one curated mood (opt-in trajectory) | `user_id`, `at`, `valence`, `energy`, `labels[]` (fixed mood words), `mode` — never the text | 90 days (TTL index) |
+| `mood_settings` | one user's trajectory on/off choice | `_id` = `user_id`, `enabled`, `updated_at` | until deletion |
 
 We only store **Muse-owned data**: what the user told us and what Muse generated. We store Spotify track IDs/names only as references inside a user's own sessions and playlists. Free-text mood input is never stored.
 
@@ -248,8 +250,10 @@ All under `/api/v1` except health checks. Interactive docs are auto-generated at
 | GET | `/curate/options` | Genres and languages allowed in `taste` *(implemented)* | 1 |
 | POST | `/playlists` | Save a curated playlist (its track IDs) to Spotify *(implemented; replaces `/curate/{session_id}/export`)* | 1 |
 | GET | `/playlists` | Playlists Muse has saved for me *(implemented)* | 1 |
-| GET | `/sessions` | Past sessions | 3 |
-| POST | `/sessions/{id}/feedback` | Like/dislike tracks | 3 |
+| PUT / GET / DELETE | `/feedback` | Rate a song 👍/👎 · what Muse learned · forget it *(implemented)* | 3 |
+| GET | `/moods/trajectory?days=` | Mood points (oldest first) and their summary *(implemented)* | 3 |
+| PUT | `/moods/settings` | Turn the mood trajectory on or off (off by default) *(implemented)* | 3 |
+| DELETE | `/moods` | Clear mood history *(implemented)* | 3 |
 
 ---
 

@@ -30,7 +30,7 @@ Muse is an independent personalisation layer. It uses Spotify for login, catalog
 |---|---|---|
 | Classics: "Know your music" | Database ✅, Spotify login ✅, preference profile ✅, reference tracks ✅, Music DNA ✅ | Done (backend) |
 | Essential: "Curate for me" | Mood analysis ✅, preference + mood scoring ✅, explained playlist ✅, export to Spotify ✅, songs you already play ✅, song moods from Last.fm listener tags ✅, similar artists ✅, familiar ↔ new slider ✅, "Give me another" ✅ | Done |
-| Advanced: "Learn from me" | Feedback loop, session history, mood trajectory | Future |
+| Advanced: "Learn from me" | Feedback loop (👍/👎) ✅, adaptive recommendations ✅, mood trajectory (opt-in) ✅, history page ✅ | Done |
 
 ## Try the mood engine
 

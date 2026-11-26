@@ -112,7 +112,7 @@ export default function History() {
               {e.kind === "playlist" ? (
                 <a href={e.playlist.url} target="_blank" rel="noreferrer" className="flex items-center justify-between gap-4 rounded-2xl border border-line bg-surface p-4 transition hover:border-sage hover:shadow-soft">
                   <div>
-                    <div className="flex items-center gap-2"><span className="font-semibold">{e.playlist.name}</span><Badge variant="sage">Saved to Spotify</Badge></div>
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1"><span className="font-semibold">{e.playlist.name}</span><Badge variant="sage">Saved to Spotify</Badge></div>
                     <div className="mt-1 text-sm text-ink-soft">{e.playlist.track_count} tracks · {shortDate(e.date)}</div>
                   </div>
                   <ExternalLink className="size-4 shrink-0 text-moss" />

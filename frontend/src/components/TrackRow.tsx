@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronDown, ExternalLink, Loader2, Pause, Play, ThumbsDown, ThumbsUp, X } from "lucide-react";
-import { useState } from "react";
+import { type CSSProperties, useState } from "react";
 
 import { Tooltip } from "@/components/ui/tooltip";
 import { duration, percent } from "@/lib/format";
@@ -17,6 +17,36 @@ function FitBar({ label, value, tone }: { label: string; value: number; tone: "p
       </div>
       <span className="w-9 text-right tabular-nums text-ink-soft">{percent(value)}</span>
     </div>
+  );
+}
+
+function Badges({ item, className }: { item: CuratedTrack; className?: string }) {
+  return (
+    <span className={cn("items-center gap-1.5", className)}>
+      {!!item.bpm && (
+        <span
+          className="inline-flex shrink-0 items-center gap-1 rounded-full bg-canvas px-2 py-0.5 text-[10px] font-semibold tabular-nums text-ink-soft ring-1 ring-line"
+          title={`${Math.round(item.bpm)} beats per minute`}
+        >
+          <span
+            className="beat size-1.5 rounded-full bg-coral"
+            style={{ "--beat": `${(60 / item.bpm).toFixed(3)}s` } as CSSProperties}
+            aria-hidden="true"
+          />
+          {Math.round(item.bpm)} BPM{item.tempo ? ` · ${item.tempo}` : ""}
+        </span>
+      )}
+      {item.known !== undefined && (
+        <span
+          className={cn(
+            "shrink-0 whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-semibold",
+            item.known ? "bg-sage-soft text-moss" : "bg-lavender-soft text-plum",
+          )}
+        >
+          {item.known ? "You know this" : "New for you"}
+        </span>
+      )}
+    </span>
   );
 }
 
@@ -44,10 +74,9 @@ export function TrackRow({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, x: -24, transition: { duration: 0.18 } }}
       transition={{ delay: Math.min(index * 0.03, 0.4) }}
-      whileHover={{ x: 4 }}
       className="group rounded-2xl border border-transparent bg-surface transition-colors hover:border-plum/30 hover:bg-raised hover:shadow-soft"
     >
-      <div className="flex items-center gap-3 p-2.5 sm:gap-4">
+      <div className="flex items-center gap-2.5 p-2 sm:gap-4 sm:p-2.5 sm:transition-transform sm:group-hover:translate-x-1">
         <span className="relative hidden h-5 w-6 sm:block">
           <span
             className={cn(
@@ -87,12 +116,20 @@ export function TrackRow({
           {item.preview_id ? (
             <button
               type="button"
-              onClick={() => toggle(item.preview_id!, track.name)}
+              onClick={() =>
+                toggle(item.preview_id!, track.name, {
+                  artist: track.artists.map((a) => a.name).join(", "),
+                  image: track.image_url,
+                  bpm: item.bpm,
+                })
+              }
               aria-label={playing ? `Stop preview of ${track.name}` : `Play a 30-second preview of ${track.name}`}
               title={playing ? "Stop preview" : "Play 30-second preview"}
               className={cn(
                 "absolute inset-0 grid place-items-center rounded-xl bg-black/45 text-white transition",
-                playing ? "opacity-100" : "opacity-0 group-hover:opacity-100 focus-visible:opacity-100",
+                playing
+                  ? "opacity-100"
+                  : "opacity-0 group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:bg-black/25 [@media(hover:none)]:opacity-100",
               )}
             >
               {playing && loading ? (
@@ -116,41 +153,23 @@ export function TrackRow({
           aria-expanded={open}
           className="min-w-0 flex-1 text-left"
         >
-          <div className="flex items-center gap-2">
+          <div className="flex min-w-0 items-center gap-2">
             <span className="truncate font-semibold text-ink">{track.name}</span>
-            {track.explicit && <span className="rounded bg-ink-soft/20 px-1 text-[10px] font-bold text-ink-soft">E</span>}
-            {!!item.bpm && (
-              <span
-                className="inline-flex shrink-0 items-center gap-1 rounded-full bg-canvas px-2 py-0.5 text-[10px] font-semibold tabular-nums text-ink-soft ring-1 ring-line"
-                title={`${Math.round(item.bpm)} beats per minute`}
-              >
-                <span
-                  className="beat size-1.5 rounded-full bg-coral"
-                  style={{ "--beat": `${(60 / item.bpm).toFixed(3)}s` } as React.CSSProperties}
-                  aria-hidden="true"
-                />
-                {Math.round(item.bpm)} BPM{item.tempo ? ` · ${item.tempo}` : ""}
-              </span>
-            )}
-            {item.known !== undefined && (
-              <span
-                className={cn(
-                  "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold",
-                  item.known ? "bg-sage-soft text-moss" : "bg-lavender-soft text-plum",
-                )}
-              >
-                {item.known ? "You know this" : "New for you"}
-              </span>
-            )}
+            {track.explicit && <span className="shrink-0 rounded bg-ink-soft/20 px-1 text-[10px] font-bold text-ink-soft">E</span>}
+            <Badges item={item} className="hidden sm:inline-flex" />
           </div>
           <div className="truncate text-sm text-ink-soft">
             {track.artists.map((a) => a.name).join(", ")} · {track.album}
             {item.genre && <span className="capitalize"> · {item.genre}</span>}
           </div>
-          <div className="mt-0.5 line-clamp-1 text-xs text-plum/90 sm:hidden">{item.reason}</div>
+          <Badges item={item} className="mt-1 flex flex-wrap sm:hidden" />
+          <div className="mt-1 line-clamp-2 text-xs leading-snug text-plum/90 sm:hidden">{item.reason}</div>
+          <div className="mt-0.5 flex items-center gap-0.5 text-[11px] font-medium text-ink-soft sm:hidden">
+            {open ? "Less" : "Why, and more"} <ChevronDown className={cn("size-3 transition-transform", open && "rotate-180")} />
+          </div>
         </button>
         <span className="hidden text-sm tabular-nums text-ink-soft md:block">{duration(track.duration_ms)}</span>
-        <div className="flex items-center gap-0.5">
+        <div className="flex shrink-0 items-center sm:gap-0.5">
           <span className="inline-flex">
             <Tooltip content={onRate ? (rating === 1 ? "Take back your 👍" : "More like this") : "Log in to rate songs"}>
               <motion.button
@@ -162,7 +181,7 @@ export function TrackRow({
                 aria-pressed={rating === 1}
                 aria-label={`Like ${track.name}`}
                 className={cn(
-                  "rounded-full p-2 transition disabled:text-ink-soft/40",
+                  "rounded-full p-2.5 transition disabled:text-ink-soft/40 sm:p-2",
                   rating === 1 ? "bg-sage-soft text-moss" : "text-ink-soft hover:bg-sage-soft hover:text-moss",
                 )}
               >
@@ -176,23 +195,23 @@ export function TrackRow({
                 onClick={() => onRate?.(-1)}
                 whileTap={{ scale: 0.75, rotate: 15 }}
                 aria-label={`Dislike ${track.name}`}
-                className="rounded-full p-2 text-ink-soft transition hover:bg-danger-soft hover:text-danger disabled:text-ink-soft/40"
+                className="rounded-full p-2.5 text-ink-soft transition hover:bg-danger-soft hover:text-danger disabled:text-ink-soft/40 sm:p-2"
               >
                 <ThumbsDown className="size-4" />
               </motion.button>
             </Tooltip>
           </span>
           <Tooltip content="Open in Spotify">
-            <a href={track.spotify_url} target="_blank" rel="noreferrer" className="rounded-full p-2 text-ink-soft transition hover:bg-sage-soft hover:text-moss" aria-label={`Open ${track.name} in Spotify`}>
+            <a href={track.spotify_url} target="_blank" rel="noreferrer" className="hidden rounded-full p-2 text-ink-soft transition hover:bg-sage-soft hover:text-moss sm:inline-flex" aria-label={`Open ${track.name} in Spotify`}>
               <ExternalLink className="size-4" />
             </a>
           </Tooltip>
           <Tooltip content="Remove from this playlist">
-            <button type="button" onClick={onRemove} className="rounded-full p-2 text-ink-soft transition hover:bg-danger-soft hover:text-danger" aria-label={`Remove ${track.name}`}>
+            <button type="button" onClick={onRemove} className="hidden rounded-full p-2 text-ink-soft transition hover:bg-danger-soft hover:text-danger sm:inline-flex" aria-label={`Remove ${track.name}`}>
               <X className="size-4" />
             </button>
           </Tooltip>
-          <button type="button" onClick={() => setOpen((o) => !o)} className="rounded-full p-2 text-ink-soft transition hover:bg-lavender-faint" aria-label="Why this track">
+          <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} className="hidden rounded-full p-2 text-ink-soft transition hover:bg-lavender-faint sm:inline-flex" aria-label={open ? "Hide details" : "Why this track, and more"}>
             <ChevronDown className={cn("size-4 transition-transform", open && "rotate-180")} />
           </button>
         </div>
@@ -205,7 +224,7 @@ export function TrackRow({
             exit={{ height: 0, opacity: 0 }}
             className="overflow-hidden"
           >
-            <div className="mx-2.5 mb-3 space-y-2 rounded-2xl bg-lavender-faint p-4 sm:ml-[5.5rem]">
+            <div className="mx-2 mb-3 space-y-2 rounded-2xl bg-lavender-faint p-3.5 sm:mx-2.5 sm:ml-[5.5rem] sm:p-4">
               <p className="text-sm text-ink">
                 <span className="font-semibold text-plum">Why Muse picked it: </span>
                 {item.reason}
@@ -221,6 +240,14 @@ export function TrackRow({
               <FitBar label="Mood fit" value={item.mood_fit} tone="plum" />
               <FitBar label="Taste fit" value={item.taste_fit} tone="moss" />
               <FitBar label="Overall" value={item.score} tone="plum" />
+              <div className="flex flex-wrap gap-2 pt-1 sm:hidden">
+                <a href={track.spotify_url} target="_blank" rel="noreferrer" className="inline-flex h-9 items-center gap-1.5 rounded-full bg-surface px-3 text-xs font-semibold text-moss ring-1 ring-line">
+                  <ExternalLink className="size-3.5" /> Open in Spotify
+                </a>
+                <button type="button" onClick={onRemove} className="inline-flex h-9 items-center gap-1.5 rounded-full bg-surface px-3 text-xs font-semibold text-danger ring-1 ring-line">
+                  <X className="size-3.5" /> Remove from playlist
+                </button>
+              </div>
             </div>
           </motion.div>
         )}

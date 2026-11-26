@@ -30,7 +30,7 @@ export function TagInput({ values, onChange, placeholder, max, label }: { values
       {values.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
           {values.map((v) => (
-            <button key={v} type="button" onClick={() => onChange(values.filter((x) => x !== v))} className="inline-flex items-center gap-1 rounded-full bg-lavender-soft px-3 py-1 text-xs font-medium text-plum hover:bg-lavender/60" aria-label={`Remove ${v}`}>
+            <button key={v} type="button" onClick={() => onChange(values.filter((x) => x !== v))} className="inline-flex min-h-8 items-center gap-1 rounded-full bg-lavender-soft px-3 py-1.5 text-xs font-medium text-plum hover:bg-lavender/60" aria-label={`Remove ${v}`}>
               {v} <X className="size-3" />
             </button>
           ))}

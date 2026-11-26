@@ -79,7 +79,7 @@ export default function Discover() {
             <p className="text-sm text-ink-soft">Pick up to {options?.max_chips ?? 5}. Change your mind any time.</p>
           </div>
           {draft.chips.length > 0 && (
-            <button type="button" className="text-sm text-ink-soft underline-offset-4 hover:underline" onClick={() => setDraft({ ...draft, chips: [] })}>
+            <button type="button" className="-mr-3 rounded-full px-3 py-2 text-sm text-ink-soft underline-offset-4 hover:bg-lavender-faint hover:underline" onClick={() => setDraft({ ...draft, chips: [] })}>
               Clear
             </button>
           )}
@@ -250,7 +250,7 @@ export default function Discover() {
                   <ExternalLink className="size-4 text-moss" />
                 </a>
               ))}
-              <Link to="/history" className="text-sm text-plum underline-offset-4 hover:underline">See all</Link>
+              <Link to="/history" className="-ml-3 inline-block rounded-full px-3 py-2 text-sm text-plum underline-offset-4 hover:underline">See all</Link>
             </div>
           )}
         </section>

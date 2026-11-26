@@ -15,6 +15,7 @@ import { coverUrl } from "@/lib/cover";
 import { percent, playlistName, playlistTitle, totalDuration } from "@/lib/format";
 import { familiarityLabel, intentionById, MODE_LABEL } from "@/lib/intentions";
 import { MOOD_EMOJI } from "@/lib/moods";
+import { moodHue } from "@/lib/trajectory";
 import type { CuratedTrack } from "@/lib/types";
 import { useApp } from "@/state/AppState";
 
@@ -128,7 +129,15 @@ export default function Results() {
 
   return (
     <div className="space-y-8">
-      <section className="flex flex-col gap-6 sm:flex-row sm:items-end">
+      <section className="relative flex flex-col gap-6 sm:flex-row sm:items-end">
+        {/* The page glows in the mood's colour, the same hue Muse paints the cover with */}
+        <motion.div
+          aria-hidden="true"
+          className="pointer-events-none absolute -left-10 -top-16 -z-10 h-72 w-[min(42rem,100%)] rounded-full opacity-40 blur-3xl dark:opacity-30"
+          style={{ background: `radial-gradient(closest-side, hsl(${moodHue(mood.valence)} 85% 60%), transparent)` }}
+          animate={{ scale: [1, 1.08, 1] }}
+          transition={{ duration: 6 + (1 - mood.energy) * 6, repeat: Infinity, ease: "easeInOut" }}
+        />
         {DEMO_MODE || coverFailed ? (
           <Artwork tracks={preview.tracks} className="aspect-square w-44 shrink-0 sm:w-52" />
         ) : (
@@ -142,7 +151,7 @@ export default function Results() {
         )}
         <div className="min-w-0 space-y-3">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-plum">Your Muse playlist</p>
-          <h1 className="font-display text-3xl leading-tight sm:text-5xl">{title}</h1>
+          <h1 className="text-balance font-display text-3xl leading-tight sm:text-5xl">{title}</h1>
           <p className="text-ink-soft">Curated around your mood, your taste, and what you need right now.</p>
           <div className="flex flex-wrap gap-1.5">
             {mood.labels.map((label) => (
@@ -166,7 +175,7 @@ export default function Results() {
         </Card>
       )}
 
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2 [&>*]:max-sm:flex-1 [&>*]:max-sm:basis-[calc(50%-0.25rem)] [&>*:first-child]:max-sm:basis-full">
         {user ? (
           <SaveToSpotify
             defaultName={playlistName(mood.labels, mood.mode)}
@@ -184,7 +193,8 @@ export default function Results() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_260px]">
-        <Card className="p-2 sm:p-3">
+        {/* min-w-0: a grid item would otherwise grow to fit long titles and overflow phones */}
+        <Card className="min-w-0 p-1.5 sm:p-3">
           {preview.note && <p className="m-3 rounded-2xl bg-amber-soft px-4 py-3 text-sm text-amber">{preview.note}</p>}
           {removed.size > 0 && (
             <div className="m-2 flex items-center justify-between rounded-2xl bg-lavender-faint px-4 py-2 text-sm">

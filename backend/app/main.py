@@ -85,6 +85,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         prefix_limits={
             f"{prefix}/curate": settings.rate_limit_curate_per_minute,
             f"{prefix}/auth": settings.rate_limit_auth_per_minute,
+            f"{prefix}/me/rewind": settings.rate_limit_rewind_per_minute,
         },
     )
     if settings.allowed_origins:

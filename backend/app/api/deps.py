@@ -1,6 +1,7 @@
 """Shared FastAPI dependencies: the auth service and the logged-in user."""
 
 from collections.abc import AsyncIterator
+from dataclasses import dataclass
 from typing import Annotated
 
 import httpx2
@@ -159,6 +160,31 @@ def get_privacy_service(request: Request) -> PrivacyService:
         RecentPicksRepository(database),
         FeedbackRepository(database),
         MoodLogRepository(database),
+    )
+
+
+@dataclass
+class RewindSources:
+    """What Muse Rewind reads: the user's moods, taste, ratings and playlists."""
+
+    moods: MoodLogRepository
+    preferences: PreferencesRepository
+    feedback: FeedbackRepository
+    playlists: PlaylistRepository
+
+
+def get_rewind_sources(request: Request) -> RewindSources:
+    database = request.app.state.db
+    if database is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail={"message": "This needs the database (MONGODB_URI)"},
+        )
+    return RewindSources(
+        MoodLogRepository(database),
+        PreferencesRepository(database),
+        FeedbackRepository(database),
+        PlaylistRepository(database),
     )
 
 

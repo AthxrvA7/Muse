@@ -14,7 +14,7 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "typecheck": "tsc -b",
-    "test": "node --experimental-strip-types --no-warnings --test src/lib/format.test.ts src/lib/intentions.test.ts src/lib/trajectory.test.ts"
+    "test": "node --experimental-strip-types --no-warnings --test src/lib/format.test.ts src/lib/intentions.test.ts src/lib/trajectory.test.ts src/lib/rewind.test.ts"
   },
   "dependencies": {
     "@fontsource-variable/fraunces": "5.3.0",

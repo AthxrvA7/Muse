@@ -6,6 +6,7 @@ than the earlier half.
 """
 
 from collections import Counter
+from datetime import timedelta
 from statistics import fmean
 
 from app.schemas.moods import LabelCount, MoodAverage, MoodEntry, MoodTrajectory
@@ -47,3 +48,25 @@ def summarise(points: list[MoodEntry], days: int) -> MoodTrajectory:
         brightness=brightness,
         energy=energy,
     )
+
+
+DAY_PARTS = ("morning", "afternoon", "evening", "night")
+
+
+def day_part(hour: int) -> str:
+    if 5 <= hour < 12:
+        return "morning"
+    if 12 <= hour < 17:
+        return "afternoon"
+    if 17 <= hour < 22:
+        return "evening"
+    return "night"
+
+
+def by_day_part(points: list[MoodEntry], offset_minutes: int) -> dict[str, float]:
+    """Average positivity per part of the day (local time), for parts with 2+ moods."""
+    shift = timedelta(minutes=offset_minutes)
+    groups: dict[str, list[float]] = {}
+    for p in points:
+        groups.setdefault(day_part((p.at + shift).hour), []).append(p.valence)
+    return {part: fmean(v) for part in DAY_PARTS if len(v := groups.get(part, [])) >= 2}

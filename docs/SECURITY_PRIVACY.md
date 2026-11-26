@@ -102,6 +102,8 @@ Song ratings: each 👍/👎 the user gives (track ID, artist IDs and names, gen
 
 Mood trajectory (opt-in, off by default): when turned on, each playlist curated adds the mood's valence and energy, its mood words (from Muse's fixed list, never the typed text) and the playlist mode. Shown only to that user on the History page; can be paused or cleared there; deleted after 90 days; included in the data export and removed with the account.
 
+Muse Rewind: the shareable PDF is made from the data above when the user asks for it, in memory, and handed straight to them; Muse stores no copy and has no public link to it. The user chooses which parts go in (moods, taste, what Muse learned, playlists), and only the first name is printed. Each request paints up to 10 pages, so it has its own rate limit (12 per minute per IP).
+
 Recent picks: the IDs of the last 90 tracks Muse picked for the user, so playlists don't repeat. Deleted 30 days after the last playlist, included in the data export, removed with the account.
 
 Top tracks: when a logged-in user curates, Muse reads their top tracks (about the last 4 weeks and 6 months) to include songs they already play. They are used for that playlist only and never stored.

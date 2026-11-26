@@ -24,7 +24,7 @@ _API_CSP = "default-src 'none'; frame-ancestors 'none'"
 # The website (/app/) may load only its own files, album art from Spotify's image CDN,
 # and call only this server. Inline styles are allowed for React's style attributes.
 _WEB_CSP = (
-    "default-src 'self'; img-src 'self' data: https://i.scdn.co; "
+    "default-src 'self'; img-src 'self' data: blob: https://i.scdn.co; "  # blob: Rewind preview
     "style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; "
     "media-src 'self' https://*.dzcdn.net; "  # 30-second previews from Deezer's CDN
     "frame-ancestors 'none'; base-uri 'none'; form-action 'self'"

@@ -75,6 +75,13 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 - "What Muse learned" on the Music DNA page lists more-of and less-of artists, with "Forget what Muse learned"
 - `PUT/GET/DELETE /api/v1/feedback`; ratings are in the data export and deleted with the account
 
+### Muse Rewind
+- A Wrapped-style PDF of your moods and music to send to friends (the synopsis's "shareable Muse analysis"): up to 10 bold, full-colour, phone-shaped pages
+- Mood of the month, your Muse personality (from where your moods sat, or "The Shapeshifter" when they were all over the map), your mood journey on the map, your golden hour (time of day with the brightest moods, in your own time zone), your sound (top artists and genres), taste × mood match, what Muse learned from your 👍/👎, your playlists, and a summary page
+- Choose the period (week, month, 3 months) and which parts to include; a live preview shows every page before you download or share it (Web Share on phones)
+- `GET /api/v1/me/rewind` (`format=pdf|preview`); painted with Pillow in the website's own fonts (Inter and Fraunces, SIL OFL, bundled under `app/assets/fonts`); made on request and never stored; 12 per minute per IP
+- History and Rewind pages now load on demand, so the chart library stays out of the first download
+
 ### Mood trajectory
 - Opt-in mood trajectory on the History page (Phase 3): once turned on, each playlist curated adds a point (valence, energy, mood words from Muse's fixed list, mode), never the typed text; kept 90 days (TTL index)
 - "Mood map": the moods on the positivity × energy map, joined oldest to newest, coloured like the covers, with the latest point pulsing and your usual mood marked; tap or hover a point to look back. "Over time": positivity and energy as lines

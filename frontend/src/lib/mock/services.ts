@@ -1,6 +1,7 @@
 // Demo-mode versions of every service: same signatures, answers from mock data after a
 // short delay. Lets the site be shown and developed without the backend.
 
+import { ApiError } from "../api/client";
 import type { Services } from "../api/services";
 import type {
   CuratedTrack,
@@ -188,6 +189,16 @@ export const mockServices: Services = {
       };
       playlists.unshift(playlist);
       return wait(playlist, 700);
+    },
+  },
+  rewind: {
+    // Demo mode shows a sample Rewind; downloading needs a real login.
+    get: async (_options, format) => {
+      if (format === "pdf") {
+        throw new ApiError(401, "This is demo mode. Log in on the live site to download your own Rewind.");
+      }
+      const response = await fetch(`${import.meta.env.BASE_URL}demo-rewind.jpg`);
+      return { blob: await response.blob(), pages: 10 };
     },
   },
   moods: {

@@ -1,4 +1,4 @@
-import { Download, LogOut, Music2, ShieldCheck, Trash2 } from "lucide-react";
+import { Disc3, Download, LogOut, Music2, ShieldCheck, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { toast } from "sonner";
@@ -90,6 +90,9 @@ export default function Settings() {
           <div className="flex flex-wrap gap-2">
             <Button asChild variant="outline">
               <a href={api.privacy.exportUrl} download><Download /> Download my data</a>
+            </Button>
+            <Button asChild variant="outline">
+              <Link to="/rewind"><Disc3 /> Make my Muse Rewind</Link>
             </Button>
             <Dialog onOpenChange={() => setConfirm("")}>
               <DialogTrigger asChild>

@@ -254,6 +254,7 @@ All under `/api/v1` except health checks. Interactive docs are auto-generated at
 | GET | `/moods/trajectory?days=` | Mood points (oldest first) and their summary *(implemented)* | 3 |
 | PUT | `/moods/settings` | Turn the mood trajectory on or off (off by default) *(implemented)* | 3 |
 | DELETE | `/moods` | Clear mood history *(implemented)* | 3 |
+| GET | `/me/rewind?days=&moods=&taste=&learned=&playlists=&tz=&format=pdf\|preview` | Muse Rewind: a shareable PDF of your moods and music, made on request, never stored *(implemented)* | Extra |
 
 ---
 

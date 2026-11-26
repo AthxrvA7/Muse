@@ -6,14 +6,15 @@ import { Layout } from "@/components/Layout";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Curate from "@/pages/Curate";
 import Discover from "@/pages/Discover";
-import History from "@/pages/History";
 import Results from "@/pages/Results";
 import Settings from "@/pages/Settings";
 import { PreviewProvider } from "@/state/PreviewPlayer";
 import { AppStateProvider } from "@/state/AppState";
 
-// The chart library is only needed on the Music DNA page, so it loads on demand
+// The chart library is only needed on the Music DNA and History pages, so they load on demand
 const MusicDna = lazy(() => import("@/pages/MusicDna"));
+const History = lazy(() => import("@/pages/History"));
+const Rewind = lazy(() => import("@/pages/Rewind"));
 
 // Hash routing (/app/#/dna) keeps every page reachable on refresh without server rules
 export default function App() {
@@ -28,7 +29,8 @@ export default function App() {
               <Route path="dna" element={<Suspense fallback={null}><MusicDna /></Suspense>} />
               <Route path="curate" element={<Curate />} />
               <Route path="results" element={<Results />} />
-              <Route path="history" element={<History />} />
+              <Route path="history" element={<Suspense fallback={null}><History /></Suspense>} />
+              <Route path="rewind" element={<Suspense fallback={null}><Rewind /></Suspense>} />
               <Route path="settings" element={<Settings />} />
               <Route path="*" element={<Discover />} />
             </Route>

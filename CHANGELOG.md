@@ -68,6 +68,12 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 - `GET /api/v1/mood/options`: mood chips with their valence and energy, and the modes, for clients
 - The built website is served at `/app/` by the backend (`FRONTEND_DIST`), with its own Content-Security-Policy
 
+### Cover art
+- Every saved playlist can get a 640x640 cover painted from the mood (Pillow, no AI or stock images): colour from positivity, waves from energy, the playlist's headline and mood words, the Muse mark and a little grain
+- The same cover is shown on the playlist page (`GET /api/v1/covers`) and offered as a tick-box when saving
+- Uploaded with `PUT /playlists/{id}/images`, only to the playlist Muse has just created; new scope `ugc-image-upload`. Accounts that logged in before get their playlist saved without the cover and a "log in again" note; a failed upload never fails the playlist
+- The JPEG is kept under 190 KB so the base64 upload stays below Spotify's 256 KB limit
+
 ### 30-second previews
 - Every song with a match on Deezer gets a play button on its artwork: one player for the whole site, with a progress bar and an equaliser that moves at the song's tempo
 - `GET /api/v1/previews/{deezer_id}` redirects to a fresh signed clip on Deezer's CDN. Deezer's links expire within about 15 minutes, so Muse never stores them: it asks for a new one on play and reuses it at most 10 minutes (and never past a minute before its expiry). The Deezer ID comes from the same lookup as the tempo, so playlists cost no extra calls

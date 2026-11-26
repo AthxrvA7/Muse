@@ -4,6 +4,7 @@
 import { mockServices } from "../mock/services";
 import type {
   Artist,
+  CoverRequest,
   CurateOptions,
   CuratePreview,
   MoodOptions,
@@ -60,8 +61,11 @@ const realServices = {
   },
   playlists: {
     list: () => request<Playlist[]>("/api/v1/playlists"),
-    create: (name: string, trackIds: string[]) =>
-      request<Playlist>("/api/v1/playlists", { method: "POST", body: { name, track_ids: trackIds } }),
+    create: (name: string, trackIds: string[], cover?: CoverRequest) =>
+      request<Playlist>("/api/v1/playlists", {
+        method: "POST",
+        body: { name, track_ids: trackIds, ...(cover ? { cover } : {}) },
+      }),
   },
   privacy: {
     exportUrl: "/api/v1/me/data",

@@ -162,6 +162,15 @@ export interface Playlist {
   name: string;
   track_count: number;
   created_at: string;
+  cover?: "added" | "needs_login" | "failed" | "none";
+}
+
+/** What Muse paints on a playlist cover. */
+export interface CoverRequest {
+  valence: number;
+  energy: number;
+  title: string;
+  words: string[];
 }
 
 /** One "curate for me" run, kept in this browser so Results and Discover can show it. */

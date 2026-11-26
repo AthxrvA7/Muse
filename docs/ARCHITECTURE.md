@@ -101,8 +101,8 @@ sequenceDiagram
 - Sessions expire after 7 days of inactivity, and a new session ID is issued on every login, which prevents session fixation.
 
 - Access tokens expire after 1 hour; the Spotify client refreshes them automatically using the stored refresh token.
-- Scopes requested (minimum needed): `playlist-modify-private`, `playlist-modify-public`, `user-read-private`, and `user-top-read` (read-only, used only by "Import from Spotify").
-- User-token calls are limited to an allow-list: `GET /me`, `GET /me/top/artists`, `POST /me/playlists`, and `POST /playlists/{id}/items` for a playlist Muse just created.
+- Scopes requested (minimum needed): `playlist-modify-private`, `playlist-modify-public`, `user-read-private`, `user-top-read` (read-only: Import from Spotify and familiar songs), and `ugc-image-upload` (cover art on a playlist Muse just created).
+- User-token calls are limited to an allow-list: `GET /me`, `GET /me/top/artists`, `GET /me/top/tracks`, `POST /me/playlists`, and, only for a playlist Muse just created, `POST /playlists/{id}/items` and `PUT /playlists/{id}/images`.
 - The Spotify client handles **429 rate limits** (reads `Retry-After`, waits, retries once) and **401** (refresh, retry once). Everything else becomes a clean Muse error.
 
 ### 4.3 Preference service — *Classics: "Know your music"*

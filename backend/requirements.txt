@@ -10,6 +10,6 @@ scikit-learn==1.9.1
 # HTTP client for Spotify (successor to httpx; also used by FastAPI's TestClient)
 httpx2==2.15.1
 # MongoDB driver: PyMongo's native async API (Motor is deprecated, see ADR-0004)
-pymongo==4.19.0
+pymongo==4.20.1
 # Encrypting stored Spotify tokens (Fernet)
 cryptography==50.0.2

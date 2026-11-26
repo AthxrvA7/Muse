@@ -114,6 +114,7 @@ class CuratedTrack(BaseModel):
     bpm: float | None = Field(default=None, description="Tempo in beats per minute (Deezer)")
     tempo: Tempo | None = Field(default=None, description="slow < 95 BPM ≤ medium ≤ 125 < fast")
     genre: str | None = Field(default=None, description="The song's genre, when known")
+    genre_id: str | None = Field(default=None, description="Its genre's ID (send it with a 👍/👎)")
     preview_id: int | None = Field(
         default=None,
         description="Play a 30-second preview at GET /api/v1/previews/{preview_id} (Deezer)",
@@ -158,6 +159,7 @@ class CuratePreview(BaseModel):
     )
     genre: str | None = Field(default=None, description="The genre the playlist is built around")
     coverage: Coverage = Field(default_factory=Coverage)
+    learned_from: int = Field(default=0, description="How many of your 👍/👎 shaped this playlist")
 
 
 class GenreOption(BaseModel):

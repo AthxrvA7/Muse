@@ -12,17 +12,15 @@ song on its mood map, and asks Last.fm for artists similar to the user's favouri
 
 import asyncio
 import logging
-import time
-from collections import OrderedDict
 from dataclasses import dataclass
 from typing import Any
 
 import httpx2
 
+from app.core.cache import TTLCache
+
 API_URL = "https://ws.audioscrobbler.com/2.0/"
-CACHE_SECONDS = 24 * 3600
 NOT_FOUND = 6  # Last.fm error code for an unknown artist or track
-CACHE_ENTRIES = 20_000
 MAX_PARALLEL = 5  # Last.fm asks apps to stay around 5 requests a second
 
 logger = logging.getLogger(__name__)
@@ -32,29 +30,6 @@ logger = logging.getLogger(__name__)
 class Tag:
     name: str  # lower-case, e.g. "late night"
     count: int  # Last.fm's relative weight, 0-100 (100 = the song's strongest tag)
-
-
-class TTLCache:
-    """A small in-memory cache with expiry; the oldest entries go first when full."""
-
-    def __init__(self, seconds: float = CACHE_SECONDS, size: int = CACHE_ENTRIES) -> None:
-        self._seconds = seconds
-        self._size = size
-        self._items: OrderedDict[str, tuple[float, Any]] = OrderedDict()
-
-    def get(self, key: str) -> Any | None:
-        item = self._items.get(key)
-        if item is None or item[0] < time.monotonic():
-            self._items.pop(key, None)
-            return None
-        self._items.move_to_end(key)
-        return item[1]
-
-    def put(self, key: str, value: Any) -> None:
-        self._items[key] = (time.monotonic() + self._seconds, value)
-        self._items.move_to_end(key)
-        while len(self._items) > self._size:
-            self._items.popitem(last=False)
 
 
 # One cache per process, shared by every request

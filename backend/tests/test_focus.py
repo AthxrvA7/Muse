@@ -78,9 +78,8 @@ def test_auto_language_keeps_the_main_language_and_drops_others() -> None:
     ids = {s.candidate.track.id for s in pool}
     assert focus.language == "hi"
     assert not any(i.startswith("e") for i in ids)
-    assert "x" in ids  # unknown language and genre: allowed while choice is thin, lower
-    assert next(s for s in pool if s.candidate.track.id == "x").score == 0.45
-    assert "lofi" not in ids  # language-neutral, but off-genre for a Bollywood playlist
+    assert "x" not in ids  # unknown language: never used, so nothing can slip in
+    assert "lofi" not in ids  # instrumental is allowed language-wise, but it's off-genre here
 
 
 def test_one_taste_language_is_used_when_there_are_songs_in_it() -> None:
@@ -113,15 +112,24 @@ def test_a_chosen_language_or_mix_is_respected() -> None:
     assert len(mixed) == 6
 
 
-def test_too_few_songs_in_a_language_lets_others_fill_lower_down() -> None:
+def test_too_few_songs_in_a_language_never_lets_others_in() -> None:
     items = [item("h1", 0.8, "hi", "bollywood")] + [
         item(f"e{i}", 0.7, "en", "pop") for i in range(12)
     ]
 
     pool, _ = focus_playlist(items, 10, KB, language="hi")
 
-    assert len(pool) == 13
-    assert max(s.score for s in pool if s.language == "en") < 0.5
+    assert [s.candidate.track.id for s in pool] == ["h1"]  # short, but never mixed
+
+
+def test_instrumental_songs_can_join_any_language() -> None:
+    items = [item(f"h{i}", 0.8, "hi", "lo-fi") for i in range(3)] + [
+        item("beat", 0.7, None, "lo-fi")
+    ]
+
+    pool, _ = focus_playlist(items, 3, KB, language="hi")
+
+    assert "beat" in {s.candidate.track.id for s in pool}
 
 
 def test_one_genre_leads_and_unrelated_genres_are_left_out() -> None:
@@ -326,3 +334,35 @@ async def test_coverage_says_how_much_muse_knew() -> None:
     assert preview.coverage.with_language == 8
     assert preview.coverage.with_genre == 8
     assert preview.coverage.with_tempo == 0
+
+
+async def test_too_few_songs_in_the_language_triggers_more_searches_in_it() -> None:
+    class Thin:
+        def __init__(self) -> None:
+            self.queries: list[str] = []
+
+        async def search_tracks(self, query: str, total: int = 10) -> list:  # type: ignore[type-arg]
+            self.queries.append(query)
+            if 'artist:"Taylor Swift"' in query:
+                return [track(f"e{i}", "Taylor Swift", f"English song {i}") for i in range(8)]
+            if 'genre:"bollywood"' in query or 'genre:"filmi"' in query:
+                g = "b" if "bollywood" in query else "f"
+                return [track(f"{g}{i}", f"Film singer {g}{i % 4}", f"Song {i}") for i in range(10)]
+            return []
+
+    catalogue = Thin()
+    service = CurateService(catalogue, MoodAnalyzer(load_vocabulary()), KB)
+    request = CurateRequest.model_validate(
+        {
+            "mood": {"chips": ["calm"]},
+            "taste": {"artists": ["Taylor Swift"]},
+            "size": 10,
+            "language": "hi",
+        }
+    )
+
+    preview = await service.preview(request)
+
+    assert any("bollywood" in q for q in catalogue.queries)  # it went looking for Hindi songs
+    assert preview.language == "hi"
+    assert preview.tracks and all(t.language == "hi" for t in preview.tracks)

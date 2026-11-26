@@ -19,9 +19,9 @@ from app.services.recommender.knowledge import GenreKnowledge
 MAX_ARTIST_SEARCHES = 5
 MAX_FAVOURITE_GENRES = 3
 MAX_LANGUAGE_GENRES = 2
-DISCOVERY_GENRES = 2
+DISCOVERY_GENRES = 1
 MOOD_ONLY_GENRES = 4  # when the user gave no taste at all
-MAX_SIMILAR_SEARCHES = 6
+MAX_SIMILAR_SEARCHES = 3
 
 Reason = Literal[
     "familiar",  # the user plays it a lot (their Spotify top tracks)
@@ -106,3 +106,25 @@ def plan_searches(
         plans += [genre_search(g, "discovery") for g in closest(allowed, DISCOVERY_GENRES)]
 
     return plans
+
+
+def language_searches(
+    mood: MoodProfile, language: str, kb: GenreKnowledge, skip: set[str], count: int = 2
+) -> list[SearchPlan]:
+    """Extra genre searches in one language, closest to the mood first (when a playlist
+    in that language would otherwise be short). `skip` holds genre ids already searched."""
+    target = MoodPoint(valence=mood.valence, energy=mood.energy)
+    genres = sorted(
+        (g for g, genre in kb.genres.items() if language in genre.langs and g not in skip),
+        key=lambda g: (len(kb.genres[g].langs), distance(kb.genres[g], target), g),
+    )[:count]
+    return [
+        SearchPlan(
+            kind="genre",
+            value=g,
+            reason="language",
+            query=build_query(genre=kb.genres[g].spotify_genre),
+            fallback_query=build_query(kb.genres[g].keywords),
+        )
+        for g in genres
+    ]

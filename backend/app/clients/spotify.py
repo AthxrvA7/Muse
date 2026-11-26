@@ -10,12 +10,16 @@ expires (Spotify issues 1-hour tokens), and refreshes it automatically.
 
 Failure handling, for every API call:
 - 401 (token expired or revoked) -> get a fresh token and retry once
-- 429 (rate limited)             -> wait for Retry-After (max 5 s) and retry once
+- 429 (rate limited)             -> wait for Retry-After (max 5 s) and retry once; a longer
+                                   wait blocks all calls until it's over (calling again
+                                   during a block only makes Spotify's block longer)
+- search results are cached for 6 hours, so repeating a playlist costs no calls
 - 5xx or timeout                 -> retry once, then report Spotify as unavailable
 """
 
 import asyncio
 import logging
+import math
 import re
 import time
 from dataclasses import dataclass
@@ -23,12 +27,36 @@ from typing import Any, Literal
 
 import httpx2
 
+from app.core.cache import TTLCache
 from app.schemas.catalog import Artist, ArtistRef, Track
 
 TOKEN_URL = "https://accounts.spotify.com/api/token"  # noqa: S105 - a URL, not a password
 API_URL = "https://api.spotify.com/v1"
 TOKEN_REFRESH_MARGIN = 60  # seconds: refresh a token this long before it expires
 MAX_RETRY_AFTER = 5  # seconds: never wait longer than this on a 429
+SEARCH_CACHE_SECONDS = 6 * 3600
+
+_search_cache = TTLCache(seconds=SEARCH_CACHE_SECONDS, size=5_000)
+_blocked_until = 0.0  # monotonic time until which Spotify asked us to stop calling
+
+
+def blocked_for() -> int:
+    """Seconds left on a Spotify rate-limit block (0 when calls are allowed)."""
+    return max(0, math.ceil(_blocked_until - time.monotonic()))
+
+
+def reset_shared_state() -> None:
+    """Forget cached searches and any rate-limit block (used by tests)."""
+    global _blocked_until
+    _blocked_until = 0.0
+    _search_cache.clear()
+
+
+def _block(seconds: int) -> None:
+    global _blocked_until
+    _blocked_until = max(_blocked_until, time.monotonic() + seconds)
+
+
 PAGE_SIZE = 10  # Spotify's maximum `limit` per search request
 MAX_OFFSET = 1000  # Spotify's maximum `offset`
 MAX_TERM_LENGTH = 100
@@ -121,6 +149,8 @@ class SpotifyClient:
         """GET an API path with automatic token refresh and one retry on transient errors."""
         refreshed = waited = retried = False
         while True:
+            if remaining := blocked_for():  # don't call while Spotify has us on hold
+                raise SpotifyRateLimitError(remaining)
             token = await self._token(force_refresh=refreshed)
             try:
                 response = await self._http.get(
@@ -144,6 +174,8 @@ class SpotifyClient:
             if status == 429:
                 retry_after = int(response.headers.get("Retry-After", "1"))
                 if waited or retry_after > MAX_RETRY_AFTER:
+                    _block(retry_after)
+                    logger.warning("Spotify rate limit", extra={"retry_after": retry_after})
                     raise SpotifyRateLimitError(retry_after)
                 waited = True
                 await asyncio.sleep(retry_after)
@@ -170,6 +202,10 @@ class SpotifyClient:
     async def _search(
         self, query: str, kind: Literal["track", "artist"], total: int
     ) -> list[dict[str, Any]]:
+        key = f"{kind}|{self.market}|{total}|{' '.join(query.lower().split())}"
+        cached = _search_cache.get(key)
+        if cached is not None:
+            return list(cached)
         results: list[dict[str, Any]] = []
         offset = 0
         while len(results) < total and offset <= MAX_OFFSET:
@@ -183,7 +219,8 @@ class SpotifyClient:
             if len(page) < limit:  # Spotify has no more results
                 break
             offset += limit
-        return results
+        _search_cache.put(key, results)
+        return list(results)
 
 
 # ---------- building queries ----------

@@ -5,6 +5,8 @@ import { mockServices } from "../mock/services";
 import type {
   Artist,
   CoverRequest,
+  Learned,
+  Rating,
   CurateOptions,
   CuratePreview,
   MoodOptions,
@@ -66,6 +68,11 @@ const realServices = {
         method: "POST",
         body: { name, track_ids: trackIds, ...(cover ? { cover } : {}) },
       }),
+  },
+  feedback: {
+    rate: (rating: Rating) => request<void>("/api/v1/feedback", { method: "PUT", body: rating }),
+    learned: () => request<Learned>("/api/v1/feedback"),
+    forget: () => request<void>("/api/v1/feedback", { method: "DELETE" }),
   },
   privacy: {
     exportUrl: "/api/v1/me/data",

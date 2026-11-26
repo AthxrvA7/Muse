@@ -1,7 +1,8 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Clock, Compass, Gauge, HeartHandshake, ListMusic, LogIn, RefreshCw, Undo2 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Navigate, useNavigate } from "react-router";
+import { toast } from "sonner";
 
 import { Artwork } from "@/components/Artwork";
 import { SaveToSpotify } from "@/components/SaveToSpotify";
@@ -14,6 +15,7 @@ import { coverUrl } from "@/lib/cover";
 import { percent, playlistName, playlistTitle, totalDuration } from "@/lib/format";
 import { familiarityLabel, intentionById, MODE_LABEL } from "@/lib/intentions";
 import { MOOD_EMOJI } from "@/lib/moods";
+import type { CuratedTrack } from "@/lib/types";
 import { useApp } from "@/state/AppState";
 
 const LANGUAGE_NAMES: Record<string, string> = {
@@ -32,6 +34,19 @@ export default function Results() {
   const { session, user, setDraft } = useApp();
   const [removed, setRemoved] = useState<Set<string>>(new Set());
   const [coverFailed, setCoverFailed] = useState(false);
+  const [ratings, setRatings] = useState<Record<string, 1 | -1>>({});
+
+  useEffect(() => {
+    if (!user) return;
+    let live = true;
+    api.feedback
+      .learned()
+      .then((learned) => live && setRatings(learned.ratings))
+      .catch(() => undefined); // ratings are a bonus: the playlist works without them
+    return () => {
+      live = false;
+    };
+  }, [user]);
 
   const tracks = useMemo(
     () => (session ? session.preview.tracks.filter((t) => !removed.has(t.track.id)) : []),
@@ -59,6 +74,55 @@ export default function Results() {
     navigate("/curate");
   }
   const knownCount = tracks.filter((t) => t.known).length;
+
+  async function rate(item: CuratedTrack, value: 1 | -1 | 0) {
+    const id = item.track.id;
+    const before = ratings[id];
+    setRatings((r) => {
+      const next = { ...r };
+      if (value === 0) delete next[id];
+      else next[id] = value;
+      return next;
+    });
+    if (value === -1) setRemoved((r) => new Set(r).add(id)); // gone from this playlist too
+    try {
+      await api.feedback.rate({
+        track_id: id,
+        value,
+        // Spotify artist IDs only (letters and digits), each paired with its name
+        artist_ids: item.track.artists.filter((a) => /^[A-Za-z0-9]{1,40}$/.test(a.id)).map((a) => a.id).slice(0, 5),
+        artist_names: item.track.artists.filter((a) => /^[A-Za-z0-9]{1,40}$/.test(a.id)).map((a) => a.name).slice(0, 5),
+        genre: item.genre_id ?? null,
+        language: item.language ?? null,
+        valence: mood.valence,
+        energy: mood.energy,
+      });
+      if (value === 1) toast.success("Muse will remember you like this", { description: item.track.name });
+      if (value === -1)
+        toast.message("Muse will avoid this song", {
+          description: item.track.name,
+          action: {
+            label: "Undo",
+            onClick: () => {
+              setRemoved((r) => {
+                const next = new Set(r);
+                next.delete(id);
+                return next;
+              });
+              void rate(item, 0);
+            },
+          },
+        });
+    } catch (e) {
+      setRatings((r) => {
+        const next = { ...r };
+        if (before) next[id] = before;
+        else delete next[id];
+        return next;
+      });
+      toast.error("Couldn't save your rating", { description: (e as Error).message });
+    }
+  }
   const title = playlistTitle(mood.valence, mood.energy);
   const cover = { valence: mood.valence, energy: mood.energy, title, words: [...mood.labels.slice(0, 2), intention.label] };
 
@@ -136,6 +200,8 @@ export default function Results() {
                   item={item}
                   index={i}
                   onRemove={() => setRemoved((r) => new Set(r).add(item.track.id))}
+                  rating={ratings[item.track.id] ?? 0}
+                  onRate={user ? (value) => rate(item, value) : undefined}
                 />
               ))}
             </AnimatePresence>
@@ -166,6 +232,7 @@ export default function Results() {
               <dt className="text-ink-soft">Your songs</dt><dd className="text-right font-medium">{preview.personal ? "Spotify top tracks" : "Not used"}</dd>
               <dt className="text-ink-soft">Language</dt><dd className="text-right font-medium">{preview.language ? (LANGUAGE_NAMES[preview.language] ?? preview.language) : "Mixed"}</dd>
               <dt className="text-ink-soft">Genre</dt><dd className="text-right font-medium capitalize">{preview.genre ?? "Mixed"}</dd>
+              <dt className="text-ink-soft">Learned from</dt><dd className="text-right font-medium">{preview.learned_from ? `${preview.learned_from} ratings` : "No ratings yet"}</dd>
               <dt className="text-ink-soft">Song moods</dt><dd className="text-right font-medium">{preview.mood_data === "lastfm" ? "Listener tags" : "Estimated"}</dd>
             </dl>
             {preview.familiarity !== undefined && (

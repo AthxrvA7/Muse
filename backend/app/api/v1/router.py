@@ -12,6 +12,7 @@ from app.api.v1 import (
     curate,
     feedback,
     mood,
+    moods,
     playlists,
     preferences,
     previews,
@@ -29,3 +30,4 @@ api_router.include_router(playlists.router)
 api_router.include_router(previews.router)
 api_router.include_router(covers.router)
 api_router.include_router(feedback.router)
+api_router.include_router(moods.router)

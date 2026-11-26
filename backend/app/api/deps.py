@@ -10,6 +10,7 @@ from app.clients.spotify_user import TOP_ARTISTS_SCOPE, SpotifyUserAuth, Spotify
 from app.core.crypto import TokenCipher
 from app.db.models import User
 from app.db.repositories.feedback import FeedbackRepository
+from app.db.repositories.mood_log import MoodLogRepository
 from app.db.repositories.oauth_states import OAuthStateRepository
 from app.db.repositories.playlists import PlaylistRepository
 from app.db.repositories.preferences import PreferencesRepository
@@ -133,6 +134,16 @@ def get_feedback_repository(request: Request) -> FeedbackRepository:
     return FeedbackRepository(database)
 
 
+def get_mood_log_repository(request: Request) -> MoodLogRepository:
+    database = request.app.state.db
+    if database is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail={"message": "This needs the database (MONGODB_URI)"},
+        )
+    return MoodLogRepository(database)
+
+
 def get_privacy_service(request: Request) -> PrivacyService:
     database = request.app.state.db
     if database is None:
@@ -147,6 +158,7 @@ def get_privacy_service(request: Request) -> PrivacyService:
         PlaylistRepository(database),
         RecentPicksRepository(database),
         FeedbackRepository(database),
+        MoodLogRepository(database),
     )
 
 
@@ -168,7 +180,7 @@ async def personal_context(
     user: Annotated[User | None, Depends(optional_user)],
     http: Annotated[httpx2.AsyncClient, Depends(get_http)],
 ) -> Personal | None:
-    """For curate: the logged-in user's top tracks (if allowed) and recent picks."""
+    """For curate: the user's top tracks (if allowed), recent picks, ratings, mood log."""
     if user is None:
         return None
     auth = get_auth_service(request, http)  # login is configured, or there'd be no user
@@ -178,7 +190,13 @@ async def personal_context(
         scopes = set()
     music = UserTopTracks(auth, http, user.id) if TOP_ARTISTS_SCOPE in scopes else None
     database = request.app.state.db
-    return Personal(user.id, music, RecentPicksRepository(database), FeedbackRepository(database))
+    return Personal(
+        user.id,
+        music,
+        RecentPicksRepository(database),
+        FeedbackRepository(database),
+        MoodLogRepository(database),
+    )
 
 
 CurrentUser = Annotated[User, Depends(current_user)]

@@ -19,6 +19,7 @@ import random
 from collections import Counter
 from collections.abc import AsyncIterator
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from typing import Annotated, Protocol
 
 import httpx2
@@ -39,6 +40,7 @@ from app.schemas.curate import (
 )
 from app.schemas.feedback import FeedbackRecord
 from app.schemas.mood import Mode, MoodProfile
+from app.schemas.moods import MoodEntry
 from app.services.learning import apply_learning, learn, liked_artists_to_search
 from app.services.mood import get_mood_analyzer
 from app.services.mood.analyzer import MoodAnalyzer
@@ -115,6 +117,10 @@ class Ratings(Protocol):
     async def list_for_user(self, user_id: str) -> list[FeedbackRecord]: ...
 
 
+class MoodLog(Protocol):
+    async def record(self, user_id: str, entry: MoodEntry) -> None: ...
+
+
 @dataclass
 class Personal:
     """What Muse may use for the logged-in user (None for visitors)."""
@@ -123,6 +129,7 @@ class Personal:
     music: TopTracks | None = None  # their Spotify top tracks, if they allowed it
     recent: RecentPicks | None = None  # what Muse picked for them recently
     feedback: Ratings | None = None  # their 👍/👎, which Muse learns from
+    moods: MoodLog | None = None  # their mood trajectory (numbers and mood words only)
 
 
 def taste_options(kb: GenreKnowledge) -> TasteOptions:
@@ -386,6 +393,18 @@ class CurateService:
                 await recent.remember(personal.user_id, [p.candidate.track.id for p in picked])
             except Exception:  # remembering is a nicety; never fail the playlist for it
                 logger.warning("Could not remember recent picks", exc_info=True)
+        if personal and personal.moods and picked:
+            entry = MoodEntry(
+                at=datetime.now(UTC),
+                valence=mood.valence,
+                energy=mood.energy,
+                labels=mood.labels,
+                mode=mood.mode,
+            )
+            try:
+                await personal.moods.record(personal.user_id, entry)
+            except Exception:  # the trajectory is a nicety too
+                logger.warning("Could not log the mood", exc_info=True)
 
         tracks = [
             CuratedTrack(

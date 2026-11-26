@@ -124,3 +124,28 @@ def test_recent_picks_are_exported_and_deleted() -> None:
     assert exported["recently_picked_track_ids"] == ["t1", "t2"]
     assert removed["recent_picks"] == 1
     assert recent.ids == []
+
+
+def test_mood_history_is_exported_and_deleted() -> None:
+    import asyncio
+
+    from tests.test_trajectory import FakeMoodLog, entry
+
+    async def run() -> tuple[dict, dict]:  # type: ignore[type-arg]
+        world = World()
+        await world.seed()
+        await moods.set_enabled(world.user.id, True)
+        await moods.record(world.user.id, entry(0, 0.3, 0.6, "low"))
+        service = PrivacyService(
+            world.users, world.sessions, world.preferences, world.playlists, moods=moods
+        )
+        return await service.export(world.user), await service.delete_account(world.user)
+
+    moods = FakeMoodLog()
+    exported, removed = asyncio.run(run())
+
+    assert exported["mood_trajectory_on"] is True
+    (point,) = exported["mood_history"]
+    assert point["labels"] == ["low"] and point["valence"] == 0.3
+    assert removed["mood_history"] == 1
+    assert moods.entries == {} and moods.enabled == {}

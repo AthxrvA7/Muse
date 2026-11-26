@@ -1,8 +1,30 @@
 """Saving a curated playlist to the user's Spotify account."""
 
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+
+class CoverRequest(BaseModel):
+    """What the cover art shows: the mood's colour and energy, a headline, mood words."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    valence: float = Field(ge=0, le=1)
+    energy: float = Field(ge=0, le=1)
+    title: str = Field(min_length=1, max_length=80)
+    words: list[str] = Field(default=[], max_length=3)
+
+    @field_validator("title")
+    @classmethod
+    def _one_line(cls, value: str) -> str:
+        return " ".join(value.split())
+
+    @field_validator("words")
+    @classmethod
+    def _short_words(cls, words: list[str]) -> list[str]:
+        return [" ".join(w.split())[:20] for w in words if w.strip()]
 
 
 class ExportRequest(BaseModel):
@@ -29,6 +51,9 @@ class ExportRequest(BaseModel):
         max_length=100,
         description="Spotify track IDs from a POST /curate response (tracks[].track.id)",
     )
+    cover: CoverRequest | None = Field(
+        default=None, description="Add Muse's cover art, painted from the mood (optional)"
+    )
 
     @field_validator("name", "description")
     @classmethod
@@ -51,3 +76,8 @@ class PlaylistOut(BaseModel):
     name: str
     track_count: int
     created_at: datetime
+    cover: Literal["added", "needs_login", "failed", "none"] = Field(
+        default="none",
+        description="added · needs_login (log in again to allow covers) · failed (the "
+        "playlist is fine, the cover isn't) · none (not asked for)",
+    )

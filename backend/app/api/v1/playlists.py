@@ -22,7 +22,7 @@ Service = Annotated[PlaylistService, Depends(get_playlist_service)]
 )
 async def export_playlist(body: ExportRequest, user: CurrentUser, service: Service) -> PlaylistOut:
     try:
-        record = await service.export(user, body)
+        record, cover = await service.export(user, body)
     except NotLoggedInError as error:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -30,7 +30,7 @@ async def export_playlist(body: ExportRequest, user: CurrentUser, service: Servi
         ) from error
     except SpotifyError as error:
         raise spotify_http_error(error) from error
-    return PlaylistOut(**record.model_dump())
+    return PlaylistOut(**record.model_dump(), cover=cover)
 
 
 @router.get("", summary="Playlists Muse has saved for you (newest first)")

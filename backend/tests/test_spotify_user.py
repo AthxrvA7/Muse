@@ -182,11 +182,12 @@ async def test_tracks_can_only_be_added_to_a_playlist_muse_just_created() -> Non
     assert recorder.requests == []
 
 
-def test_only_five_kinds_of_user_call_exist() -> None:
+def test_only_six_kinds_of_user_call_exist() -> None:
     assert [(m, p.pattern) for m, p in ALLOWED_USER_CALLS] == [
         ("GET", "^/me$"),
         ("GET", "^/me/top/artists$"),
         ("GET", "^/me/top/tracks$"),
+        ("PUT", "^/playlists/[A-Za-z0-9]+/images$"),
         ("POST", "^/me/playlists$"),
         ("POST", "^/playlists/[A-Za-z0-9]+/items$"),
     ]

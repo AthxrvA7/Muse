@@ -6,6 +6,7 @@ obtained when they log in with Spotify. Tokens are never logged or sent to the b
 """
 
 import asyncio
+import base64
 import logging
 import re
 import time
@@ -33,7 +34,14 @@ AUTHORIZE_URL = "https://accounts.spotify.com/authorize"
 # The minimum Muse needs: create playlists, read the user's Spotify ID and name, and
 # read their top artists and tracks (to suggest a taste profile, and to start playlists
 # from songs the user already plays; never stored)
-SCOPES = ("playlist-modify-private", "playlist-modify-public", "user-read-private", "user-top-read")
+SCOPES = (
+    "playlist-modify-private",
+    "playlist-modify-public",
+    "user-read-private",
+    "user-top-read",
+    "ugc-image-upload",  # only to put Muse's cover art on a playlist Muse just created
+)
+COVER_SCOPE = "ugc-image-upload"
 TOP_ARTISTS_SCOPE = "user-top-read"
 MAX_ITEMS_PER_REQUEST = 100  # Spotify's limit for adding items to a playlist
 
@@ -44,6 +52,7 @@ ALLOWED_USER_CALLS = (
     ("GET", re.compile(r"^/me$")),  # read the user's Spotify ID and display name
     ("GET", re.compile(r"^/me/top/artists$")),  # read-only: suggest a taste profile
     ("GET", re.compile(r"^/me/top/tracks$")),  # read-only: songs the user plays most
+    ("PUT", re.compile(r"^/playlists/[A-Za-z0-9]+/images$")),  # cover art, own new playlist only
     ("POST", re.compile(r"^/me/playlists$")),  # create a NEW playlist
     ("POST", re.compile(r"^/playlists/[A-Za-z0-9]+/items$")),  # add tracks to it
 )
@@ -209,20 +218,41 @@ class SpotifyUserClient:
                 {"uris": uris[start : start + MAX_ITEMS_PER_REQUEST]},
             )
 
+    async def upload_cover(self, playlist_id: str, jpeg: bytes) -> None:
+        """Puts a cover image on a playlist this client has just created (base64 JPEG)."""
+        if playlist_id not in self._created:
+            raise ForbiddenCallError("Muse only adds covers to playlists it has just created")
+        await self._request(
+            "PUT",
+            f"/playlists/{playlist_id}/images",
+            content=base64.b64encode(jpeg),
+            content_type="image/jpeg",
+        )
+
     async def _request(
         self,
         method: str,
         path: str,
         json: dict[str, Any] | None = None,
         params: dict[str, Any] | None = None,
+        content: bytes | None = None,
+        content_type: str | None = None,
     ) -> dict[str, Any]:
         if not any(method == m and pattern.match(path) for m, pattern in ALLOWED_USER_CALLS):
             raise ForbiddenCallError(f"Muse may not call {method} {path} with a user's token")
         waited = retried = False
         while True:
             try:
+                headers = self._headers
+                if content_type:
+                    headers = {**headers, "Content-Type": content_type}
                 response = await self._http.request(
-                    method, f"{API_URL}{path}", json=json, params=params, headers=self._headers
+                    method,
+                    f"{API_URL}{path}",
+                    json=json,
+                    params=params,
+                    content=content,
+                    headers=headers,
                 )
             except httpx2.TransportError as error:
                 if retried or method != "GET":  # never repeat a write that may have happened
@@ -231,7 +261,7 @@ class SpotifyUserClient:
                 continue
 
             status = response.status_code
-            if status in (200, 201):
+            if status in (200, 201, 202):  # 202: Spotify accepted an image upload
                 result: dict[str, Any] = response.json() if response.content else {}
                 return result
             if status == 401:

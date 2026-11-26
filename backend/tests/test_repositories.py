@@ -267,3 +267,24 @@ async def test_recent_picks_keep_the_latest_90_per_user(database: AsyncDatabase)
     assert await picks.get("nobody") == []
     assert await picks.delete("user-1") is True
     assert await picks.get("user-1") == []
+
+
+# ---------------------------------------------------------------- feedback
+
+
+async def test_ratings_replace_each_other_and_can_be_taken_back(database: AsyncDatabase) -> None:
+    from app.db.repositories.feedback import FeedbackRepository
+    from app.schemas.feedback import FeedbackIn
+
+    ratings = FeedbackRepository(database)
+    song = "a" * 22
+
+    await ratings.rate("user-1", FeedbackIn(track_id=song, value=1, artist_names=["A"]))
+    await ratings.rate("user-1", FeedbackIn(track_id=song, value=-1, artist_names=["A"]))
+    await ratings.rate("user-2", FeedbackIn(track_id=song, value=1))
+
+    mine = await ratings.list_for_user("user-1")
+    assert [(r.track_id, r.value) for r in mine] == [(song, -1)]
+    await ratings.rate("user-1", FeedbackIn(track_id=song, value=0))
+    assert await ratings.list_for_user("user-1") == []
+    assert await ratings.delete_all("user-2") == 1

@@ -34,6 +34,10 @@ def explain(item: ScoredTrack, mood: MoodProfile, taste: Taste, kb: GenreKnowled
     parts: list[str] = []
     named: str | None = None  # genre already mentioned, so the mood clause doesn't repeat it
 
+    if item.learned == "liked":
+        parts.append("you gave it a 👍 before")
+    elif item.learned and item.learned.startswith("liked_artist:") and item.learned[13:]:
+        parts.append(f"you've liked songs by {item.learned[13:]}")
     if item.familiar_range == "short_term":
         parts.append("you've been playing it a lot lately")
     elif item.familiar_range:

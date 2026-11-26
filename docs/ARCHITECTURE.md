@@ -190,6 +190,7 @@ flowchart LR
 - **Similar artists:** Last.fm's similar artists for the first three favourites are searched too (taste fit 0.8).
 - **Song-level mood:** Last.fm listener tags ("chill", "sad", "party"; `knowledge/mood_tags.json`) place each song on the mood map, ahead of the genre estimate in step 3.
 - **Familiar/new mix:** `familiarity` (0–1, default by mode) sets how many songs the user already knows; each part is diversified on its own, then the playlist is ordered by score.
+- **Learning from 👍/👎** (`services/learning.py`): 👎 songs never return, and an artist with two more 👎 than 👍 is left out; 👍 songs get +0.1 (+0.06 more when the current mood is within 0.25 of the mood they were liked in); each net 👍 for an artist adds 0.04 (max 0.12) and liked artists are searched even if they aren't in the Music DNA; genres lean ±0.02 per net rating (max ±0.06). Every nudge is capped so the mood and the stated taste still lead, and each one is named in the song's reason.
 - **Coherence:** one language (auto, chosen, or mix) and one anchor genre per playlist; songs in the same genre family or a related family stay, unrelated genres are left out while enough remain (`recommender/focus.py`).
 - **Tempo:** Deezer BPM (by ISRC) for the best candidates; a small bonus when the pace fits the mood.
 - **Freshness:** a random nudge of up to 0.04, a 0.15 penalty for songs picked for the user recently (`recent_picks`, 30-day TTL), and `exclude_track_ids` for "Give me another".

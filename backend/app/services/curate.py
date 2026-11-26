@@ -37,7 +37,9 @@ from app.schemas.curate import (
     Taste,
     TasteOptions,
 )
+from app.schemas.feedback import FeedbackRecord
 from app.schemas.mood import Mode, MoodProfile
+from app.services.learning import apply_learning, learn, liked_artists_to_search
 from app.services.mood import get_mood_analyzer
 from app.services.mood.analyzer import MoodAnalyzer
 from app.services.recommender.candidates import (
@@ -109,6 +111,10 @@ class RecentPicks(Protocol):
     async def remember(self, user_id: str, track_ids: list[str]) -> None: ...
 
 
+class Ratings(Protocol):
+    async def list_for_user(self, user_id: str) -> list[FeedbackRecord]: ...
+
+
 @dataclass
 class Personal:
     """What Muse may use for the logged-in user (None for visitors)."""
@@ -116,6 +122,7 @@ class Personal:
     user_id: str
     music: TopTracks | None = None  # their Spotify top tracks, if they allowed it
     recent: RecentPicks | None = None  # what Muse picked for them recently
+    feedback: Ratings | None = None  # their 👍/👎, which Muse learns from
 
 
 def taste_options(kb: GenreKnowledge) -> TasteOptions:
@@ -308,9 +315,20 @@ class CurateService:
         )
         familiar_task = familiar_candidates(music) if music else _no_candidates()
         recent_task = recent.get(personal.user_id) if recent and personal else _no_ids()
-        similar, familiar, recent_ids = await asyncio.gather(
-            similar_task, familiar_task, recent_task
+        ratings_task = (
+            personal.feedback.list_for_user(personal.user_id)
+            if personal and personal.feedback
+            else _no_ratings()
         )
+        similar, familiar, recent_ids, ratings = await asyncio.gather(
+            similar_task, familiar_task, recent_task, ratings_task
+        )
+        learned = learn(ratings)
+        if not learned.empty:  # artists the user has liked are searched too
+            liked = liked_artists_to_search(learned, taste.artists)
+            taste = taste.model_copy(
+                update={"artists": taste.artists[:3] + liked + taste.artists[3:]}
+            )
 
         taste = _planning_taste(taste, request)
         plans = plan_searches(mood, taste, self._kb, similar)
@@ -344,6 +362,7 @@ class CurateService:
                 _share_by_artist(scored)
 
         moods = {i: p.mood for i, p in profiles.items() if p.mood is not None}
+        scored = apply_learning(scored, learned, mood)
         scored, focus = focus_playlist(
             scored, request.size, self._kb, target or "mix", request.genre, taste.languages
         )
@@ -381,6 +400,7 @@ class CurateService:
                 preview_id=item.deezer_id,
                 tempo=item.tempo,  # type: ignore[arg-type]
                 genre=self._kb.genres[item.genre].name if item.genre in self._kb.genres else None,
+                genre_id=item.genre if item.genre in self._kb.genres else None,
                 language=item.language,
             )
             for item in picked
@@ -410,6 +430,7 @@ class CurateService:
             language=focus.language,
             genre=focus.genre,
             coverage=coverage,
+            learned_from=len(learned.ratings),
         )
 
 
@@ -422,6 +443,10 @@ async def _no_candidates() -> list[Candidate]:
 
 
 async def _no_ids() -> list[str]:
+    return []
+
+
+async def _no_ratings() -> list[FeedbackRecord]:
     return []
 
 

@@ -27,6 +27,7 @@ const wait = <T,>(value: T, ms = 350) => new Promise<T>((resolve) => setTimeout(
 
 let preferences: MusicPreferences = { ...demoPreferences };
 const playlists: Playlist[] = [...demoPlaylists];
+const demoRatings: Record<string, 1 | -1> = {};
 
 function readMood(mood: MoodRequest): MoodProfile {
   const picked = demoChips.filter((chip) => mood.chips.includes(chip.id));
@@ -168,6 +169,27 @@ export const mockServices: Services = {
       };
       playlists.unshift(playlist);
       return wait(playlist, 700);
+    },
+  },
+  feedback: {
+    rate: (rating) => {
+      if (rating.value === 0) delete demoRatings[rating.track_id];
+      else demoRatings[rating.track_id] = rating.value;
+      return wait(undefined, 200);
+    },
+    learned: () => {
+      const values = Object.values(demoRatings);
+      return wait({
+        likes: values.filter((v) => v > 0).length,
+        dislikes: values.filter((v) => v < 0).length,
+        liked_artists: [],
+        avoided_artists: [],
+        ratings: { ...demoRatings },
+      });
+    },
+    forget: () => {
+      Object.keys(demoRatings).forEach((k) => delete demoRatings[k]);
+      return wait(undefined, 200);
     },
   },
   privacy: {

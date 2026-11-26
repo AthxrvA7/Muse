@@ -98,6 +98,8 @@ Everything that crosses into the backend (request bodies, query strings, headers
 
 Not collected: email, country, listening history, top tracks, followed artists, location, age.
 
+Song ratings: each 👍/👎 the user gives (track ID, artist IDs and names, genre, language, and the mood it was given in). Used only to shape that user's playlists; shown on the Music DNA page; "Forget what Muse learned" deletes them; included in the data export and removed with the account.
+
 Recent picks: the IDs of the last 90 tracks Muse picked for the user, so playlists don't repeat. Deleted 30 days after the last playlist, included in the data export, removed with the account.
 
 Top tracks: when a logged-in user curates, Muse reads their top tracks (about the last 4 weeks and 6 months) to include songs they already play. They are used for that playlist only and never stored.

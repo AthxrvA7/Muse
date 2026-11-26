@@ -43,6 +43,7 @@ INDEXES: tuple[IndexSpec, ...] = (
     IndexSpec("preferences", "user_id", "user_id_unique", unique=True),
     IndexSpec("playlists", "user_id", "user_id"),  # a user's playlist history
     IndexSpec("recent_picks", "user_id", "user_id_unique", unique=True),
+    IndexSpec("feedback", "user_id", "user_id"),  # a user's ratings, newest first
     IndexSpec(
         "recent_picks", "updated_at", "forget_ttl", expire_after_seconds=RECENT_PICKS_SECONDS
     ),

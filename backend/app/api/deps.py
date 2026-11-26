@@ -9,6 +9,7 @@ from fastapi import Depends, HTTPException, Request, status
 from app.clients.spotify_user import TOP_ARTISTS_SCOPE, SpotifyUserAuth, SpotifyUserClient
 from app.core.crypto import TokenCipher
 from app.db.models import User
+from app.db.repositories.feedback import FeedbackRepository
 from app.db.repositories.oauth_states import OAuthStateRepository
 from app.db.repositories.playlists import PlaylistRepository
 from app.db.repositories.preferences import PreferencesRepository
@@ -122,6 +123,16 @@ def get_taste_import_service(
     return TasteImportService(auth, http, get_genre_knowledge())
 
 
+def get_feedback_repository(request: Request) -> FeedbackRepository:
+    database = request.app.state.db
+    if database is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail={"message": "This needs the database (MONGODB_URI)"},
+        )
+    return FeedbackRepository(database)
+
+
 def get_privacy_service(request: Request) -> PrivacyService:
     database = request.app.state.db
     if database is None:
@@ -135,6 +146,7 @@ def get_privacy_service(request: Request) -> PrivacyService:
         PreferencesRepository(database),
         PlaylistRepository(database),
         RecentPicksRepository(database),
+        FeedbackRepository(database),
     )
 
 
@@ -165,7 +177,8 @@ async def personal_context(
     except NotLoggedInError:
         scopes = set()
     music = UserTopTracks(auth, http, user.id) if TOP_ARTISTS_SCOPE in scopes else None
-    return Personal(user.id, music, RecentPicksRepository(request.app.state.db))
+    database = request.app.state.db
+    return Personal(user.id, music, RecentPicksRepository(database), FeedbackRepository(database))
 
 
 CurrentUser = Annotated[User, Depends(current_user)]

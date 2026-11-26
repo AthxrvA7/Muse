@@ -20,7 +20,19 @@ function FitBar({ label, value, tone }: { label: string; value: number; tone: "p
   );
 }
 
-export function TrackRow({ item, index, onRemove }: { item: CuratedTrack; index: number; onRemove: () => void }) {
+export function TrackRow({
+  item,
+  index,
+  onRemove,
+  rating = 0,
+  onRate,
+}: {
+  item: CuratedTrack;
+  index: number;
+  onRemove: () => void;
+  rating?: 1 | -1 | 0;
+  onRate?: (value: 1 | -1 | 0) => void;
+}) {
   const [open, setOpen] = useState(false);
   const { playingId, loading, progress, toggle } = usePreview();
   const playing = !!item.preview_id && playingId === item.preview_id;
@@ -139,16 +151,37 @@ export function TrackRow({ item, index, onRemove }: { item: CuratedTrack; index:
         </button>
         <span className="hidden text-sm tabular-nums text-ink-soft md:block">{duration(track.duration_ms)}</span>
         <div className="flex items-center gap-0.5">
-          <Tooltip content="Likes and dislikes arrive with Muse's feedback loop (Phase 3).">
-            <span className="hidden sm:inline-flex">
-              <button type="button" disabled className="rounded-full p-2 text-ink-soft/40" aria-label="Like (coming in Phase 3)">
-                <ThumbsUp className="size-4" />
-              </button>
-              <button type="button" disabled className="rounded-full p-2 text-ink-soft/40" aria-label="Dislike (coming in Phase 3)">
+          <span className="inline-flex">
+            <Tooltip content={onRate ? (rating === 1 ? "Take back your 👍" : "More like this") : "Log in to rate songs"}>
+              <motion.button
+                type="button"
+                disabled={!onRate}
+                onClick={() => onRate?.(rating === 1 ? 0 : 1)}
+                whileTap={{ scale: 0.75, rotate: -15 }}
+                animate={rating === 1 ? { scale: [1, 1.35, 1] } : { scale: 1 }}
+                aria-pressed={rating === 1}
+                aria-label={`Like ${track.name}`}
+                className={cn(
+                  "rounded-full p-2 transition disabled:text-ink-soft/40",
+                  rating === 1 ? "bg-sage-soft text-moss" : "text-ink-soft hover:bg-sage-soft hover:text-moss",
+                )}
+              >
+                <ThumbsUp className={cn("size-4", rating === 1 && "fill-current")} />
+              </motion.button>
+            </Tooltip>
+            <Tooltip content={onRate ? "Less like this (Muse will avoid it)" : "Log in to rate songs"}>
+              <motion.button
+                type="button"
+                disabled={!onRate}
+                onClick={() => onRate?.(-1)}
+                whileTap={{ scale: 0.75, rotate: 15 }}
+                aria-label={`Dislike ${track.name}`}
+                className="rounded-full p-2 text-ink-soft transition hover:bg-danger-soft hover:text-danger disabled:text-ink-soft/40"
+              >
                 <ThumbsDown className="size-4" />
-              </button>
-            </span>
-          </Tooltip>
+              </motion.button>
+            </Tooltip>
+          </span>
           <Tooltip content="Open in Spotify">
             <a href={track.spotify_url} target="_blank" rel="noreferrer" className="rounded-full p-2 text-ink-soft transition hover:bg-sage-soft hover:text-moss" aria-label={`Open ${track.name} in Spotify`}>
               <ExternalLink className="size-4" />

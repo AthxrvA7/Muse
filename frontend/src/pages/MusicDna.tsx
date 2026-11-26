@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 import { DnaChart } from "@/components/DnaChart";
+import { LearnedCard } from "@/components/LearnedCard";
 import { LoginPrompt } from "@/components/LoginPrompt";
 import { SearchBox } from "@/components/SearchBox";
 import { TagInput } from "@/components/TagInput";
@@ -292,6 +293,8 @@ export default function MusicDna() {
             </div>
             <TagInput label="Add an artist to exclude" values={prefs.exclusions} max={LIMITS.exclusions} placeholder="Artist name… press Enter" onChange={(exclusions) => update({ exclusions })} />
           </Card>
+
+          <LearnedCard />
         </div>
       )}
     </div>

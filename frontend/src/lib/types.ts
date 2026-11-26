@@ -90,6 +90,7 @@ export interface CuratedTrack {
   bpm?: number | null; // tempo in beats per minute (Deezer)
   tempo?: Tempo | null;
   genre?: string | null; // the song's genre name, when known
+  genre_id?: string | null; // its genre's ID (sent with a 👍/👎)
   preview_id?: number | null; // Deezer ID: play at /api/v1/previews/{id}
   language?: string | null; // ISO code, when known
 }
@@ -107,6 +108,7 @@ export interface CuratePreview {
   similar_artists?: string[];
   language?: string | null; // the playlist's language (null: mixed or unknown)
   genre?: string | null; // genre id the playlist is built around
+  learned_from?: number; // how many of the listener's 👍/👎 shaped this playlist
   coverage?: {
     candidates: number;
     with_mood: number;
@@ -191,3 +193,24 @@ export interface MuseSession {
 }
 
 export type ReadyStatus = "ready" | "degraded" | "not_ready";
+
+/** A 👍 (1) or 👎 (-1) on a song; 0 takes it back. */
+export interface Rating {
+  track_id: string;
+  value: 1 | -1 | 0;
+  artist_ids: string[];
+  artist_names: string[];
+  genre?: string | null;
+  language?: string | null;
+  valence?: number;
+  energy?: number;
+}
+
+/** What Muse has learned from the listener's ratings. */
+export interface Learned {
+  likes: number;
+  dislikes: number;
+  liked_artists: { name: string; count: number }[];
+  avoided_artists: { name: string; count: number }[];
+  ratings: Record<string, 1 | -1>;
+}

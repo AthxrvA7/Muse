@@ -218,3 +218,13 @@ Never paste secrets, tokens or real user data into an AI tool.
 - **Changes made by us:** Kept "Download my data" as the raw JSON privacy export and made Rewind a separate feature; chose a name of our own instead of "Wrapped"; made every part optional, printed only the first name, and stored nothing; checked the fonts' licence (SIL OFL) before bundling them.
 - **Verification:** 394 backend tests and 20 website tests; a run of the real app with its Content-Security-Policy showed the preview and downloaded a 9-page PDF with no console errors, which caught that the policy needed `blob:` for the preview image.
 - **Reflection:** Every line in the report comes from simple rules we can explain, so the "analysis" is honest about what it is: a playful summary of moods the user chose.
+
+### 2026-11-27 — Room mode and the presentation deck (`feature/present`)
+- **Member:** Atharva
+- **Tool:** Claude (Anthropic)
+- **Purpose:** design, code generation, security review, testing
+- **Prompt (summary):** Make the presentation itself interactive for a class of students, and make sure nobody in the audience can break the app.
+- **Output used:** room mode (`services/rooms.py`, `api/v1/rooms.py`), the phone join page, the deck at `/app/#/present` with its live demos, the body-size limit, the visitor curation budget, the rate-limit changes, tests and a load test, `docs/PRESENTATION.md`.
+- **Changes made by us:** Asked for an explicit audience-abuse review; from it: rooms need a login to open, chips only (no free text on screen), new-voter cap, lock and reset keys, a shared budget for visitors' curations to protect the Spotify quota, 64 KB body limit, and presenting from a phone hotspot. Swapped the mood-reading presets for sentences the model reads confidently.
+- **Verification:** 418 backend tests; a browser run with six phones joining and every slide used; a load test of 120 phones voting at once from one IP plus hostile inputs (huge, malformed and script-like bodies) gave no server errors.
+- **Reflection:** The riskiest part of a live demo is the shared network and the shared Spotify quota, not the code paths we normally test; thinking like a mischievous audience found problems the unit tests never would.

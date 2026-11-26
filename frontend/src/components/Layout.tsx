@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { Compass, Dna, History, ListMusic, Settings } from "lucide-react";
+import { Compass, Disc3, Dna, History, ListMusic, Settings } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, NavLink, Outlet, useLocation } from "react-router";
 
@@ -17,6 +17,7 @@ const NAV = [
   { to: "/dna", label: "My Music DNA", hint: "Your taste, your way", icon: Dna },
   { to: "/results", label: "Playlist", hint: "Your latest mix", icon: ListMusic, needsSession: true },
   { to: "/history", label: "History", hint: "Past moods and mixes", icon: History },
+  { to: "/rewind", label: "Rewind", hint: "Your month, wrapped", icon: Disc3 },
   { to: "/settings", label: "Settings", hint: "Account and privacy", icon: Settings },
 ];
 

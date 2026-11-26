@@ -21,7 +21,8 @@ import type {
   Track,
   User,
 } from "../types";
-import { request } from "./client";
+import { rewindUrl, type RewindOptions } from "../rewind";
+import { ApiError, errorCode, errorMessage, request } from "./client";
 
 export const DEMO_MODE = import.meta.env.MODE === "demo" || import.meta.env.VITE_DEMO === "true";
 
@@ -80,6 +81,22 @@ const realServices = {
     clear: () => request<void>("/api/v1/moods", { method: "DELETE" }),
     setEnabled: (enabled: boolean) =>
       request<void>("/api/v1/moods/settings", { method: "PUT", body: { enabled } }),
+  },
+  rewind: {
+    /** The Rewind as a PDF, or the preview strip as a JPEG, with its page count. */
+    get: async (options: RewindOptions, format: "pdf" | "preview"): Promise<{ blob: Blob; pages: number }> => {
+      let response: Response;
+      try {
+        response = await fetch(rewindUrl(options, format, -new Date().getTimezoneOffset()));
+      } catch {
+        throw new ApiError(0, "Can't reach Muse. Check your connection and try again.");
+      }
+      if (!response.ok) {
+        const data = await response.json().catch(() => null);
+        throw new ApiError(response.status, errorMessage(response.status, data), errorCode(data));
+      }
+      return { blob: await response.blob(), pages: Number(response.headers.get("X-Rewind-Pages") ?? 0) };
+    },
   },
   privacy: {
     exportUrl: "/api/v1/me/data",

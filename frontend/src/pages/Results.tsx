@@ -9,7 +9,8 @@ import { TrackRow } from "@/components/TrackRow";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { api } from "@/lib/api/services";
+import { api, DEMO_MODE } from "@/lib/api/services";
+import { coverUrl } from "@/lib/cover";
 import { percent, playlistName, playlistTitle, totalDuration } from "@/lib/format";
 import { familiarityLabel, intentionById, MODE_LABEL } from "@/lib/intentions";
 import { MOOD_EMOJI } from "@/lib/moods";
@@ -30,6 +31,7 @@ export default function Results() {
   const navigate = useNavigate();
   const { session, user, setDraft } = useApp();
   const [removed, setRemoved] = useState<Set<string>>(new Set());
+  const [coverFailed, setCoverFailed] = useState(false);
 
   const tracks = useMemo(
     () => (session ? session.preview.tracks.filter((t) => !removed.has(t.track.id)) : []),
@@ -57,14 +59,26 @@ export default function Results() {
     navigate("/curate");
   }
   const knownCount = tracks.filter((t) => t.known).length;
+  const title = playlistTitle(mood.valence, mood.energy);
+  const cover = { valence: mood.valence, energy: mood.energy, title, words: [...mood.labels.slice(0, 2), intention.label] };
 
   return (
     <div className="space-y-8">
       <section className="flex flex-col gap-6 sm:flex-row sm:items-end">
-        <Artwork tracks={preview.tracks} className="aspect-square w-44 shrink-0 sm:w-52" />
+        {DEMO_MODE || coverFailed ? (
+          <Artwork tracks={preview.tracks} className="aspect-square w-44 shrink-0 sm:w-52" />
+        ) : (
+          <motion.img
+            src={coverUrl(cover)}
+            alt={`Cover art for ${title}`}
+            onError={() => setCoverFailed(true)}
+            whileHover={{ rotate: -2, scale: 1.03 }}
+            className="aspect-square w-44 shrink-0 rounded-3xl object-cover shadow-lift sm:w-52"
+          />
+        )}
         <div className="min-w-0 space-y-3">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-plum">Your Muse playlist</p>
-          <h1 className="font-display text-3xl leading-tight sm:text-5xl">{playlistTitle(mood.valence, mood.energy)}</h1>
+          <h1 className="font-display text-3xl leading-tight sm:text-5xl">{title}</h1>
           <p className="text-ink-soft">Curated around your mood, your taste, and what you need right now.</p>
           <div className="flex flex-wrap gap-1.5">
             {mood.labels.map((label) => (
@@ -90,7 +104,11 @@ export default function Results() {
 
       <div className="flex flex-wrap items-center gap-2">
         {user ? (
-          <SaveToSpotify defaultName={playlistName(mood.labels, mood.mode)} trackIds={tracks.map((t) => t.track.id)} />
+          <SaveToSpotify
+            defaultName={playlistName(mood.labels, mood.mode)}
+            trackIds={tracks.map((t) => t.track.id)}
+            cover={cover}
+          />
         ) : (
           <Button asChild variant="spotify" size="lg">
             <a href={api.auth.loginUrl}><LogIn /> Connect Spotify to save</a>

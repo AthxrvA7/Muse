@@ -164,6 +164,7 @@ export const mockServices: Services = {
         name,
         track_count: trackIds.length,
         created_at: new Date().toISOString(),
+        cover: "none",
       };
       playlists.unshift(playlist);
       return wait(playlist, 700);

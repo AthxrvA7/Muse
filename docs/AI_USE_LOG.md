@@ -188,3 +188,13 @@ Never paste secrets, tokens or real user data into an AI tool.
 - **Changes made by us:** Checked Spotify's current rules first (endpoint still available, `ugc-image-upload`, base64 JPEG ≤ 256 KB) and sized the image for them; made the cover optional and never able to fail a save.
 - **Verification:** 365 backend tests; a browser run showed the cover on the page and in the dialog, and saving uploaded it to the new playlist.
 - **Reflection:** Using the same colour rule as the mood orb makes the cover feel like part of the app rather than decoration.
+
+### 2026-11-26 — Learn from me (`feature/learning`)
+- **Member:** Atharva
+- **Tool:** Claude (Anthropic)
+- **Purpose:** design, code generation, testing
+- **Prompt (summary):** Make the 👍/👎 buttons actually teach Muse, the synopsis's "Learn from me" stage.
+- **Output used:** `feedback` collection and API, `services/learning.py`, liked-artist searches, reasons, the rating buttons, the "What Muse learned" card, tests.
+- **Changes made by us:** Kept every nudge small and capped so ratings refine the mood and taste instead of overriding them; chose to remove 👎 songs from the current playlist straight away (with Undo); added "Forget what Muse learned".
+- **Verification:** 374 backend tests; in a browser a 👍 and a 👎 were saved, the 👎 song left the playlist, and the next playlist reported "Learned from 2 ratings".
+- **Reflection:** Simple, explainable rules can be described line by line in the viva, which matters more here than a model nobody can inspect.

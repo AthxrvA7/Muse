@@ -68,6 +68,13 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versioning: [S
 - `GET /api/v1/mood/options`: mood chips with their valence and energy, and the modes, for clients
 - The built website is served at `/app/` by the backend (`FRONTEND_DIST`), with its own Content-Security-Policy
 
+### Learn from me (👍/👎)
+- 👍/👎 on every song (Phase 3 feedback loop). 👎 removes the song now (with Undo) and Muse never brings it back; an artist with two more 👎 than 👍 is left out
+- 👍 songs come forward next time, more so in a similar mood; liked artists are searched even when they aren't in the Music DNA; genres lean gently towards what you like
+- Reasons say so ("you gave it a 👍 before", "you've liked songs by …"); the playlist page shows how many ratings shaped it
+- "What Muse learned" on the Music DNA page lists more-of and less-of artists, with "Forget what Muse learned"
+- `PUT/GET/DELETE /api/v1/feedback`; ratings are in the data export and deleted with the account
+
 ### Cover art
 - Every saved playlist can get a 640x640 cover painted from the mood (Pillow, no AI or stock images): colour from positivity, waves from energy, the playlist's headline and mood words, the Muse mark and a little grain
 - The same cover is shown on the playlist page (`GET /api/v1/covers`) and offered as a tick-box when saving
